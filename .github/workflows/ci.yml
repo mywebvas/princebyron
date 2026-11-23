@@ -221,8 +221,10 @@ jobs:
             # Without this, only a truncated snippet of the offending source
             # is visible, which is not enough to act on.
             echo "================ FAILURE DETAIL ================"
-            grep -E 'Failed asserting|Failed asserting that|does not contain|must be of type|Call to|Exception|SQLSTATE|Tests:|FAIL ' /tmp/test.log \
-              | head -60 || true
+            grep -nE 'FAILED|Failed asserting|Expected response status|does not contain|must be of type|Call to|Exception:|SQLSTATE\(|Tests: ' /tmp/test.log \
+              | head -80 || true
+            echo "---- failed test method context ----"
+            awk '/^ *FAILED /{f=1} f&&NR<99999{print; c++} c>60{exit}' /tmp/test.log || true
             echo "================================================"
 
             # Surface the same lines in the Checks API / PR files view so a
@@ -307,8 +309,10 @@ jobs:
             # Without this, only a truncated snippet of the offending source
             # is visible, which is not enough to act on.
             echo "================ FAILURE DETAIL ================"
-            grep -E 'Failed asserting|Failed asserting that|does not contain|must be of type|Call to|Exception|SQLSTATE|Tests:|FAIL ' /tmp/test.log \
-              | head -60 || true
+            grep -nE 'FAILED|Failed asserting|Expected response status|does not contain|must be of type|Call to|Exception:|SQLSTATE\(|Tests: ' /tmp/test.log \
+              | head -80 || true
+            echo "---- failed test method context ----"
+            awk '/^ *FAILED /{f=1} f&&NR<99999{print; c++} c>60{exit}' /tmp/test.log || true
             echo "================================================"
 
             # Surface the same lines in the Checks API / PR files view so a

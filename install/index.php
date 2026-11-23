@@ -354,9 +354,7 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'All owner administrator fields are required.';
         } elseif (! filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
             $error = 'Invalid owner email address format.';
-        } elseif ($mailer === 'smtp' && empty($mailHost)) {
-            $error = 'A mail server host is required so order receipts and enquiry notifications can be delivered. Choose "Record to log (no email yet)" if the host has no mail server configured.';
-        } elseif ($mailer === 'smtp' && (! ctype_digit($mailPort) || (int)$mailPort < 1 || (int)$mailPort > 65535)) {
+        } elseif ($mailer === 'smtp' && $mailHost !== '' && (! ctype_digit($mailPort) || (int)$mailPort < 1 || (int)$mailPort > 65535)) {
             $error = 'Invalid mail server port (must be 1-65535).';
         } elseif ($mailFrom !== '' && ! filter_var($mailFrom, FILTER_VALIDATE_EMAIL)) {
             $error = 'Invalid "from" email address for outgoing mail.';
@@ -406,6 +404,14 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $escDbUser   = escapeEnv($dbUser);
                                 $escDbPass   = escapeEnv($dbPass);
                                 $escMailPass = escapeEnv($mailPass);
+
+                                // A mailer with no host cannot deliver anything,
+                                // so record to the log instead of shipping a
+                                // configuration that fails on first send. The
+                                // success screen tells the owner.
+                                if ($mailer === 'smtp' && $mailHost === '') {
+                                    $mailer = 'none';
+                                }
 
                                 $envTemplate = <<<ENV
 APP_NAME="{$escSiteName}"
