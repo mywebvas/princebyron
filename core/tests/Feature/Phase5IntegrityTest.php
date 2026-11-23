@@ -276,6 +276,32 @@ class Phase5IntegrityTest extends TestCase
             (string) $setting->fresh()->getRawOriginal('value'),
             json_encode($entry->new_values)
         );
+
+        // Redaction must be surgical: an auditor still needs to know WHICH
+        // setting changed, so the rest of the row survives.
+        $this->assertSame('[redacted]', $entry->new_values['value']);
+        $this->assertSame('mail.password', $entry->new_values['key']);
+    }
+
+    public function test_updating_an_encrypted_setting_redacts_the_change(): void
+    {
+        $setting = Setting::create([
+            'key'   => 'payment.rotate_me',
+            'type'  => Setting::TYPE_ENCRYPTED,
+            'value' => 'first-secret',
+        ]);
+
+        $setting->update(['value' => 'second-secret']);
+
+        $entry = AuditEvent::where('action', 'Setting.updated')
+            ->where('auditable_id', $setting->id)
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($entry, 'Rotating a secret must be audited');
+        $this->assertStringNotContainsString('second-secret', json_encode($entry->new_values));
+        $this->assertStringNotContainsString('first-secret', json_encode($entry->old_values));
+        $this->assertSame('[redacted]', $entry->new_values['value']);
     }
 
     // ---------------------------------------------------------------- P1-6

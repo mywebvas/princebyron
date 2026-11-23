@@ -80,11 +80,9 @@ trait Auditable
     /** Mask sensitive values so the audit log never becomes a secret store. */
     protected function auditRedact(array $values): array
     {
-        if ($this->shouldHideValue()) {
-            foreach (array_keys($values) as $key) {
-                if ($values[$key] !== null && $values[$key] !== '') {
-                    $values[$key] = '[encrypted]';
-                }
+        foreach ($this->auditSensitiveAttributes() as $key) {
+            if (array_key_exists($key, $values) && $values[$key] !== null && $values[$key] !== '') {
+                $values[$key] = '[redacted]';
             }
         }
 
@@ -92,14 +90,25 @@ trait Auditable
     }
 
     /**
+     * Attributes whose value must never be written to the log.
+     *
+     * Redaction is per-attribute rather than whole-row on purpose: an auditor
+     * needs to know that `payment.webhook_secret` was changed and by whom; they
+     * do not need its value. Hiding the entire row would make the trail useless
+     * exactly where it matters most.
+     *
      * Setting rows of type `encrypted` hold ciphertext in `value`; both the
-     * ciphertext and its plaintext are secrets.
+     * ciphertext and its plaintext are secrets. NB: `property_exists($this,
+     * 'type')` is FALSE for an Eloquent attribute — `type` is not a declared
+     * property, it lives in $attributes behind __get(). An earlier version used
+     * property_exists and therefore redacted nothing, writing the ciphertext to
+     * the audit log; read it through the model instead.
      */
-    protected function shouldHideValue(): bool
+    protected function auditSensitiveAttributes(): array
     {
-        return property_exists($this, 'type')
-            && isset($this->type)
-            && $this->type === \App\Models\Setting::TYPE_ENCRYPTED;
+        return $this->getAttribute('type') === \App\Models\Setting::TYPE_ENCRYPTED
+            ? ['value']
+            : [];
     }
 
     /**
