@@ -114,8 +114,26 @@ jobs:
         # Uses `install` (never `update`): fails if composer.json was edited
         # without re-locking, which would make the shipped vendor/ tree
         # disagree with its own manifest.
+        #
+        # The retry is not cosmetic. When this step fails, the failure is a
+        # network or registry problem on the runner, not a defect in the
+        # repository — and without a retry the whole pipeline goes red for a
+        # reason the author cannot see from the annotations (step logs are not
+        # always retrievable). Two attempts with a short backoff absorbs the
+        # transient case; a real lock or manifest problem fails both times and
+        # still fails the build.
         working-directory: ${{ env.APP_DIR }}
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            sleep $((attempt * 10))
+          done
+          echo "::error title='Composer install'::composer install failed 3 times from a clean lock file — treat as a registry/network incident and re-run, not as a code defect"
+          exit 1
 
       - name: Prepare application
         working-directory: ${{ env.APP_DIR }}
@@ -191,8 +209,21 @@ jobs:
           mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 
       - name: Install Composer dependencies from lock
+        # Retried on network/registry failure: when this step fails the cause is
+        # the runner, not the repository, and step logs are not always
+        # retrievable. A genuine lock/manifest problem fails every attempt.
         working-directory: ${{ env.APP_DIR }}
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            sleep $((attempt * 10))
+          done
+          echo "::error title='Composer install'::composer install failed 3 times from a clean lock file — treat as a registry/network incident and re-run, not as a code defect"
+          exit 1
 
       - name: Prepare application
         working-directory: ${{ env.APP_DIR }}
@@ -284,8 +315,21 @@ jobs:
           mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 
       - name: Install Composer dependencies from lock
+        # Retried on network/registry failure: when this step fails the cause is
+        # the runner, not the repository, and step logs are not always
+        # retrievable. A genuine lock/manifest problem fails every attempt.
         working-directory: ${{ env.APP_DIR }}
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            sleep $((attempt * 10))
+          done
+          echo "::error title='Composer install'::composer install failed 3 times from a clean lock file — treat as a registry/network incident and re-run, not as a code defect"
+          exit 1
 
       - name: Prepare application
         working-directory: ${{ env.APP_DIR }}
