@@ -416,16 +416,15 @@ jobs:
             echo "================ FAILURE DETAIL ================"
             sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -40
             echo "================================================"
-            # ONE annotation carrying the raw tail. GitHub keeps only the last
-            # ~10 annotations per step, and the failure here produces no line
-            # matching the usual patterns — it exits before any test runs — so
-            # filtering by pattern emitted nothing at all.
-            # GitHub rejects any annotation body containing the literal '--'
-            # or a nested '::', so both are neutralised rather than dropped.
-            raw=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -25 \
-              | sed -e 's/%/%25/g' -e 's/--/-/g' -e 's/::/:\:/g' -e 's/\r//g' \
-              | tr '\n' '~' | cut -c1-9000)
-            echo "::error title='MySQL/MariaDB raw tail'::${raw}"
+            # ONE annotation carrying the tail as BASE64.
+            #
+            # Every earlier attempt failed on GitHub's annotation content rules:
+            # bodies may not contain '--', and escaping it to '- -' or '-' is
+            # rejected too. Base64 is [A-Za-z0-9+/=] only, so nothing can trip
+            # the filter whatever the log contains. Decode with:
+            #   gh api .../annotations --jq '.[].message' | base64 -d
+            raw=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -25 | base64 -w0)
+            echo "::error title='MySQL raw log base64'::${raw}"
           else
             totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
               | grep -E '^[[:space:]]*(Tests:|Duration:)' \
