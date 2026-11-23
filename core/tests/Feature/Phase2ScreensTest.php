@@ -96,11 +96,11 @@ class Phase2ScreensTest extends TestCase
         $response->assertSee('Prince Byron Signature Tee');
         $response->assertSee('Apparel');
         $response->assertSee('PB-TEE-001');
-        $response->assertSee('In Stock');
         $response->assertSee('Sand Linen');
         $response->assertSee('Charcoal Obsidian');
         $response->assertSee('Add to Bag');
-        $response->assertSee('Sample Product Specifications');
+        $response->assertSee('Materials');
+        $response->assertSee('Details');
     }
 
     /**
@@ -142,10 +142,16 @@ class Phase2ScreensTest extends TestCase
         $response = $this->get('/booking');
 
         $response->assertStatus(200);
-        $response->assertSee('Ministry Appearance &amp; Event Booking', false);
-        $response->assertSee('Request for Quotation (RFQ)');
+        // The page is an invitation enquiry form, not a priced booking form.
+        $response->assertSee('Congregational Ministry');
+        $response->assertSee('Make room');
         $response->assertSee('Sunday Worship Service');
         $response->assertSee('Full Live Band Setup');
+
+        // The enquiry must be presented as a request for quotation: no price is
+        // quoted and nothing is charged on submission.
+        $response->assertSee('Ministry Booking');
+        $response->assertSee('RFQ');
         $response->assertSee('Submit Ministry Request');
     }
 

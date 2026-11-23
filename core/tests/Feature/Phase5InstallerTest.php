@@ -292,11 +292,16 @@ PHP;
 
         // A higher floor must be reported as a failure, with a remedy the owner
         // can action in cPanel, and the install action must be blocked.
-        $this->assertStringContainsString('PHP Version >= 8.5.0', $response['output']);
-        $this->assertStringContainsString('MultiPHP Manager', $response['output']);
-        $this->assertStringContainsString('Resolve Preflight Issues Above to Continue', $response['output']);
-        $this->assertStringNotContainsString('Initialize &amp; Install Platform', $response['output']);
-        $this->assertStringNotContainsString('Initialize & Install Platform', $response['output']);
+        $rendered = html_entity_decode($response['output'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $this->assertStringContainsString('PHP Version >= 8.5.0', $rendered);
+        $this->assertStringContainsString('MultiPHP Manager', $rendered);
+        $this->assertStringContainsString('Resolve Preflight Issues Above to Continue', $rendered);
+        $this->assertStringNotContainsString('Initialize & Install Platform', $rendered);
+
+        // The failed row must say "Fail" and show the remedy inline; it used to
+        // render the word "Pass" regardless of outcome.
+        $this->assertStringContainsString('badge-fail', $response['output']);
+        $this->assertStringContainsString('check-hint', $response['output']);
     }
 
     /**
@@ -817,7 +822,10 @@ ENV;
         );
 
         // The rendered preflight must advertise the same number to the operator.
+        // The installer escapes its labels, so decode before comparing rather
+        // than asserting on entity-encoded markup.
         $response = $this->runInstaller(['action' => 'requirements']);
-        $this->assertStringContainsString("PHP Version >= {$installerFloor}", $response['output']);
+        $rendered = html_entity_decode($response['output'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $this->assertStringContainsString("PHP Version >= {$installerFloor}", $rendered);
     }
 }
