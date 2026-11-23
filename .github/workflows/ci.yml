@@ -284,7 +284,7 @@ jobs:
             # failure is diagnosable without downloading raw job logs.
             grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
               | grep -vE '^\s*$' | head -20 | while IFS= read -r line; do
-                esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
+                esc=$(printf '%s' "$line" | sed -e 's/%/%25/g' -e 's/--/-\ -/g' -e 's/::/:\:/g' -e 's/\r//g')
                 echo "::error title='Tests (PostgreSQL)'::$esc"
               done
             echo "::error title='Tests (PostgreSQL)'::exit code $status — see step log for full output"
@@ -420,7 +420,11 @@ jobs:
             # ~10 annotations per step, and the failure here produces no line
             # matching the usual patterns — it exits before any test runs — so
             # filtering by pattern emitted nothing at all.
-            raw=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -25 | tr '\n' '~' | sed 's/%/%25/g' | cut -c1-9000)
+            # GitHub rejects any annotation body containing the literal '--'
+            # or a nested '::', so both are neutralised rather than dropped.
+            raw=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -25 \
+              | sed -e 's/%/%25/g' -e 's/--/-\ -/g' -e 's/::/:\:/g' -e 's/\r//g' \
+              | tr '\n' '~' | cut -c1-9000)
             echo "::error title='MySQL/MariaDB raw tail'::${raw}"
           else
             totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
@@ -539,7 +543,7 @@ jobs:
             # failure is diagnosable without downloading raw job logs.
             grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
               | grep -vE '^\s*$' | head -20 | while IFS= read -r line; do
-                esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
+                esc=$(printf '%s' "$line" | sed -e 's/%/%25/g' -e 's/--/-\ -/g' -e 's/::/:\:/g' -e 's/\r//g')
                 echo "::error title='Tests (SQLite)'::$esc"
               done
             echo "::error title='Tests (SQLite)'::exit code $status — see step log for full output"
