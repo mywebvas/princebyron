@@ -69,6 +69,9 @@ class Phase5InstallerTest extends TestCase
      */
     protected function runRootLoader(string $uri, string $method = 'GET'): array
     {
+        // Symfony Process derives the child environment from $_SERVER/$_ENV,
+        // NOT from putenv(), so environment overrides must be passed
+        // explicitly here or they are silently ignored by the installer.
         $runner = <<<'PHP'
 register_shutdown_function(function () {
     $out = ob_get_contents();
@@ -108,8 +111,11 @@ PHP;
     /**
      * Executes the one-time installer (install/index.php) in a clean sub-process.
      */
-    protected function runInstaller(array $get = [], array $post = [], array $server = []): array
+    protected function runInstaller(array $get = [], array $post = [], array $server = [], array $env = []): array
     {
+        // Symfony Process derives the child environment from $_SERVER/$_ENV,
+        // NOT from putenv(), so environment overrides must be passed
+        // explicitly here or they are silently ignored by the installer.
         $runner = <<<'PHP'
 register_shutdown_function(function () {
     $out = ob_get_contents();
@@ -147,15 +153,19 @@ if (!empty($_POST) && !array_key_exists('csrf_token', $_POST)) {
 require $argv[4];
 PHP;
 
-        $proc = new Process([
-            PHP_BINARY,
-            '-r',
-            $runner,
-            json_encode($get),
-            json_encode($post),
-            json_encode($server),
-            $this->installerPath,
-        ]);
+        $proc = new Process(
+            [
+                PHP_BINARY,
+                '-r',
+                $runner,
+                json_encode($get),
+                json_encode($post),
+                json_encode($server),
+                $this->installerPath,
+            ],
+            null,
+            $env ?: null
+        );
 
         $proc->run();
         $rawResult = $proc->getErrorOutput();
@@ -278,15 +288,14 @@ PHP;
         // Force a guaranteed-failing condition by raising the effective PHP
         // floor beyond any real runtime. COMPOSER_PLATFORM_PHP is the same
         // override Composer honours, so the installer's gate stays faithful to
-        // how dependencies are actually resolved. The child process inherits
-        // this environment, so it must be restored immediately afterwards.
-        putenv('COMPOSER_PLATFORM_PHP=99.0.0');
-
-        try {
-            $response = $this->runInstaller(['action' => 'requirements']);
-        } finally {
-            putenv('COMPOSER_PLATFORM_PHP');
-        }
+        // how dependencies are actually resolved. It is passed as an explicit
+        // child environment because Symfony Process does not forward putenv().
+        $response = $this->runInstaller(
+            ['action' => 'requirements'],
+            [],
+            [],
+            ['COMPOSER_PLATFORM_PHP' => '99.0.0']
+        );
 
         $this->assertSame(200, $response['status']);
 
