@@ -8,7 +8,16 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <title>{{ $title ?? 'Prince Byron — Official Gospel Music, Ministry & Store' }}</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='{{ urlencode(config('tokens.primitives.gold')) }}'>PB</text></svg>">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+
+  {{-- P2-7: preload only the display face. It is used above the fold for the
+       hero headline, so it is on the critical path; the body face is not
+       preloaded because `font-display: swap` already keeps text readable while
+       it loads, and a second preload would compete with the LCP image. --}}
+  <link rel="preload" href="/fonts/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

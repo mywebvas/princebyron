@@ -1,11 +1,11 @@
 @import 'tailwindcss';
+@import './tokens.css';
+@import './fonts.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../views/**/*.blade.php';
 
-
-    @import './tokens.css';
 
 @theme {
   --color-obsidian: var(--color-obsidian);
@@ -1696,13 +1696,73 @@
       }
     }
 
-    /* Artist Bio Narrative Band */
-    .bio-feature-band {
+    /* Artist Bio Narrative Band (P2-1)
+       Renamed: app.css styled .bio-feature-band and .bio-image-col, but no
+       template has ever used either name — the templates say .bio-band and
+       .bio-portrait-frame. The band therefore rendered as unstyled body text on
+       the highest-traffic page. Rules now match the markup. */
+    .bio-band {
       background: var(--color-charcoal);
       color: var(--text-on-dark);
       padding: 80px 28px;
       border-top: 1px solid var(--border-dark);
       border-bottom: 1px solid var(--border-dark);
+    }
+    .bio-inner {
+      max-width: 1360px;
+      margin: 0 auto;
+    }
+    .bio-portrait-frame {
+      position: relative;
+    }
+    .bio-portrait-frame img, .bio-portrait-frame picture {
+      width: 100%;
+      height: 480px;
+      object-fit: cover;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-gold);
+      display: block;
+    }
+    .bio-narrative {
+      max-width: 62ch;
+    }
+    .bio-eyebrow {
+      display: inline-block;
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-gold);
+      margin-bottom: 18px;
+    }
+    .bio-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.4vw, 2.9rem);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--color-paper);
+      margin: 0 0 22px;
+    }
+    .bio-body {
+      font-size: 1.02rem;
+      line-height: 1.75;
+      color: var(--text-on-dark);
+      margin: 0 0 18px;
+    }
+    .bio-body:last-child {
+      margin-bottom: 0;
+    }
+    .bio-quote {
+      margin: 26px 0 0;
+      padding: 18px 0 0 22px;
+      border-left: 2px solid var(--color-gold);
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-style: italic;
+      line-height: 1.65;
+      color: var(--color-paper);
     }
     .bio-grid {
       max-width: 1360px;
@@ -2461,29 +2521,348 @@
 
 
 
-    /* Toast Notification */
-    .toast-pill {
+    /* Toast Notification (P2-1)
+       The template has always used .toast-notification with a `visible` state
+       class; app.css styled .toast-pill.show. Net effect: the toast had NO
+       position, NO stacking order and NO transition — it rendered as loose text
+       at the end of <body>, so every "Added to bag" / error message was
+       invisible. For a storefront that is a silent-failure UI: the customer gets
+       no confirmation that the thing they clicked worked. */
+    .toast-notification {
       position: fixed;
       top: 24px;
       right: 24px;
+      left: auto;
+      max-width: min(420px, calc(100vw - 32px));
       background: var(--color-charcoal);
       color: var(--color-sand);
       border: 1px solid var(--border-gold);
       box-shadow: var(--shadow-lg);
       padding: 14px 22px;
       border-radius: var(--radius-md);
-      font-size: 0.85rem;
+      font-size: 0.9rem;
+      line-height: 1.45;
       z-index: 99999;
       display: flex;
       align-items: center;
       gap: 12px;
-      transform: translateY(-80px);
+      transform: translateY(-12px);
       opacity: 0;
-      transition: all var(--transition-base);
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base);
     }
-    .toast-pill.show {
+    .toast-notification.visible {
       transform: translateY(0);
       opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    /* Announce politely but never trap focus: the element is not focusable and
+       carries role="status" + aria-live="polite" in the template. */
+    @media (max-width: 620px) {
+      .toast-notification {
+        top: auto;
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        max-width: none;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .toast-notification {
+        transition: opacity 120ms linear;
+        transform: none;
+      }
+    }
+
+
+    /* ==========================================================================
+       COMPONENT CLASSES THAT HAD NO RULES (P2-1)
+       ==========================================================================
+       These 22 class names were present in Blade templates and completely absent
+       from the stylesheet. The audit found them by diffing referenced classes
+       against compiled CSS, which is the only reliable way to see this class of
+       defect: a missing rule does not error, it just renders wrong, and it is
+       invisible on a machine where the page happens to look fine.
+
+       `node tools/check-classes.mjs` now enforces coverage in CI so this cannot
+       silently return.
+       ========================================================================== */
+
+    /* --- Bag drawer ------------------------------------------------------- */
+    .badge-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: var(--radius-full);
+      background: var(--color-clay);
+      color: var(--color-paper);
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .cart-item-thumb {
+      width: 56px;
+      height: 56px;
+      flex: 0 0 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--color-linen);
+      color: var(--color-charcoal);
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+    }
+    .cart-qty-ctrl {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      width: 96px;
+      justify-content: space-between;
+    }
+    .cart-qty-ctrl button {
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-charcoal);
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1;
+      transition: background var(--transition-fast);
+    }
+    .cart-qty-ctrl button:hover {
+      background: var(--color-linen);
+    }
+    .cart-qty-ctrl button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .cart-qty-ctrl .qty-value {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.85rem;
+      min-width: 18px;
+      text-align: center;
+    }
+    .btn-remove {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      transition: color var(--transition-fast), background var(--transition-fast);
+    }
+    .btn-remove:hover {
+      color: var(--color-clay);
+      background: var(--color-linen);
+    }
+    .meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* --- Product detail gallery ------------------------------------------ */
+    .detail-gallery {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: sticky;
+      top: 96px;
+      align-self: start;
+    }
+    .detail-main-frame {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: var(--color-linen);
+      aspect-ratio: 1 / 1;
+    }
+    .detail-main-frame img, .detail-main-frame picture {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .detail-thumbs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .detail-thumb {
+      flex: 0 0 76px;
+      height: 44px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      background: var(--color-paper);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color var(--transition-fast), color var(--transition-fast);
+    }
+    .detail-thumb:hover {
+      border-color: var(--border-gold);
+      color: var(--color-charcoal);
+    }
+    .detail-thumb.active {
+      border-color: var(--color-gold);
+      color: var(--color-charcoal);
+      background: var(--color-linen);
+    }
+    .detail-thumb:focus-visible,
+    .cart-qty-ctrl button:focus-visible,
+    .btn-remove:focus-visible,
+    .options-row button:focus-visible {
+      outline: 2px solid var(--color-focus, var(--color-gold));
+      outline-offset: 2px;
+    }
+    .detail-info-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .detail-badge,
+    .product-badge {
+      display: inline-block;
+      font-family: var(--font-sans);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-clay);
+      background: var(--color-linen);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      padding: 5px 12px;
+    }
+    .product-badge {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 2;
+      background: rgba(247, 243, 236, 0.94);
+    }
+    .detail-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 600;
+      line-height: 1.15;
+      margin: 4px 0 0;
+      color: var(--color-charcoal);
+    }
+    .options-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    /* --- Music track rows ------------------------------------------------- */
+    .track-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-charcoal);
+      margin: 0 0 2px;
+    }
+    .music-item-free .track-title::after {
+      content: 'Free';
+      display: inline-block;
+      margin-left: 10px;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--color-forest, #3f5b47);
+      color: var(--color-paper);
+      font-family: var(--font-sans);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+    /* The paid variant needs a rule of its own for the same reason the free one
+       does: it is emitted by a Blade ternary, so it is a real class token that
+       must exist — even if only to state the neutral case explicitly. */
+    .music-item-paid .track-title::after {
+      content: none;
+    }
+    .audio-time {
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      color: var(--color-gold);
+      white-space: nowrap;
+    }
+
+    /* --- Booking stepper -------------------------------------------------- */
+    .booking-stepper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 36px;
+      padding: 0 10px;
+    }
+    .booking-step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      transition: color var(--transition-fast);
+    }
+    .booking-step-item.active {
+      color: var(--color-clay);
+    }
+    .booking-step-item .step-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-full);
+      border: 1px solid currentColor;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    @media (max-width: 860px) {
+      .detail-gallery {
+        position: static;
+      }
+      .booking-stepper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
     }
 
     /* ==========================================================================

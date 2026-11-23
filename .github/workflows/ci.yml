@@ -448,6 +448,15 @@ jobs:
       - name: Assert build output and payload budget
         run: node tools/check-assets.mjs
 
+      - name: Assert every Blade class has a CSS rule
+        # P2-1: 27 classes were used in templates with no rule anywhere — the
+        # bag drawer badge, the toast, the product gallery, the bio band, the
+        # booking stepper. Nothing errored; the components were simply invisible,
+        # and that survived several rounds of human review because a missing rule
+        # looks like a design decision. This runs after the build so Tailwind
+        # utilities can be recognised from compiled output.
+        run: node tools/check-classes.mjs
+
       - name: Upload built assets
         uses: actions/upload-artifact@v4
         with:

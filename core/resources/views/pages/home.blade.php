@@ -41,13 +41,17 @@
 
       <div class="hero-visual">
         <div class="hero-portrait-frame">
-          <img 
-            src="{{ asset('images/prince-byron-hero.jpeg') }}" 
-            width="560" 
-            height="660" 
-            alt="Prince Byron sitting thoughtfully in an earthy, warm studio portrait" 
+          {{-- P2-6: this was a 276 KB JPEG served to every screen size, including
+               a 390 px phone. Now the browser picks a 480/960/1600 px WebP; the
+               hero is the LCP element, so it is eager + high priority and the
+               intrinsic dimensions reserve its box before the bytes land (CLS). --}}
+          <x-img
+            src="images/prince-byron-hero.jpeg"
+            alt="Prince Byron sitting thoughtfully in an earthy, warm studio portrait"
+            sizes="(max-width: 700px) 92vw, (max-width: 1180px) 46vw, 560px"
+            loading="eager"
             fetchpriority="high"
-          >
+          />
         </div>
       </div>
     </div>
@@ -59,13 +63,12 @@
   <div class="bio-inner">
     <div class="bio-grid">
       <div class="bio-portrait-frame">
-        <img 
-          src="{{ asset('images/prince-byron-portrait.jpeg') }}" 
-          width="520" 
-          height="620" 
-          alt="Prince Byron standing in natural studio lighting" 
-          loading="lazy"
-        >
+        {{-- 927 KB as a single file before Sprint 3. --}}
+        <x-img
+          src="images/prince-byron-portrait.jpeg"
+          alt="Prince Byron standing in natural studio lighting"
+          sizes="(max-width: 900px) 92vw, 520px"
+        />
       </div>
       <div class="bio-narrative">
         <span class="bio-eyebrow">Our Story &amp; Calling</span>

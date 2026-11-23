@@ -20,13 +20,12 @@
   <div class="section-container">
     <div class="bio-grid">
       <div class="bio-portrait-frame">
-        <img 
-          src="{{ asset('images/prince-byron-portrait.jpeg') }}" 
-          width="520" 
-          height="620" 
-          alt="Prince Byron standing in natural studio lighting" 
+        <x-img
+          src="images/prince-byron-portrait.jpeg"
+          alt="Prince Byron standing in natural studio lighting"
+          sizes="(max-width: 900px) 92vw, 520px"
           fetchpriority="high"
-        >
+        />
       </div>
 
       <div class="bio-narrative">

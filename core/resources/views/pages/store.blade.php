@@ -75,7 +75,14 @@
         >
           <div class="product-badge">{{ $product['category'] }}</div>
           <div class="product-image-wrap">
-            <img src="{{ asset($product['image']) }}" alt="{{ $product['title'] }}" class="product-card-photo" loading="lazy">
+            {{-- product['image'] is a path under public/ (e.g. images/products/pb-tee.jpg).
+                 The component discovers the derivatives so this markup cannot go stale. --}}
+            <x-img
+              :src="$product['image']"
+              :alt="$product['title']"
+              class="product-card-photo"
+              sizes="(max-width: 620px) 92vw, (max-width: 1024px) 46vw, 360px"
+            />
           </div>
           <div class="product-content">
             <h3 class="product-title" style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">{{ $product['title'] }}</h3>

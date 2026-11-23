@@ -25,13 +25,12 @@
     <!-- 1. Featured Collection / Album Card -->
     <div class="album-feature-card">
       <div style="display: flex; justify-content: center; align-items: center;">
-        <img 
-          src="{{ asset('images/music/faith-for-the-in-between-album.jpg') }}" 
-          alt="Faith for the In-Between Album Art" 
+        <x-img
+          src="images/music/faith-for-the-in-between-album.jpg"
+          alt="Faith for the In-Between album art"
           class="album-cover-photo"
-          width="260"
-          height="260"
-        >
+          sizes="(max-width: 700px) 70vw, 260px"
+        />
       </div>
       <div class="album-feature-info">
         <span class="hero-eyebrow" style="color: var(--color-gold); margin-bottom: 8px;">Featured Collection &bull; 5 Master Tracks</span>
