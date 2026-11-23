@@ -201,7 +201,7 @@ jobs:
           php artisan key:generate --force
           php artisan config:clear
 
-      - name: Tests: PostgreSQL suite
+      - name: 'Tests: PostgreSQL suite'
         working-directory: ${{ env.APP_DIR }}
         run: |
           set +e
@@ -215,9 +215,9 @@ jobs:
             grep -E '(FAIL|Failed|ERROR|Error|Tests:|assert|Expected|expected|Exception|\-\-)' /tmp/test.log \
               | grep -vE '^\s*$' | head -40 | while IFS= read -r line; do
                 esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
-                echo "::error title=Tests: PostgreSQL suite::$esc"
+                echo "::error title='Tests (PostgreSQL)'::$esc"
               done
-            echo "::error title=Tests: PostgreSQL suite::exit code $status — see step log for full output"
+            echo "::error title='Tests (PostgreSQL)'::exit code $status — see step log for full output"
           fi
           exit $status
 
@@ -277,7 +277,7 @@ jobs:
           php artisan key:generate --force
           php artisan config:clear
 
-      - name: Tests: SQLite suite
+      - name: 'Tests: SQLite suite'
         working-directory: ${{ env.APP_DIR }}
         run: |
           set +e
@@ -291,9 +291,9 @@ jobs:
             grep -E '(FAIL|Failed|ERROR|Error|Tests:|assert|Expected|expected|Exception|\-\-)' /tmp/test.log \
               | grep -vE '^\s*$' | head -40 | while IFS= read -r line; do
                 esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
-                echo "::error title=Tests: SQLite suite::$esc"
+                echo "::error title='Tests (SQLite)'::$esc"
               done
-            echo "::error title=Tests: SQLite suite::exit code $status — see step log for full output"
+            echo "::error title='Tests (SQLite)'::exit code $status — see step log for full output"
           fi
           exit $status
 
@@ -341,3 +341,13 @@ jobs:
         # No install step on purpose: packaging correctness must be provable
         # from the repository alone, exactly as the host receives it.
         run: node tools/check-package.mjs
+
+      - name: Validate workflow files
+        # A malformed workflow does not fail loudly — GitHub accepts the push
+        # and publishes a run with zero jobs, which looks like a test failure.
+        # This check needs a real YAML parser, so it lives here rather than in
+        # the dependency-free manifest step.
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-audit --no-fund js-yaml
+          node tools/check-workflows.mjs
