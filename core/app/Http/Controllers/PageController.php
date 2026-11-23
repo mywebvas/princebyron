@@ -39,6 +39,32 @@ class PageController extends Controller
             'formats' => config('commerce.formats'),
             'samplePricing' => config('commerce.sample_pricing'),
             'samplePricingNotice' => config('commerce.sample_pricing_notice'),
+            'seo' => [
+                'title' => 'The Complete Music Experience — Prince Byron',
+                'description' => 'Stream previews and buy Prince Byron releases as instant MP3 downloads. Gospel, soul and worship.',
+                'image' => 'images/music/faith-for-the-in-between-album.jpg',
+                'type' => 'website',
+                // The catalogue is what a music search should surface: an
+                // ItemList of MusicRecording entries, one per published song.
+                'schema' => [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'ItemList',
+                    'name' => 'Prince Byron — releases',
+                    'itemListElement' => collect($this->catalog->songs())
+                        ->values()
+                        ->map(fn ($song, $i) => [
+                            '@type' => 'ListItem',
+                            'position' => $i + 1,
+                            'item' => [
+                                '@type' => 'MusicRecording',
+                                'name' => $song['title'],
+                                'byArtist' => ['@type' => 'MusicGroup', 'name' => 'Prince Byron'],
+                                'url' => url('/music'),
+                            ],
+                        ])
+                        ->all(),
+                ],
+            ],
         ]);
     }
 
@@ -76,6 +102,34 @@ class PageController extends Controller
             'relatedProducts' => array_slice($related, 0, 3),
             'samplePricing' => config('commerce.sample_pricing'),
             'samplePricingNotice' => config('commerce.sample_pricing_notice'),
+
+            // P2-4: a product page that describes itself in structured data is
+            // what lets a search result show a price instead of a bare link.
+            // The sample-catalogue items are deliberately excluded: advertising
+            // a structured `Offer` for something that cannot be bought is the
+            // machine-readable version of the false-advertising defect (P2-8).
+            'seo' => [
+                'title' => $product['title'] . ' — Prince Byron Store',
+                'description' => $product['desc'] ?? null,
+                'image' => $product['image'] ?? null,
+                'type' => 'product',
+                'noindex' => ! $product['purchasable'],
+                'schema' => $product['purchasable'] ? [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'Product',
+                    'name' => $product['title'],
+                    'description' => $product['desc'] ?? '',
+                    'image' => asset($product['image']),
+                    'brand' => ['@type' => 'Brand', 'name' => 'Prince Byron'],
+                    'offers' => [
+                        '@type' => 'Offer',
+                        'price' => number_format($product['priceCents'] / 100, 2, '.', ''),
+                        'priceCurrency' => 'USD',
+                        'availability' => 'https://schema.org/InStock',
+                        'url' => url()->current(),
+                    ],
+                ] : null,
+            ],
         ]);
     }
 

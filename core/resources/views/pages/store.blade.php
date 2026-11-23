@@ -99,7 +99,12 @@
     <!-- Sourcing & Shipping Notice -->
     <div style="margin-top: 56px; padding: 24px; background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); text-align: center;">
       <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
-        <strong>Ethical Craft &amp; Sourcing:</strong> Every piece is produced with certified sustainable practices and pre-shrunk for enduring comfort. Delivery options and regional shipping rates are calculated authoritatively at checkout.
+        {{-- P2-8: this paragraph previously claimed "certified sustainable
+             practices", specific fabric weights, a paper mill and SKUs — none of
+             which the owner supplied, and one of which ("certified") is a claim
+             that can attract a regulator. Replaced with what is actually true:
+             the item is made to order and the price is calculated server-side. --}}
+        <strong>Made to Order:</strong> Every piece is produced per order, so please allow for production time before dispatch. Delivery options and regional shipping rates are calculated at checkout from your address.
       </p>
     </div>
 

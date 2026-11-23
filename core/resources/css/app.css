@@ -1536,6 +1536,23 @@
       color: var(--text-primary);
       letter-spacing: 0.01em;
     }
+    /* Visible invalid state (P2-11). aria-invalid tells assistive technology the
+       field is wrong; this tells everybody else. Without both, a form error is
+       announced but the offending field is invisible. */
+    .form-control[aria-invalid="true"] {
+      border-color: var(--status-error-border, #b4543f);
+      box-shadow: 0 0 0 3px var(--status-error-bg, rgba(180, 84, 63, 0.12));
+    }
+    .form-control[aria-invalid="true"]:focus {
+      outline-color: var(--status-error-border, #b4543f);
+    }
+
+    /* Alpine's x-cloak: without this rule the attribute does nothing and hidden
+       panels flash on load — which is why Alpine documents it as required. */
+    [x-cloak] {
+      display: none !important;
+    }
+
     .form-control {
       width: 100%;
       padding: 13px 16px;
@@ -2811,6 +2828,12 @@
        must exist — even if only to state the neutral case explicitly. */
     .music-item-paid .track-title::after {
       content: none;
+    }
+    .track-format {
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin: 2px 0 0;
     }
     .audio-time {
       font-family: var(--font-sans);

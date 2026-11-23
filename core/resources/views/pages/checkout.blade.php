@@ -94,7 +94,21 @@
       // The server is the source of truth for what remains in the bag.
       await $store.app.loadCart();
       this.orderCompleted = true;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // P2-11: move focus to the confirmation. `role="status"` announces the
+      // region's content, but focus stays on the (now hidden) submit button, so
+      // a keyboard user's next Tab starts from nowhere useful. Focus plus
+      // scroll makes the outcome both announced and reachable.
+      this.$nextTick(() => {
+        const confirmation = document.getElementById('order-confirmation');
+
+        if (confirmation) {
+          confirmation.setAttribute('tabindex', '-1');
+          confirmation.focus({ preventScroll: true });
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     }
   }">
   <div class="checkout-page-wrap">
@@ -115,13 +129,19 @@
     </div>
 
     <!-- Error surface: server rejections must be visible, not silent. -->
-    <div x-show="errorMessage" x-cloak role="alert"
+    {{-- id + aria-live so a field can be wired to it with aria-describedby, and
+         so the message is announced when it appears (P2-11). --}}
+    <div x-show="errorMessage" x-cloak role="alert" aria-live="assertive" id="checkout-error"
          style="background: var(--status-error-bg); border: 1px solid var(--status-error-border); color: var(--status-error-text); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 24px; font-size: 0.9rem;">
       <strong>We couldn't place this order:</strong> <span x-text="errorMessage"></span>
     </div>
 
     <!-- Success State View -->
-    <div x-show="orderCompleted" style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 56px 36px; text-align: center; box-shadow: var(--shadow-sm);" x-cloak>
+    {{-- Live region (P2-11). The order confirmation replaces the form with no
+         page navigation, so without role="status" a screen-reader user gets no
+         indication that anything happened — they hear the same page and assume
+         the click failed. --}}
+    <div x-show="orderCompleted" id="order-confirmation" role="status" aria-live="polite" style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 56px 36px; text-align: center; box-shadow: var(--shadow-sm);" x-cloak>
       <div style="width: 64px; height: 64px; background: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-border); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 20px;">
         &#10003;
       </div>
@@ -196,13 +216,13 @@
             
             <div class="form-group" style="margin-bottom: 20px;">
               <label for="chk-email">Email Address (for order receipts &amp; digital links):</label>
-              <input type="email" id="chk-email" class="form-control" x-model="contactEmail" required>
+              <input type="email" id="chk-email" class="form-control" x-model="contactEmail" required aria-describedby="checkout-error" :aria-invalid="errorMessage ? 'true' : null">
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="chk-name">Full Name:</label>
-                <input type="text" id="chk-name" class="form-control" x-model="contactName" required>
+                <input type="text" id="chk-name" class="form-control" x-model="contactName" required aria-describedby="checkout-error" :aria-invalid="errorMessage ? 'true' : null">
               </div>
               <div class="form-group">
                 <label for="chk-phone">Mobile Phone (optional):</label>
@@ -225,17 +245,17 @@
             
             <div class="form-group" style="margin-bottom: 20px;">
               <label for="chk-address">Street Address:</label>
-              <input type="text" id="chk-address" class="form-control" x-model="shippingAddress" required>
+              <input type="text" id="chk-address" class="form-control" x-model="shippingAddress" required aria-describedby="checkout-error" :aria-invalid="errorMessage ? 'true' : null">
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label for="chk-city">City:</label>
-                <input type="text" id="chk-city" class="form-control" x-model="shippingCity" required>
+                <input type="text" id="chk-city" class="form-control" x-model="shippingCity" required aria-describedby="checkout-error" :aria-invalid="errorMessage ? 'true' : null">
               </div>
               <div class="form-group">
                 <label for="chk-postal">Postal Code / ZIP:</label>
-                <input type="text" id="chk-postal" class="form-control" x-model="shippingPostal" required>
+                <input type="text" id="chk-postal" class="form-control" x-model="shippingPostal" required aria-describedby="checkout-error" :aria-invalid="errorMessage ? 'true' : null">
               </div>
             </div>
 

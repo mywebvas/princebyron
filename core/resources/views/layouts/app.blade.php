@@ -4,10 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="{{ config('tokens.primitives.obsidian') }}">
-  <meta name="description" content="Prince Byron — Official Gospel Music, Ministry & Store. High-craft worship releases, apparel, ministry bookings, and customer downloads.">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
-  <title>{{ $title ?? 'Prince Byron — Official Gospel Music, Ministry & Store' }}</title>
+  {{-- P2-4: title, description, canonical, Open Graph, Twitter card and JSON-LD
+       in one place. Previously the head carried a single hardcoded description
+       and nothing else — no og:*, no canonical, no structured data — so every
+       share looked generic and a search engine had nothing to link the artist's
+       profiles to. Per-page values arrive via @section or the view's $seo array. --}}
+  <x-seo
+    :title="$seo['title'] ?? $title ?? null"
+    :description="$seo['description'] ?? null"
+    :image="$seo['image'] ?? null"
+    :type="$seo['type'] ?? 'website'"
+    :noindex="$seo['noindex'] ?? false"
+    :schema="$seo['schema'] ?? null"
+  />
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -59,7 +70,7 @@
 
         <nav class="mobile-nav-links" aria-label="Mobile Navigation Links">
           <a href="{{ url('/') }}" class="mobile-nav-link {{ request()->is('/') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Home</a>
-          <a href="{{ url('/about') }}" class="mobile-nav-link {{ request()->is('about') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Our Story &amp; Vision</a>
+          <a href="{{ url('/about') }}" class="mobile-nav-link {{ request()->is('about') ? 'active' : '' }}" @if(request()->is('about')) aria-current="page" @endif @click="$store.app.closeMobileNav()">Our Story &amp; Vision</a>
           <a href="{{ url('/music') }}" class="mobile-nav-link {{ request()->is('music*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Music Releases</a>
           <a href="{{ url('/store') }}" class="mobile-nav-link {{ request()->is('store*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Official Store</a>
           <a href="{{ url('/booking') }}" class="mobile-nav-link {{ request()->is('booking') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Ministry Booking &amp; RFQ</a>
@@ -94,12 +105,12 @@
 
         <!-- Desktop Navigation -->
         <nav class="site-nav" aria-label="Main Navigation">
-          <a href="{{ url('/') }}" class="nav-link {{ request()->is('/') ? 'active' : '' }}">Home</a>
-          <a href="{{ url('/about') }}" class="nav-link {{ request()->is('about') ? 'active' : '' }}">Our Story</a>
-          <a href="{{ url('/music') }}" class="nav-link {{ request()->is('music*') ? 'active' : '' }}">Music</a>
-          <a href="{{ url('/store') }}" class="nav-link {{ request()->is('store*') ? 'active' : '' }}">Store</a>
-          <a href="{{ url('/booking') }}" class="nav-link {{ request()->is('booking') ? 'active' : '' }}">Booking</a>
-          <a href="{{ url('/account') }}" class="nav-link {{ request()->is('account*') ? 'active' : '' }}">Fan Vault</a>
+          <a href="{{ url('/') }}" class="nav-link {{ request()->is('/') ? 'active' : '' }}" @if(request()->is('/')) aria-current="page" @endif>Home</a>
+          <a href="{{ url('/about') }}" class="nav-link {{ request()->is('about') ? 'active' : '' }}" @if(request()->is('about')) aria-current="page" @endif>Our Story</a>
+          <a href="{{ url('/music') }}" class="nav-link {{ request()->is('music*') ? 'active' : '' }}" @if(request()->is('music*')) aria-current="page" @endif>Music</a>
+          <a href="{{ url('/store') }}" class="nav-link {{ request()->is('store*') ? 'active' : '' }}" @if(request()->is('store*')) aria-current="page" @endif>Store</a>
+          <a href="{{ url('/booking') }}" class="nav-link {{ request()->is('booking') ? 'active' : '' }}" @if(request()->is('booking')) aria-current="page" @endif>Booking</a>
+          <a href="{{ url('/account') }}" class="nav-link {{ request()->is('account*') ? 'active' : '' }}" @if(request()->is('account*')) aria-current="page" @endif>Fan Vault</a>
         </nav>
 
         <div class="header-actions">

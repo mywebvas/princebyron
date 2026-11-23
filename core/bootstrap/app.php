@@ -38,4 +38,26 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // P2-3: give every server-side failure a short quotable reference and
+        // put that same reference in the log. Without it, a 500 page is a dead
+        // end for the customer and an unsolvable ticket for support.
+        //
+        // Only 5xx gets a reference: a 404 is not an incident, and generating
+        // tokens for bot traffic would be noise in both the log and the page.
+        $exceptions->report(function (\Throwable $e) {
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                && $e->getStatusCode() < 500) {
+                return;
+            }
+
+            if (app()->bound('request')) {
+                \Illuminate\Support\Facades\Log::error('Unhandled request failure', [
+                    'reference' => app(\App\Support\ErrorReference::class)->current(),
+                    'exception' => $e::class,
+                    'message' => $e->getMessage(),
+                    'url' => request()->fullUrl(),
+                ]);
+            }
+        });
     })->create();

@@ -178,7 +178,7 @@
       </div>
 
       <!-- Error Announcement Alert -->
-      <div x-show="errorMessage" style="background: var(--status-error-bg); border: 1px solid var(--status-error-border); color: var(--status-error-text); padding: 12px 18px; border-radius: var(--radius-sm); margin-bottom: 24px; font-size: 0.88rem;" x-cloak>
+      <div x-show="errorMessage" id="booking-error" role="alert" aria-live="assertive" style="background: var(--status-error-bg); border: 1px solid var(--status-error-border); color: var(--status-error-text); padding: 12px 18px; border-radius: var(--radius-sm); margin-bottom: 24px; font-size: 0.88rem;" x-cloak>
         <span x-text="errorMessage"></span>
       </div>
 
@@ -209,8 +209,8 @@
               class="form-control" 
               x-model="form.event_name" 
               placeholder="e.g. Annual Faith Revival or Sunday Morning Worship" 
-              required
-            >
+              required aria-describedby="booking-error" :aria-invalid="errorMessage ? 'true' : null"
+>
           </div>
 
           <div class="form-row">
@@ -261,8 +261,8 @@
               rows="4" 
               x-model="form.event_description" 
               placeholder="Share what you hope to experience, the flow of the gathering, or any specific themes."
-              required
-            ></textarea>
+              required aria-describedby="booking-error" :aria-invalid="errorMessage ? 'true' : null"
+></textarea>
           </div>
 
           <div class="form-group" style="margin-bottom: 28px;">
@@ -308,8 +308,8 @@
                 class="form-control" 
                 x-model="form.contact_name" 
                 placeholder="Full Name" 
-                required
-              >
+                required aria-describedby="booking-error" :aria-invalid="errorMessage ? 'true' : null"
+>
             </div>
             <div class="form-group">
               <label for="rfq-email">Email Address: <span style="color: var(--color-clay);">*</span></label>
@@ -319,8 +319,8 @@
                 class="form-control" 
                 x-model="form.contact_email" 
                 placeholder="you@example.com" 
-                required
-              >
+                required aria-describedby="booking-error" :aria-invalid="errorMessage ? 'true' : null"
+>
             </div>
           </div>
 

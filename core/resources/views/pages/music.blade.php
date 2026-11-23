@@ -38,15 +38,19 @@
           Faith for the In-Between
         </h2>
         <p style="color: var(--color-sand); line-height: 1.6; margin-bottom: 24px;">
-          The complete 5-track digital collection including Lead Single "Free", "Purify Me", "I Always Win", "Toduyun", and "Follow Me". Includes high-res digital booklet, 320kbps MP3s, and 24-bit studio WAV masters.
+          Five tracks: the lead single "Free", "Purify Me", "I Always Win", "Toduyun" and "Follow Me". Each track is available as an instant MP3 download. Studio WAV masters are not available yet — the track list marks where they are pending rather than promising them.
         </p>
         <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+          {{-- Play the lead-single preview that actually ships. The previous
+               button announced a 1200-second "collection" audio file that does
+               not exist, alongside a $12.00 price for a product the owner never
+               approved (P2-8). Individual tracks are purchasable below. --}}
           <button 
             type="button" 
             class="btn-primary" 
-            @click="$store.app.playTrack('Faith for the In-Between', 1200, 'collection')"
+            @click="$store.app.playTrack('Purify Me', 30)"
           >
-            &#9658; Play Full Collection
+            &#9658; Play Preview
           </button>
           <a href="#tracklist" class="btn-secondary" style="text-decoration: none;">
             Browse the Tracks &darr;
@@ -115,6 +119,17 @@
           <div class="track-details">
             <h3 class="track-title" style="font-family: var(--font-sans); font-size: 1.05rem; font-weight: 700; color: inherit; margin-bottom: 4px;">{{ $song['title'] }}</h3>
             <p style="font-size: 0.85rem; color: var(--color-sand); margin: 0;">{{ $song['subtitle'] }}</p>
+            {{-- P2-8: state the format truthfully per track. The catalogue
+                 advertises 24-bit WAV while `has_wav` is false on every row and
+                 the masters are still pending, so the honest label is shown only
+                 where the file genuinely exists. --}}
+            <p class="track-format">
+              @if(! empty($song['hasWav']))
+                MP3 + 24-bit WAV
+              @else
+                MP3 download &bull; WAV master pending
+              @endif
+            </p>
           </div>
           <span class="{{ $song['isFree'] ? 'track-badge-free' : 'track-badge-price' }}">{{ $song['tag'] }}</span>
           <div class="track-actions">

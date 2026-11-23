@@ -118,3 +118,65 @@ Route::get('/up', function () {
 
     return response()->json(['status' => 'ok'], 200);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Sitemap (review P2-4)
+|--------------------------------------------------------------------------
+| Generated from the live catalogue rather than a static file, so a new release
+| or product appears without anybody remembering to edit an XML file — which is
+| the reason hand-maintained sitemaps are always wrong after a month.
+|
+| Unpurchasable sample items are excluded: they must never be indexed, and the
+| product page marks them noindex anyway.
+*/
+Route::get('/sitemap.xml', function (\App\Services\CatalogService $catalog) {
+    $urls = [
+        ['loc' => url('/'), 'changefreq' => 'weekly', 'priority' => '1.0'],
+        ['loc' => url('/music'), 'changefreq' => 'weekly', 'priority' => '0.9'],
+        ['loc' => url('/store'), 'changefreq' => 'weekly', 'priority' => '0.9'],
+        ['loc' => url('/about'), 'changefreq' => 'monthly', 'priority' => '0.7'],
+        ['loc' => url('/booking'), 'changefreq' => 'monthly', 'priority' => '0.6'],
+    ];
+
+    foreach ($catalog->songs() as $song) {
+        // Only published, purchasable tracks; the catalogue already filters
+        // unpublished rows, so this is about the sample fallback items.
+        if (($song['purchasable'] ?? true) === false) {
+            continue;
+        }
+
+        $urls[] = [
+            'loc' => url('/music'),
+            'changefreq' => 'monthly',
+            'priority' => '0.5',
+        ];
+    }
+
+    foreach ($catalog->products() as $product) {
+        if (($product['purchasable'] ?? false) === false) {
+            continue;
+        }
+
+        $urls[] = [
+            'loc' => url('/store/'.$product['slug']),
+            'changefreq' => 'weekly',
+            'priority' => '0.8',
+        ];
+    }
+
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n";
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+
+    foreach ($urls as $entry) {
+        $xml .= "  <url>\n";
+        $xml .= '    <loc>'.e($entry['loc'])."</loc>\n";
+        $xml .= '    <changefreq>'.$entry['changefreq']."</changefreq>\n";
+        $xml .= '    <priority>'.$entry['priority']."</priority>\n";
+        $xml .= "  </url>\n";
+    }
+
+    $xml .= '</urlset>';
+
+    return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+})->name('sitemap');

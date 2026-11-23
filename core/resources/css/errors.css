@@ -1,0 +1,169 @@
+/*
+ * Error pages (P2-3)
+ * ---------------------------------------------------------------------------
+ * Standalone stylesheet, deliberately NOT part of the Vite bundle. An error page
+ * is what Laravel renders when something has gone wrong — including, in the 500
+ * case, when the application itself is broken. Depending on a build manifest to
+ * style it would mean the one page that must always work is the page most likely
+ * to render unstyled.
+ *
+ * It is a plain file in public/build/errors.css, served statically, with the two
+ * self-hosted faces inlined as @font-face in the document.
+ */
+
+:root {
+  --ink: #14100C;
+  --clay: #8C5A3B;
+  --gold: #C9A227;
+  --paper: #F7F3EC;
+  --linen: #EDE6DA;
+  --muted: #6B6257;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.err-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 32px clamp(20px, 5vw, 64px);
+}
+
+.err-skip {
+  position: absolute;
+  left: -9999px;
+}
+.err-skip:focus {
+  left: 24px;
+  top: 24px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 10px 16px;
+  border-radius: 6px;
+  z-index: 10;
+}
+
+.err-head { padding-bottom: 24px; }
+
+.err-brand {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+}
+.err-brand:hover { color: var(--clay); }
+
+.err-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 44rem;
+  padding: 48px 0 64px;
+}
+
+.err-code {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: clamp(4rem, 14vw, 9rem);
+  font-weight: 700;
+  line-height: 0.85;
+  margin: 0 0 8px;
+  color: var(--linen);
+  letter-spacing: -0.03em;
+}
+
+.err-title {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: clamp(1.5rem, 3.4vw, 2.3rem);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0 0 20px;
+}
+
+.err-lede {
+  font-size: 1.06rem;
+  color: var(--muted);
+  margin: 0 0 34px;
+  max-width: 38rem;
+}
+
+.err-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.err-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+.err-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+  transform: translateY(-1px);
+}
+.err-btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.err-btn-primary:hover {
+  background: var(--clay);
+  border-color: var(--clay);
+}
+
+.err-btn:focus-visible,
+.err-brand:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.err-detail {
+  margin: 28px 0 0;
+  padding: 14px 18px;
+  border-left: 2px solid var(--gold);
+  background: var(--linen);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+.err-foot {
+  border-top: 1px solid var(--linen);
+  padding-top: 20px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.err-foot p { margin: 0 0 4px; }
+.err-ref strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .err-btn { transition: none; }
+  .err-btn:hover { transform: none; }
+}
