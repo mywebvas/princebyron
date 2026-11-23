@@ -323,6 +323,128 @@ jobs:
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
 
+  tests-mysql:
+    name: Tests (MySQL/MariaDB — shared-host parity)
+    runs-on: ubuntu-latest
+    # WHY THIS JOB EXISTS
+    # -------------------
+    # The installer has offered a MySQL/MariaDB option since Sprint 0 while four
+    # migrations used `jsonb` and the audit-immutability trigger was PostgreSQL +
+    # SQLite only. On MariaDB — the database most of this project's cPanel target
+    # hosts actually provide — the schema would half-create and the audit trail
+    # would have had no database-level protection at all. A capability CI does
+    # not exercise is a claim, not a feature.
+    #
+    # MariaDB, not MySQL: it is what shared cPanel accounts ship, and its trigger
+    # and SIGNAL behaviour is the one that matters here.
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: princebyron_test
+          MARIADB_USER: princebyron
+          MARIADB_PASSWORD: secret
+          MARIADB_ROOT_PASSWORD: rootsecret
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: princebyron_test
+      DB_USERNAME: princebyron
+      DB_PASSWORD: secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, pdo_mysql
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: Composer lock-file sync (no PHP required)
+        run: node tools/check-lock.mjs
+
+      - name: Prepare .env before dependency install
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+      - name: Install Composer dependencies from lock
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            sleep $((attempt * 10))
+          done
+          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
+          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
+          exit 1
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan key:generate --force
+          php artisan config:clear
+
+      - name: 'Tests: MySQL/MariaDB suite'
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set +e
+          cp phpunit.mysql.xml phpunit.xml
+          php artisan test > /tmp/test.log 2>&1
+          status=$?
+          cat /tmp/test.log
+
+          if [ $status -ne 0 ]; then
+            echo "================ FAILURE DETAIL ================"
+            grep -nE 'FAILED|Failed asserting|does not contain|must be of type|Call to|Exception:|SQLSTATE\(|Tests: ' /tmp/test.log \
+              | head -80 || true
+            echo "================================================"
+            grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
+              | grep -vE '^[[:space:]]*$' | head -20 | while IFS= read -r line; do
+                esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
+                echo "::error title='Tests (MySQL/MariaDB)'::$esc"
+              done
+            echo "::error title='Tests (MySQL/MariaDB)'::exit code $status — see step log for full output"
+          else
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (MySQL/MariaDB)'::${totals:-suite passed}"
+          fi
+          exit $status
+
+      - name: Verify full migration replay from an empty database
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan migrate:fresh --force
+          php artisan migrate:status
+
+      - name: Seed a clean database (installer parity)
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+
   tests-sqlite:
     name: Tests (SQLite — fast regression pass)
     runs-on: ubuntu-latest

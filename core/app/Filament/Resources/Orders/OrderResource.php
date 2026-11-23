@@ -8,6 +8,7 @@ use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Models\AuditEvent;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\AnonymiseCustomer;
 use App\Services\GrantEntitlementsForOrder;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -432,6 +433,54 @@ class OrderResource extends Resource
                     }),
 
                 EditAction::make(),
+
+                // P1-5 follow-through: Sprint 2 refused to delete a customer who
+                // has orders and the error message promised "deactivate or
+                // anonymise". This is that action, and it is the only lawful way
+                // to honour a deletion request without destroying the financial
+                // record. Irreversible, so it confirms first and says so.
+                Action::make('anonymise_customer')
+                    ->label('Anonymise customer')
+                    ->icon('heroicon-o-user-minus')
+                    ->color('danger')
+                    ->visible(fn (Order $record): bool => $record->user_id !== null
+                        && $record->user !== null
+                        && ! $record->user->isOwner())
+                    ->requiresConfirmation()
+                    ->modalHeading('Anonymise this customer permanently?')
+                    ->modalDescription('Their name, email, phone, password and postal address are replaced and the account is deactivated. Orders, line items and amounts are kept because they are financial records, and the downloads they owned are revoked. This cannot be undone.')
+                    ->modalSubmitActionLabel('Anonymise permanently')
+                    ->schema([
+                        Select::make('reason')
+                            ->label('Reason for the request')
+                            ->options([
+                                AnonymiseCustomer::REASON_DELETION_REQUEST => 'Customer asked for their account to be deleted',
+                                AnonymiseCustomer::REASON_INACTIVE => 'Account unused for a long period',
+                                AnonymiseCustomer::REASON_LEGAL => 'Legal or regulatory requirement',
+                            ])
+                            ->required(),
+
+                        TextInput::make('reference_note')
+                            ->label('Request reference (optional)')
+                            ->maxLength(120)
+                            ->helperText('e.g. the support ticket number. Stored in the audit log.'),
+                    ])
+                    ->action(function (Order $record, array $data) {
+                        $customer = $record->user;
+
+                        $result = app(AnonymiseCustomer::class)->handle(
+                            $customer,
+                            $data['reason'],
+                            $data['reference_note'] ?? null,
+                        );
+
+                        Notification::make()
+                            ->title('Customer anonymised')
+                            ->body("{$result['reference']} — {$result['orders']} order(s) retained, {$result['entitlements']} download entitlement(s) revoked.")
+                            ->success()
+                            ->persistent()
+                            ->send();
+                    }),
             ])
             // P1-5: no bulk delete on financial records. An order is evidence
             // that money moved; the model itself now refuses deletion.
