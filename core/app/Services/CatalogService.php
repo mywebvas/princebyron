@@ -58,13 +58,31 @@ class CatalogService
             ->orderBy('name')
             ->get();
 
-        if ($products->isEmpty()) {
+        if (! $this->hasAnyCatalogueProduct()) {
             return $this->fallbackProducts();
         }
 
         return $products
             ->mapWithKeys(fn (Product $product) => [$product->slug => $this->presentProduct($product)])
             ->all();
+    }
+
+    /**
+     * Whether the owner has ever created a product.
+     *
+     * Deliberately ignores `is_published` and soft deletes are excluded by the
+     * default query scope: a product the owner has unpublished must NOT be
+     * replaced by the demo catalogue, or taking an item down would put a
+     * sample item back in its place.
+     */
+    private function hasAnyCatalogueProduct(): bool
+    {
+        return Product::query()->exists();
+    }
+
+    private function hasAnyCatalogueSong(): bool
+    {
+        return Song::query()->exists();
     }
 
     /** A single published product by slug, or null when it does not exist. */
@@ -92,7 +110,7 @@ class CatalogService
             ->orderBy('id')
             ->get();
 
-        if ($songs->isEmpty()) {
+        if (! $this->hasAnyCatalogueSong()) {
             return $this->fallbackSongs();
         }
 
@@ -105,11 +123,11 @@ class CatalogService
     /** Whether any of the songs has a real downloadable master. */
     public function hasAnyDigitalDelivery(): bool
     {
-        $songs = Song::query()->where('is_published', true)->get();
-
-        if ($songs->isEmpty()) {
+        if (! $this->hasAnyCatalogueSong()) {
             return false;
         }
+
+        $songs = Song::query()->where('is_published', true)->get();
 
         return $songs->contains(fn (Song $s) => (bool) $s->download_storage_path_mp3 || (bool) $s->download_storage_path_wav);
     }

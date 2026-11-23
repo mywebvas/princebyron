@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
-use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\Song;
 use App\Models\User;
@@ -40,18 +39,19 @@ class StorefrontWiringTest extends TestCase
 
     public function test_store_page_lists_products_from_the_database(): void
     {
+        $this->get('/store')
+            ->assertStatus(200)
+            ->assertSee('Prince Byron T-Shirt');
+
+        // Unpublishing everything must leave the store empty. It must NOT
+        // resurrect the demo catalogue: an owner taking a product down would
+        // otherwise find a sample item standing in its place.
         Product::query()->update(['is_published' => false]);
 
         $this->get('/store')
             ->assertStatus(200)
-            // The seeded published product must be gone once unpublished...
-            ->assertDontSee('Prince Byron T-Shirt');
-
-        Product::where('slug', 'prince-byron-t-shirt')->update(['is_published' => true]);
-
-        $this->get('/store')
-            ->assertStatus(200)
-            ->assertSee('Prince Byron T-Shirt');
+            ->assertDontSee('Prince Byron T-Shirt')
+            ->assertDontSee('Sample catalogue item', false);
     }
 
     public function test_product_page_shows_the_database_price_not_a_hardcoded_one(): void
@@ -301,9 +301,14 @@ class StorefrontWiringTest extends TestCase
 
     public function test_fallback_catalogue_is_present_but_not_purchasable(): void
     {
-        // An un-seeded install must still look intentional.
-        Product::query()->forceDelete();
-        Song::query()->forceDelete();
+        // An un-seeded install must still look intentional. Children are
+        // deleted before parents so foreign keys are satisfied on every engine;
+        // PRAGMA-based tricks are SQLite-only and would break the PostgreSQL
+        // job, which is the primary target.
+        \Illuminate\Support\Facades\DB::table('product_images')->delete();
+        \Illuminate\Support\Facades\DB::table('product_variants')->delete();
+        \Illuminate\Support\Facades\DB::table('products')->delete();
+        \Illuminate\Support\Facades\DB::table('songs')->delete();
 
         $response = $this->get('/store');
         $response->assertStatus(200);

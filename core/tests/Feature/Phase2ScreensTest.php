@@ -142,10 +142,16 @@ class Phase2ScreensTest extends TestCase
         $response->assertSee('Contact &amp; Entitlement Account', false);
         $response->assertSee('Shipping &amp; Delivery Destination', false);
         $response->assertSee('Payment Method Review');
-        $response->assertSee('Stripe Simulation');
-        $response->assertSee('PayPal (Sandbox Simulation)');
+        $response->assertSee('Credit / Debit Card');
+        $response->assertSee('PayPal');
         $response->assertSee('Manual Bank Wire Transfer');
         $response->assertSee('awaiting_bank_verification');
+
+        // The page must not print card numbers or invite visitors to test a
+        // decline: it collects no card data and captures no payment.
+        $response->assertDontSee('4242');
+        $response->assertDontSee('Simulate card decline');
+        $response->assertSee('Online card capture is not enabled', false);
     }
 
     /**

@@ -3,7 +3,7 @@
 @section('content')
 <section class="section-editorial" style="background: var(--color-cream);" 
   x-data="{
-    variants: {{ Illuminate\Support\Json::encode($product['variants']) }},
+    variants: @js($product['variants']),
     purchasable: {{ $product['purchasable'] ? 'true' : 'false' }},
     selectedColor: '',
     selectedSize: '',
