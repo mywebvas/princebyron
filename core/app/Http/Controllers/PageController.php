@@ -221,6 +221,8 @@ class PageController extends Controller
         return view('pages.store', [
             'title' => 'Official Store & Merchandise — Prince Byron',
             'products' => $this->getProducts(),
+            'samplePricing' => config('commerce.sample_pricing'),
+            'samplePricingNotice' => config('commerce.sample_pricing_notice'),
         ]);
     }
 

@@ -79,7 +79,10 @@ class Phase2ScreensTest extends TestCase
         $response->assertSee('Prince Byron Signature Tee');
         $response->assertSee('Abide Arch Pullover Hoodie');
         $response->assertSee('PB Monogram Curved Brim Cap');
-        $response->assertSee('Sample');
+
+        // Merchandise shows real-looking money, so the same placeholder-pricing
+        // disclosure is required here as on the music page.
+        $response->assertSee('Sample demonstration prices');
     }
 
     /**

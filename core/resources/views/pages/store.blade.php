@@ -19,6 +19,13 @@
 <section class="section-editorial" style="background: var(--color-linen);" x-data="{ activeCategory: 'all' }">
   <div class="section-container">
     
+    @if($samplePricing)
+      <p class="price-notice" style="color: var(--text-primary); border-left-color: var(--color-amber); background: rgba(200, 136, 59, 0.07);" role="note">
+        <strong>Please note:</strong> {{ $samplePricingNotice }}
+        Amounts are shown for demonstration only while the catalog is being finalised.
+      </p>
+    @endif
+
     <!-- Filter Bar -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 36px; flex-wrap: wrap; gap: 16px;">
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">

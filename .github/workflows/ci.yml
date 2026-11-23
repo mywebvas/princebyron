@@ -215,10 +215,20 @@ jobs:
           cat /tmp/test.log
 
           if [ $status -ne 0 ]; then
-            # Surface the useful lines in the Checks API / PR files view so a
+            # Print the actual cause first: for every failed test, the
+            # assertion message ("Failed asserting that ... contains X") is
+            # the single most useful line and it does not start with FAIL.
+            # Without this, only a truncated snippet of the offending source
+            # is visible, which is not enough to act on.
+            echo "================ FAILURE DETAIL ================"
+            grep -E 'Failed asserting|Failed asserting that|does not contain|must be of type|Call to|Exception|SQLSTATE|Tests:|FAIL ' /tmp/test.log \
+              | head -60 || true
+            echo "================================================"
+
+            # Surface the same lines in the Checks API / PR files view so a
             # failure is diagnosable without downloading raw job logs.
-            grep -E '(FAIL|Failed|ERROR|Error|Tests:|assert|Expected|expected|Exception|\-\-)' /tmp/test.log \
-              | grep -vE '^\s*$' | head -40 | while IFS= read -r line; do
+            grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
+              | grep -vE '^\s*$' | head -20 | while IFS= read -r line; do
                 esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
                 echo "::error title='Tests (PostgreSQL)'::$esc"
               done
@@ -291,10 +301,20 @@ jobs:
           cat /tmp/test.log
 
           if [ $status -ne 0 ]; then
-            # Surface the useful lines in the Checks API / PR files view so a
+            # Print the actual cause first: for every failed test, the
+            # assertion message ("Failed asserting that ... contains X") is
+            # the single most useful line and it does not start with FAIL.
+            # Without this, only a truncated snippet of the offending source
+            # is visible, which is not enough to act on.
+            echo "================ FAILURE DETAIL ================"
+            grep -E 'Failed asserting|Failed asserting that|does not contain|must be of type|Call to|Exception|SQLSTATE|Tests:|FAIL ' /tmp/test.log \
+              | head -60 || true
+            echo "================================================"
+
+            # Surface the same lines in the Checks API / PR files view so a
             # failure is diagnosable without downloading raw job logs.
-            grep -E '(FAIL|Failed|ERROR|Error|Tests:|assert|Expected|expected|Exception|\-\-)' /tmp/test.log \
-              | grep -vE '^\s*$' | head -40 | while IFS= read -r line; do
+            grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
+              | grep -vE '^\s*$' | head -20 | while IFS= read -r line; do
                 esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
                 echo "::error title='Tests (SQLite)'::$esc"
               done
