@@ -373,6 +373,23 @@ class Phase5IntegrityTest extends TestCase
         $this->assertSame([], config('security.trusted_proxies'));
     }
 
+    public function test_the_application_boots_for_console_commands(): void
+    {
+        // Regression guard for a real outage. Reading config() inside
+        // bootstrap/app.php's withMiddleware() closure throws
+        // "Target class [config] does not exist", because that closure runs
+        // while the container is still resolving the kernel. It broke
+        // `composer install` (post-autoload-dump runs artisan package:discover)
+        // and would have broken every request in production.
+        //
+        // Booting the console kernel exercises exactly that path without needing
+        // a network or a database.
+        $kernel = $this->app->make(\Illuminate\Contracts\Console\Kernel::class);
+
+        $this->assertNotNull($kernel);
+        $this->assertNotEmpty($kernel->all(), 'The console kernel must resolve its commands');
+    }
+
     public function test_security_headers_are_present_on_storefront_responses(): void
     {
         $response = $this->get('/');

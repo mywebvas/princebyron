@@ -3,7 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,29 +21,17 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // P1-9: trusted proxies.
         //
-        // Behind Cloudflare, a cPanel LiteSpeed proxy or any TLS-terminating
-        // load balancer, request()->ip() is the proxy's address. Every throttle
-        // key then collapses onto one IP, so a single abuser locks out every
-        // customer — and the audit log records the wrong actor address.
-        //
-        // The list is configurable rather than hardcoded, because trusting a
-        // proxy range you do not control lets a client forge its own IP. An
-        // empty list (the default) is correct for direct hosting and safe.
-        // Read through config, not env(): `config:cache` makes env() return
-        // null outside config files, which would silently disable proxy trust.
-        $proxies = (array) config('security.trusted_proxies', []);
-
-        if (! empty($proxies)) {
-            // '*' is a deliberate opt-in for platforms that rewrite the header
-            // themselves (e.g. a managed edge) — never a default.
-            $middleware->trustProxies(
-                at: $proxies === ['*'] ? '*' : $proxies,
-                headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR
-                    | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST
-                    | \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT
-                    | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO,
-            );
-        }
+        // The list itself is read in App\Http\Middleware\TrustProxies at
+        // request time. It MUST NOT be read here: this closure runs while the
+        // container is still resolving the kernel, before the `config` binding
+        // exists, so config() throws "Target class [config] does not exist" —
+        // which broke artisan package:discover during `composer install` and
+        // would break every request in production. See the middleware for the
+        // full explanation.
+        $middleware->replace(
+            \Illuminate\Http\Middleware\TrustProxies::class,
+            \App\Http\Middleware\TrustProxies::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
