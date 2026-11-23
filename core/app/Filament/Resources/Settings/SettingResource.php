@@ -80,13 +80,64 @@ class SettingResource extends Resource
                 ])->columns(2),
 
                 Section::make('Setting Value')->schema([
+                    // P1-3: this field previously bound the raw `value` column,
+                    // so an "Encrypted Secret" typed into it was written to the
+                    // database in cleartext — the model's setTypedValue() was
+                    // bypassed entirely. Secrets silently stored in plaintext are
+                    // the worst kind of bug: everything appears to work.
+                    //
+                    // Design: for an encrypted setting the existing secret is
+                    // never rendered into the page at all (not even masked HTML
+                    // that could be revealed with devtools). The field starts
+                    // empty; leaving it empty keeps the stored ciphertext, typing
+                    // a new value replaces it. That is the password-field pattern
+                    // and it is safer than hydrating plaintext into a textarea.
                     Textarea::make('value')
-                        ->label('Value')
+                        ->label(fn (?Setting $record): string => $record?->type === Setting::TYPE_ENCRYPTED
+                            ? 'New secret value'
+                            : 'Value')
                         ->rows(4)
-                        ->helperText('Structured value. If type is Encrypted, it will be encrypted at rest.')
+                        ->placeholder(fn (?Setting $record): string => $record?->type === Setting::TYPE_ENCRYPTED
+                            ? 'Leave blank to keep the current secret'
+                            : '')
+                        ->afterStateHydrated(function (Textarea $component, ?Setting $record): void {
+                            if ($record?->type === Setting::TYPE_ENCRYPTED) {
+                                $component->state(null);
+                            }
+                        })
+                        ->dehydrateStateUsing(function ($state, ?Setting $record) {
+                            // Blank on an existing encrypted setting = unchanged.
+                            // Keeping the stored ciphertext means an owner editing
+                            // the label cannot accidentally destroy the secret.
+                            if ($record?->type === Setting::TYPE_ENCRYPTED) {
+                                if ($state === null || $state === '') {
+                                    return $record->value;
+                                }
+
+                                return \Illuminate\Support\Facades\Crypt::encryptString((string) $state);
+                            }
+
+                            return $state;
+                        })
+                        ->helperText(fn (?Setting $record): string => $record?->type === Setting::TYPE_ENCRYPTED
+                            ? 'Stored encrypted; the current value is never displayed. Type a new value to replace it, or leave blank to keep it.'
+                            : 'Structured value. Choose the "Encrypted Secret" type to store a value encrypted at rest.')
                         ->columnSpanFull(),
                 ]),
             ]);
+    }
+
+    /**
+     * Ensure the value is encrypted before the model ever sees it, including
+     * on create (where there is no existing record to compare against).
+     */
+    public static function mutateFormDataBeforeCreate(array $data): array
+    {
+        if (($data['type'] ?? null) === Setting::TYPE_ENCRYPTED && filled($data['value'] ?? null)) {
+            $data['value'] = \Illuminate\Support\Facades\Crypt::encryptString((string) $data['value']);
+        }
+
+        return $data;
     }
 
     public static function table(Table $table): Table

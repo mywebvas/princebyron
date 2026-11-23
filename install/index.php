@@ -413,6 +413,23 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $mailer = 'none';
                                 }
 
+                                // P1-11: the session cookie must be Secure in
+                                // production. Without it, a single plain-HTTP
+                                // request to any page leaks the authenticated
+                                // session id, which is a complete account
+                                // takeover — the most valuable cookie in the
+                                // application.
+                                //
+                                // Derived from the site URL rather than asked,
+                                // because the owner already told us the scheme
+                                // and a second question invites the wrong
+                                // answer. Enabled only for https:// so a
+                                // pre-certificate install still works; the
+                                // success screen tells the owner to re-run or
+                                // flip the flag once TLS is live.
+                                $isHttps = stripos($siteUrl, 'https://') === 0;
+                                $secureCookie = $isHttps ? 'true' : 'false';
+
                                 $envTemplate = <<<ENV
 APP_NAME="{$escSiteName}"
 APP_ENV=production
@@ -433,6 +450,10 @@ DB_PASSWORD="{$escDbPass}"
 
 SESSION_DRIVER=file
 SESSION_LIFETIME=120
+SESSION_SECURE_COOKIE={$secureCookie}
+SESSION_SAME_SITE=lax
+SESSION_HTTP_ONLY=true
+SESSION_ENCRYPT=true
 CACHE_STORE=file
 QUEUE_CONNECTION=sync
 FILESYSTEM_DISK=local
@@ -449,6 +470,12 @@ MAIL_FROM_NAME="{$escSiteName}"
 # Payment gateways remain in sandbox mode until owner authorizes live release
 STRIPE_MODE=sandbox
 PAYPAL_MODE=sandbox
+
+# Set TRUSTED_PROXIES only if traffic reaches this account through a proxy or
+# CDN you control (Cloudflare, a hosting load balancer). Comma-separated IPs.
+# Leave empty on direct hosting: trusting a proxy you do not control lets a
+# client forge its own IP address in logs and rate limits.
+TRUSTED_PROXIES=
 ENV;
 
                                 $written = @file_put_contents($envFile, $envTemplate);

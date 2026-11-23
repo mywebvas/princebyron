@@ -37,9 +37,9 @@ Route::get('/booking', [PageController::class, 'booking'])->name('booking');
 
 // Customer Authentication
 Route::get('/login', [CustomerAuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [CustomerAuthController::class, 'login'])->middleware('throttle:5,1');
+Route::post('/login', [CustomerAuthController::class, 'login'])->middleware('throttle:auth');
 Route::get('/register', [CustomerAuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [CustomerAuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/register', [CustomerAuthController::class, 'register'])->middleware('throttle:auth');
 Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
 
 // Customer Account & Fan Vault
@@ -47,22 +47,39 @@ Route::get('/account', [CustomerAccountController::class, 'dashboard'])->name('a
 Route::get('/account/orders/{reference}', [CustomerAccountController::class, 'orderDetail'])->middleware('auth')->name('account.order');
 
 // Server-Authoritative Cart Endpoints
-Route::get('/api/cart', [CartController::class, 'data'])->name('cart.data');
-Route::post('/api/cart/items', [CartController::class, 'add'])->name('cart.add');
-Route::patch('/api/cart/items', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/api/cart/items', [CartController::class, 'remove'])->name('cart.remove');
-Route::delete('/api/cart', [CartController::class, 'clear'])->name('cart.clear');
+// Throttled per P1-8: reads are generous, mutations tighter, because each
+// mutation writes the session and may query stock.
+Route::middleware('throttle:cart')->group(function () {
+    Route::get('/api/cart', [CartController::class, 'data'])->name('cart.data');
+    Route::get('/api/checkout/calculate', [CheckoutController::class, 'calculate'])->name('checkout.calculate');
+});
+
+Route::middleware('throttle:cart-mutation')->group(function () {
+    Route::post('/api/cart/items', [CartController::class, 'add'])->name('cart.add');
+    Route::patch('/api/cart/items', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('/api/cart/items', [CartController::class, 'remove'])->name('cart.remove');
+    Route::delete('/api/cart', [CartController::class, 'clear'])->name('cart.clear');
+});
 
 // Checkout Endpoints (Recalculated Server-Side)
-Route::get('/api/checkout/calculate', [CheckoutController::class, 'calculate'])->name('checkout.calculate');
-Route::post('/api/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+// The most expensive route in the application: creates an order, reserves stock
+// and writes audit events. Previously unthrottled.
+Route::post('/api/checkout/process', [CheckoutController::class, 'process'])
+    ->middleware('throttle:checkout')
+    ->name('checkout.process');
 
 // Payment Provider Webhooks (Sandbox Mode)
-Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe'])->name('webhooks.stripe');
-Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal'])->name('webhooks.paypal');
+// Throttled: unauthenticated by nature, so signature verification is the only
+// barrier to a brute-force attempt (P1-8).
+Route::middleware('throttle:webhooks')->group(function () {
+    Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe'])->name('webhooks.stripe');
+    Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal'])->name('webhooks.paypal');
+});
 
 // Protected Digital Downloads (Entitlement-Authorized Only)
-Route::get('/downloads/{id}', [DownloadController::class, 'download'])->middleware('auth')->name('downloads.file');
+Route::get('/downloads/{id}', [DownloadController::class, 'download'])
+    ->middleware(['auth', 'throttle:downloads'])
+    ->name('downloads.file');
 
 // Ministry Booking Inquiry Submission
 Route::post('/booking', [BookingController::class, 'submit'])->middleware('throttle:10,1')->name('booking.submit');

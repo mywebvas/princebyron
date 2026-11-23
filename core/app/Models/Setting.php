@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
 class Setting extends Model
 {
+    use Auditable;
+
     const TYPE_STRING    = 'string';
     const TYPE_BOOLEAN   = 'boolean';
     const TYPE_INTEGER   = 'integer';
@@ -65,6 +69,36 @@ class Setting extends Model
             self::TYPE_ENCRYPTED => Crypt::encryptString((string) $val),
             default              => (string) $val,
         };
+    }
+
+    /**
+     * Defence in depth for P1-3.
+     *
+     * The admin form now encrypts, but the form is not the only writer: seeders,
+     * console commands and future code all reach this model. Rather than trust
+     * every caller, encrypt on save whenever the type is `encrypted` and the
+     * value is not already a valid payload. Config values like APP_KEY are safe
+     * to pass through so the platform's own bootstrap settings are not mangled.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Setting $setting) {
+            if ($setting->type !== self::TYPE_ENCRYPTED || $setting->value === null) {
+                return;
+            }
+
+            $value = (string) $setting->value;
+
+            // Already encrypted by this application? Leave it alone.
+            try {
+                \Illuminate\Support\Facades\Crypt::decryptString($value);
+                return;
+            } catch (\Throwable) {
+                // Not a decryptable payload — fall through and encrypt it.
+            }
+
+            $setting->value = \Illuminate\Support\Facades\Crypt::encryptString($value);
+        });
     }
 
     protected function decryptValue(string $encrypted): ?string

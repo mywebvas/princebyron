@@ -8,10 +8,9 @@ use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Models\AuditEvent;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\GrantEntitlementsForOrder;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -182,7 +181,11 @@ class OrderResource extends Resource
                     ])
                     ->visible(fn (Order $record): bool => $record->status === Order::STATUS_AWAITING_BANK)
                     ->action(function (Order $record, array $data): void {
-                        DB::transaction(function () use ($record, $data) {
+                        // Declared outside the transaction so the notification
+                        // below can report what was actually granted.
+                        $entitlements = ['granted' => 0, 'skipped_guest' => false];
+
+                        DB::transaction(function () use ($record, $data, &$entitlements) {
                             $oldStatus = $record->status;
                             $record->transitionTo(Order::STATUS_PAID);
                             $record->save();
@@ -204,6 +207,13 @@ class OrderResource extends Resource
                                 ],
                             ]);
 
+                            // P1-4: the customer paid, so they must get what
+                            // they paid for. This used to be omitted here while
+                            // both webhooks granted access, so a bank-transfer
+                            // customer was marked Paid and never received their
+                            // download.
+                            $entitlements = app(GrantEntitlementsForOrder::class)->grant($record->fresh());
+
                             AuditEvent::create([
                                 'actor_id'       => auth()->id(),
                                 'action'         => 'order.bank_transfer_verified',
@@ -211,20 +221,32 @@ class OrderResource extends Resource
                                 'auditable_id'   => $record->id,
                                 'old_values'     => ['status' => $oldStatus],
                                 'new_values'     => [
-                                    'status'         => Order::STATUS_PAID,
-                                    'bank_reference' => $data['bank_reference'],
-                                    'amount_cents'   => $record->total_cents,
+                                    'status'            => Order::STATUS_PAID,
+                                    'bank_reference'    => $data['bank_reference'],
+                                    'amount_cents'      => $record->total_cents,
+                                    'entitlements_granted' => $entitlements['granted'],
                                 ],
                                 'ip_address'     => request()->ip(),
                                 'user_agent'     => request()->userAgent(),
                             ]);
                         });
 
-                        Notification::make()
-                            ->title('Bank Payment Verified')
-                            ->body("Order #{$record->reference} has been marked as Paid.")
-                            ->success()
-                            ->send();
+                        if ($entitlements['skipped_guest']) {
+                            Notification::make()
+                                ->title('Bank payment verified — no account attached')
+                                ->body("Order #{$record->reference} is marked Paid, but it is a guest order so no digital downloads were issued. Ask the customer to register with {$record->customer_email}, then grant access from this order.")
+                                ->warning()
+                                ->persistent()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Bank Payment Verified')
+                                ->body($entitlements['granted'] > 0
+                                    ? "Order #{$record->reference} is marked Paid and {$entitlements['granted']} download entitlement(s) were issued."
+                                    : "Order #{$record->reference} is marked Paid. No digital items on this order.")
+                                ->success()
+                                ->send();
+                        }
                     }),
 
                 // Ready for fulfillment
@@ -324,13 +346,96 @@ class OrderResource extends Resource
                             ->send();
                     }),
 
+                // P1-7: refunds were only reachable via a provider webhook, so
+                // a bank-transfer refund (or any manual refund) required SQL.
+                // This is the owner-facing path; it records the payment, revokes
+                // digital access and writes an audit event.
+                Action::make('refund')
+                    ->label('Refund Order')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Record a Refund')
+                    ->modalDescription('This marks the order refunded and immediately revokes any digital download entitlements. If money was returned through Stripe or PayPal, record the same refund there so your provider records agree with this system.')
+                    ->form([
+                        Select::make('reason')
+                            ->label('Reason')
+                            ->options([
+                                'customer_request'   => 'Customer request',
+                                'duplicate_order'    => 'Duplicate order',
+                                'not_delivered'      => 'Not delivered',
+                                'goodwill'           => 'Goodwill gesture',
+                                'fraudulent'         => 'Fraudulent payment',
+                                'other'              => 'Other',
+                            ])
+                            ->required(),
+                        TextInput::make('provider_reference')
+                            ->label('Refund Reference (optional)')
+                            ->maxLength(100)
+                            ->helperText('Bank refund reference or provider refund ID, for your records.'),
+                        Textarea::make('notes')
+                            ->label('Internal Notes (optional)')
+                            ->rows(2)
+                            ->maxLength(500),
+                    ])
+                    ->visible(fn (Order $record): bool => $record->isRefundable())
+                    ->action(function (Order $record, array $data): void {
+                        $revoked = 0;
+                        $oldStatus = $record->status;
+
+                        DB::transaction(function () use ($record, $data, &$revoked, $oldStatus) {
+                            $record->transitionTo(Order::STATUS_REFUNDED);
+                            $record->save();
+
+                            Payment::create([
+                                'order_id'           => $record->id,
+                                'provider'           => Payment::PROVIDER_BANK,
+                                'provider_reference' => $data['provider_reference'] ?? null,
+                                'provider_event_id'  => 'refund_' . Str::uuid(),
+                                'status'             => Payment::STATUS_REFUNDED,
+                                'currency'           => $record->currency,
+                                'amount_cents'       => -abs($record->total_cents),
+                                'signature_verified' => true,
+                                'provider_metadata'  => [
+                                    'reason'           => $data['reason'],
+                                    'notes'            => $data['notes'] ?? null,
+                                    'refunded_by_id'   => auth()->id(),
+                                    'refunded_by_email'=> auth()->user()?->email,
+                                    'refunded_at'      => now()->toIso8601String(),
+                                ],
+                            ]);
+
+                            $revoked = app(GrantEntitlementsForOrder::class)->revoke($record);
+
+                            AuditEvent::create([
+                                'actor_id'       => auth()->id(),
+                                'action'         => 'order.refunded',
+                                'auditable_type' => Order::class,
+                                'auditable_id'   => $record->id,
+                                'old_values'     => ['status' => $oldStatus],
+                                'new_values'     => [
+                                    'status'                => Order::STATUS_REFUNDED,
+                                    'reason'                => $data['reason'],
+                                    'amount_cents'          => $record->total_cents,
+                                    'entitlements_revoked'  => $revoked,
+                                ],
+                                'ip_address'     => request()->ip(),
+                                'user_agent'     => request()->userAgent(),
+                            ]);
+                        });
+
+                        Notification::make()
+                            ->title('Order Refunded')
+                            ->body("Order #{$record->reference} marked refunded. {$revoked} download entitlement(s) revoked.")
+                            ->success()
+                            ->send();
+                    }),
+
                 EditAction::make(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            // P1-5: no bulk delete on financial records. An order is evidence
+            // that money moved; the model itself now refuses deletion.
+            ;
     }
 
     public static function getPages(): array
