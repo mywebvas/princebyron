@@ -123,16 +123,27 @@ jobs:
         # transient case; a real lock or manifest problem fails both times and
         # still fails the build.
         working-directory: ${{ env.APP_DIR }}
+        env:
+          # Composer fetches many distribution archives from api.github.com
+          # without an authenticated request by default, which is rate-limited
+          # per IP — and hosted runners share IPs. Passing the token raises the
+          # ceiling so a shared-runner rate limit does not read as a code defect.
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
         run: |
           set -uo pipefail
           for attempt in 1 2 3; do
-            if composer install --no-interaction --prefer-dist --no-progress; then
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
               exit 0
             fi
             echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
             sleep $((attempt * 10))
           done
-          echo "::error title='Composer install'::composer install failed 3 times from a clean lock file — treat as a registry/network incident and re-run, not as a code defect"
+          # Surface the actual reason. A failure here is invisible otherwise:
+          # the step log is often not retrievable, and "exit code 1" tells the
+          # author nothing about whether the cause is the repository or the
+          # registry.
+          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
+          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
           exit 1
 
       - name: Prepare application
@@ -213,16 +224,27 @@ jobs:
         # the runner, not the repository, and step logs are not always
         # retrievable. A genuine lock/manifest problem fails every attempt.
         working-directory: ${{ env.APP_DIR }}
+        env:
+          # Composer fetches many distribution archives from api.github.com
+          # without an authenticated request by default, which is rate-limited
+          # per IP — and hosted runners share IPs. Passing the token raises the
+          # ceiling so a shared-runner rate limit does not read as a code defect.
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
         run: |
           set -uo pipefail
           for attempt in 1 2 3; do
-            if composer install --no-interaction --prefer-dist --no-progress; then
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
               exit 0
             fi
             echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
             sleep $((attempt * 10))
           done
-          echo "::error title='Composer install'::composer install failed 3 times from a clean lock file — treat as a registry/network incident and re-run, not as a code defect"
+          # Surface the actual reason. A failure here is invisible otherwise:
+          # the step log is often not retrievable, and "exit code 1" tells the
+          # author nothing about whether the cause is the repository or the
+          # registry.
+          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
+          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
           exit 1
 
       - name: Prepare application
@@ -319,16 +341,27 @@ jobs:
         # the runner, not the repository, and step logs are not always
         # retrievable. A genuine lock/manifest problem fails every attempt.
         working-directory: ${{ env.APP_DIR }}
+        env:
+          # Composer fetches many distribution archives from api.github.com
+          # without an authenticated request by default, which is rate-limited
+          # per IP — and hosted runners share IPs. Passing the token raises the
+          # ceiling so a shared-runner rate limit does not read as a code defect.
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
         run: |
           set -uo pipefail
           for attempt in 1 2 3; do
-            if composer install --no-interaction --prefer-dist --no-progress; then
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
               exit 0
             fi
             echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
             sleep $((attempt * 10))
           done
-          echo "::error title='Composer install'::composer install failed 3 times from a clean lock file — treat as a registry/network incident and re-run, not as a code defect"
+          # Surface the actual reason. A failure here is invisible otherwise:
+          # the step log is often not retrievable, and "exit code 1" tells the
+          # author nothing about whether the cause is the repository or the
+          # registry.
+          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
+          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
           exit 1
 
       - name: Prepare application
