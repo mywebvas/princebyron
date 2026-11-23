@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
@@ -23,6 +23,9 @@ use Tests\TestCase;
  */
 class DatabasePortabilityTest extends TestCase
 {
+    // The JSON round-trip test writes a row, so it needs a schema.
+    use RefreshDatabase;
+
     public function test_no_migration_uses_a_postgres_only_column_type(): void
     {
         $offenders = [];
