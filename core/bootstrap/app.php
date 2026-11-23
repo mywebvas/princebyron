@@ -30,7 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // The list is configurable rather than hardcoded, because trusting a
         // proxy range you do not control lets a client forge its own IP. An
         // empty list (the default) is correct for direct hosting and safe.
-        $proxies = array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))));
+        // Read through config, not env(): `config:cache` makes env() return
+        // null outside config files, which would silently disable proxy trust.
+        $proxies = (array) config('security.trusted_proxies', []);
 
         if (! empty($proxies)) {
             // '*' is a deliberate opt-in for platforms that rewrite the header

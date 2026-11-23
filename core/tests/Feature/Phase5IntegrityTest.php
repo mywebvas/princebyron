@@ -347,6 +347,32 @@ class Phase5IntegrityTest extends TestCase
 
     // ---------------------------------------------------------------- P1-8 … P1-11
 
+    public function test_the_csp_can_be_extended_without_editing_code(): void
+    {
+        // A host that needs one extra origin (an analytics endpoint, a payment
+        // frame) must not have to fork the middleware.
+        config(['security.headers.csp_extra' => [
+            'connect-src' => ['https://analytics.example.com'],
+        ]]);
+
+        $csp = $this->get('/')->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString('connect-src \'self\' https://analytics.example.com', $csp);
+        // Widening connect-src must not widen the directives that stop injection.
+        $this->assertStringContainsString("object-src 'none'", $csp);
+        $this->assertStringContainsString("frame-ancestors 'self'", $csp);
+    }
+
+    public function test_trusted_proxies_default_to_trusting_nobody(): void
+    {
+        // Trusting a proxy the operator does not control lets a client forge its
+        // own IP, which corrupts both rate-limit keys and the audit trail. The
+        // safe default must be an empty list, and it must be read from config so
+        // that `config:cache` cannot turn it into null.
+        $this->assertIsArray(config('security.trusted_proxies'));
+        $this->assertSame([], config('security.trusted_proxies'));
+    }
+
     public function test_security_headers_are_present_on_storefront_responses(): void
     {
         $response = $this->get('/');

@@ -66,7 +66,8 @@ class SecurityHeaders
             // 1 year, include subdomains. No preload: that is a hard-to-reverse
             // commitment the owner must make deliberately, not a default an
             // installer chooses for them.
-            $headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+            $maxAge = (int) config('security.headers.hsts_max_age', 31536000);
+            $headers['Strict-Transport-Security'] = "max-age={$maxAge}; includeSubDomains";
         }
 
         foreach ($headers as $name => $value) {
@@ -108,7 +109,7 @@ class SecurityHeaders
     /** Storefront: strict, because the front end needs nothing relaxed. */
     private function storefrontPolicy(): string
     {
-        return implode('; ', [
+        return $this->buildPolicy([
             "default-src 'self'",
             "script-src 'self' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline'",
@@ -116,11 +117,34 @@ class SecurityHeaders
             "font-src 'self' data:",
             "media-src 'self'",
             "connect-src 'self'",
+        ], [
             "form-action 'self'",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "object-src 'none'",
         ]);
+    }
+
+    /**
+     * Append operator-configured extra sources (config/security.php) to the
+     * matching directives. Kept separate from the fixed directives so a host
+     * can allow one extra origin without being able to weaken frame-ancestors
+     * or object-src.
+     */
+    private function buildPolicy(array $directives, array $fixed): string
+    {
+        $extra = (array) config('security.headers.csp_extra', []);
+
+        foreach ($directives as $i => $directive) {
+            $name = strtok($directive, ' ');
+            $additions = (array) ($extra[$name] ?? []);
+
+            if ($additions !== []) {
+                $directives[$i] = $directive.' '.implode(' ', array_filter($additions, 'is_string'));
+            }
+        }
+
+        return implode('; ', array_merge($directives, $fixed));
     }
 
     /**
@@ -130,13 +154,14 @@ class SecurityHeaders
      */
     private function panelPolicy(): string
     {
-        return implode('; ', [
+        return $this->buildPolicy([
             "default-src 'self'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
             "connect-src 'self'",
+        ], [
             "form-action 'self'",
             "frame-ancestors 'self'",
             "base-uri 'self'",
