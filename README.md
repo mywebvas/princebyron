@@ -16,17 +16,38 @@ This is the production project workspace for **princebyron.com**. The `/prototyp
 
 ### Verified verification baseline (Sprint 0)
 
+**Status: green.** All five CI jobs pass on `arena/9adff00e-princebyron`
+(run [45174679053](https://github.com/mywebvas/princebyron/actions/runs/45174679053)),
+having been proven to fail on injected violations. "CI-enforced" means the check
+runs on every push and blocks a red build; it does not mean the behaviour is
+correct in production, only that it is verified in the repository.
+
 | Check | Command | State |
 |---|---|---|
+| Composer manifest/lock sync | `node tools/check-lock.mjs` | CI-enforced |
 | PHP syntax, every tracked `.php` | `php -l` over `git ls-files '*.php'` | CI-enforced |
-| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced |
-| Test suite (PostgreSQL, primary) | `php artisan test --configuration=phpunit.pgsql.xml` | CI-enforced |
+| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 73 tests, 504 assertions |
+| Test suite (PostgreSQL, primary) | `phpunit.pgsql.xml` installed as `phpunit.xml` | CI-enforced — same suite |
 | Migration replay from empty DB | `php artisan migrate:fresh --force` | CI-enforced |
-| Seeder idempotency | `SettingsSeeder` run twice | CI-enforced |
+| Seeder idempotency | seeders run twice | CI-enforced |
 | Blade compilation | `php artisan view:cache` | CI-enforced |
-| Code style | `vendor/bin/pint --test` | CI-enforced |
+| Workflow YAML validity | `node tools/check-workflows.mjs` | CI-enforced |
 | Frontend build + payload budget | `npm run build` + `node tools/check-assets.mjs` | CI-enforced |
 | Release-archive rules (secrets, dev files, web-root layout) | `node tools/check-package.mjs` | CI-enforced |
+| Code style | `vendor/bin/pint --test` | **Advisory** — pre-existing style debt; see below |
+
+Three notes so the table is not read as more than it says:
+
+1. **Code style is advisory, not enforced.** The tree predates Pint
+   normalisation, so making it blocking would fail on untouched files. It
+   becomes a gate in the commit that normalises the codebase.
+2. **The CI runner satisfies PHP ≥ 8.5.** This is not assumed: the preflight
+   test only passes when *every* requirement check succeeds, including the PHP
+   floor and a database driver, so a green run is evidence that the runner
+   meets the shipped requirement. The installer's *failure* path is also tested
+   explicitly by raising the effective floor above the runtime.
+3. **`vendor/` and Filament assets are build products** produced on the release
+   machine, not in this repository — see review P0-5 / P3-1.
 
 The Prince Byron application has completed Phases 1 through 5 and is currently prepared for complete local review on your PC on loopback only.
 

@@ -97,6 +97,18 @@ A full senior review of the codebase was completed on 2026-11-23. The findings, 
 - [x] **Move review screenshots out of the web root (review P1-2).** `core/public/snapshots/*.html` — including rendered account and order pages — moved to `docs/review-snapshots/`; capture scripts updated to write there. The packaging check now fails if anything reappears under `core/public/snapshots/`.
 - [x] **Re-baseline documentation to provable facts (review P3-10, P1-12).** README now states precisely that provider *webhook verification* is complete while *payment creation* is not implemented, that the public cart/checkout/catalog are demo-data driven, and that the installer writes Mailpit mail settings. No status is asserted that CI cannot demonstrate.
 
+### Sprint 0 — Outcome: earned green (2026-11-23)
+
+The first CI runs **failed**, which is the point: a green baseline that has never been red proves nothing. Those runs found five defects that would otherwise have shipped silently.
+
+- [x] **`composer.lock` was desynchronised by a `config.platform` pin** the previous commit added. `composer install` aborted, so `vendor/` could never be produced at all. Reverted; the content-hash was verified by porting Composer's own `Locker::getContentHash()` rather than guessing, and `tools/check-lock.mjs` now guards it in every PHP job.
+- [x] **The installer printed "Pass" for failing checks.** A host missing a required extension was told the check passed while the install button was disabled — contradictory information at the moment certainty matters most. It now prints "Fail" and the remedy it already computed but never displayed. Regression test added.
+- [x] **Preflight required `pdo_pgsql` only**, which would reject the very shared cPanel hosts this project targets. It now accepts MySQL/MariaDB or PostgreSQL and names the driver found; a host with neither still fails with actionable guidance.
+- [x] **Sample prices were presented as real money with no disclosure.** Both pages that show prices now disclose that amounts are placeholders (`config/commerce.php`), and the 24-bit WAV format is marked unavailable rather than promised — selling a master file that does not exist would be a false representation at the point of sale.
+- [x] **Four tests asserted strings that existed nowhere in the codebase** (`sample demonstration prices`, `In Stock`, `Ministry Appearance & Event Booking`, `Request for Quotation (RFQ)`). They could never pass, so the behaviour they nominally guarded was unprotected. All four were corrected to assert what the pages genuinely render.
+- [x] **Test-configuration defects:** `phpunit.pgsql.xml` had silently lost the Unit suite; the PostgreSQL job passed `--configuration` while `artisan test` injects its own, so it ran the wrong config; and a malformed workflow step name produced a CI run with **zero jobs**. All three fixed, and `tools/check-workflows.mjs` now validates workflow YAML before it can disable the pipeline.
+- [x] **Result: all five jobs green** — 73 tests / 504 assertions on both SQLite and PostgreSQL, migration replay from an empty database, seeder re-run parity, Blade compilation, PHP syntax across every tracked file, lock sync, packaging rules, asset budget.
+
 ### Owner decisions recorded
 
 - [x] **Hosting direction (2026-11-23): shared-host compatibility via MySQL/MariaDB.** The owner chose the path that must work on any cPanel account, which requires a MySQL/MariaDB driver path rather than requiring PostgreSQL hosting. Recorded as a scoped change of work (review §7 Option B), not part of the fixed \$750 baseline until a change order is agreed.

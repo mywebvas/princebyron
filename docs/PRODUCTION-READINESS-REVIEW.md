@@ -391,8 +391,32 @@ A first visit to `/store` currently requests ~3.85 MB of JPEG for six product ca
 - Wiring the storefront (P0-1…P0-3) — requires UI refactor plus test updates; scheduled as Sprint 1.
 - Host asset passthrough (P0-4) and Filament assets (P0-5) — must be verified against a real web server, not by inspection.
 - Installing Filament's compiled assets cannot be performed in this environment (no PHP/Composer). **This remains an open launch blocker:** `vendor/` and `public/{css,js,fonts}/filament` must be produced on the build machine by `composer install && php artisan filament:assets`. Awaiting an environment where PHP and Composer are available, or explicit owner approval to run that step in Antigravity.
-- Running the test suite here (no PHP runtime, no PostgreSQL). CI will produce the first real result on push; until then the "71 passing tests" figure remains **historical, not re-verified**.
+- Running the test suite on the authoring machine — no PHP runtime or PostgreSQL was available there. **This is now resolved by CI** (see the entry below).
+
+**2026-11-23 · First real CI runs — five genuine defects found and fixed.** The
+suite had never actually executed (there was no CI, and `composer install`
+could not run), so "71 passing tests" was historical. Running it for real found:
+
+| # | Defect | Why it mattered |
+|---|---|---|
+| 1 | `config.platform.php` was added to `composer.json`, desynchronising `composer.lock` | `composer install` aborted, so **vendor/ could never be built**. Reverted; content-hash verified by porting Composer's own algorithm; guarded by `tools/check-lock.mjs` |
+| 2 | Installer rendered the literal word **"Pass"** for *failing* checks | A host missing an extension was told it passed while the install button was disabled. Now renders "Fail" plus the remedy (e.g. MultiPHP Manager guidance) |
+| 3 | Installer hard-required **`pdo_pgsql`** | Would reject the ordinary shared cPanel hosts this project targets. Now accepts MySQL/MariaDB **or** PostgreSQL and names which was found |
+| 4 | Sample prices shown as real money with **no disclosure** | Taking money against a placeholder price is a consumer-protection issue. `config/commerce.php` now drives a disclosure on both pages that show prices; 24-bit WAV is marked unavailable rather than promised |
+| 5 | Four tests asserted strings that **existed nowhere in the codebase** (e.g. `sample demonstration prices`, `In Stock`) | The suite could never have been green; these tests were silently guarding nothing, so the defects they covered were invisible |
+
+Also fixed: `phpunit.pgsql.xml` had lost the **Unit** suite (the "primary" job
+skipped `tests/Unit`); the PostgreSQL job passed `--configuration` while
+`artisan test` injects its own, so it ran the wrong config; and a malformed
+workflow step name silently produced a CI run with **zero jobs**, now caught by
+`tools/check-workflows.mjs`.
+
+**Verified state:** all five CI jobs green — 73 tests / 504 assertions on both
+SQLite and PostgreSQL, full migration replay from an empty database, seeder
+re-run parity, Blade compilation, PHP syntax across every tracked file, lock
+sync, packaging rules and the asset budget. Pint is advisory until the
+codebase is normalised in its own commit.
 
 ---
 
-*Review originally written 2026-11-23; §13 appended as findings were closed. Application feature code was not modified by the review itself.*
+*Review originally written 2026-11-23; §13 appended as findings were closed. Application feature code was not modified by the review itself. Sprint 0 did modify code — the installer, the storefront disclosure and the test harness — and each such change is listed above with the defect it closes.*
