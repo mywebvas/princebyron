@@ -288,6 +288,13 @@ jobs:
                 echo "::error title='Tests (PostgreSQL)'::$esc"
               done
             echo "::error title='Tests (PostgreSQL)'::exit code $status — see step log for full output"
+          else
+            # Publish the real totals on a green run. README states a suite size,
+            # and without this the only way to check it is a local PHP install
+            # that the sandbox may not have — which is how documentation drifts
+            # away from reality.
+            totals=$(grep -E '^\s*(Tests:|Duration:)' /tmp/test.log | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (PostgreSQL)'::${totals:-suite passed (no totals line found)}"
           fi
           exit $status
 
@@ -400,6 +407,9 @@ jobs:
                 echo "::error title='Tests (SQLite)'::$esc"
               done
             echo "::error title='Tests (SQLite)'::exit code $status — see step log for full output"
+          else
+            totals=$(grep -E '^\s*(Tests:|Duration:)' /tmp/test.log | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (SQLite)'::${totals:-suite passed (no totals line found)}"
           fi
           exit $status
 
