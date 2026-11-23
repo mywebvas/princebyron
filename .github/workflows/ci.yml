@@ -432,6 +432,14 @@ jobs:
                 echo "::error title='Tests (MySQL/MariaDB)'::$esc"
               done
             echo "::error title='Tests (MySQL/MariaDB)'::exit code $status — see step log for full output"
+            # Annotation lines above are capped/flaky when the log is very
+            # structured; the step summary always lands.
+            {
+              echo "### MySQL/MariaDB suite failed (exit $status)"
+              echo '```'
+              sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -60
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
               | grep -E '^[[:space:]]*(Tests:|Duration:)' \
