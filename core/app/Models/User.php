@@ -16,6 +16,38 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /**
+     * A customer with financial history cannot be deleted (review P1-5).
+     *
+     * `orders.user_id` is `nullOnDelete`, so deleting a user account does not
+     * fail — it silently rewrites history: the order survives with no owner, so
+     * the purchase is no longer attributable, the customer can never reach their
+     * downloads again, and a chargeback investigation has no account to point
+     * at. The database's referential integrity is intact and the business record
+     * is not.
+     *
+     * The right operation for "customer wants their account gone" is
+     * anonymisation (clear name/email/address, keep the order), which is a
+     * deliberate, reviewable action — not a cascade side effect of a Delete
+     * button. Until that exists, refuse the delete and say why.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user) {
+            if ($user->orders()->exists()) {
+                throw new \DomainException(
+                    'This customer has orders and cannot be deleted: orders are financial records. '
+                    .'Deactivate or anonymise the account instead.'
+                );
+            }
+        });
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     // Role constants — the only valid role values.
     const ROLE_OWNER    = 'owner';
     const ROLE_CUSTOMER = 'customer';
@@ -70,11 +102,6 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     // -------------------------------------------------------------------------
     // Relationships
     // -------------------------------------------------------------------------
-
-    public function orders(): HasMany
-    {
-        return $this->hasMany(Order::class);
-    }
 
     public function downloadEntitlements(): HasMany
     {

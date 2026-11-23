@@ -181,6 +181,37 @@ class Phase5IntegrityTest extends TestCase
         $this->assertDatabaseHas('orders', ['id' => $order->id]);
     }
 
+    public function test_a_customer_with_orders_cannot_be_deleted(): void
+    {
+        // orders.user_id is nullOnDelete, so this delete would "succeed" and
+        // silently orphan the purchase — leaving a financial record nobody can
+        // attribute and a customer who can never reach their downloads.
+        $user = User::factory()->create();
+        $this->makeOrder($user);
+
+        try {
+            $user->delete();
+            $this->fail('Deleting a customer with orders should have thrown');
+        } catch (\DomainException $e) {
+            $this->assertStringContainsString('financial record', $e->getMessage());
+        }
+
+        $this->assertDatabaseHas('users', ['id' => $user->id]);
+        $this->assertDatabaseHas('orders', ['user_id' => $user->id]);
+    }
+
+    public function test_a_customer_without_orders_can_still_be_deleted(): void
+    {
+        // The guard must not make support's life impossible: an account with no
+        // financial history is not a record.
+        $user = User::factory()->create();
+        $id = $user->id;
+
+        $user->delete();
+
+        $this->assertDatabaseMissing('users', ['id' => $id]);
+    }
+
     // ---------------------------------------------------------------- P1-7
 
     public function test_refund_payments_can_be_recorded_as_negative_amounts(): void
