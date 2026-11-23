@@ -67,40 +67,51 @@ return new class extends Migration
 
     private function createMysqlTriggers(): void
     {
-        // MySQL/MariaDB syntax: one trigger per timing+event pair.
+        // ONE STATEMENT PER CALL, deliberately.
+        //
+        // PDO's MySQL driver does not enable multi-statement execution by
+        // default, so a DROP and a CREATE in a single unprepared() call fails
+        // with a syntax error at the second statement. (PostgreSQL's driver does
+        // accept a multi-statement string, which is why that branch above can
+        // batch — and why this bit CI on MariaDB and nowhere else.)
+        DB::unprepared('DROP TRIGGER IF EXISTS trg_audit_events_immutable_update');
         DB::unprepared(<<<'SQL'
-            DROP TRIGGER IF EXISTS trg_audit_events_immutable_update;
             CREATE TRIGGER trg_audit_events_immutable_update
             BEFORE UPDATE ON audit_events
             FOR EACH ROW
             SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Audit events table is strictly append-only. Updates are forbidden at the database layer.';
+            SET MESSAGE_TEXT = 'Audit events table is strictly append-only. Updates are forbidden at the database layer.'
         SQL);
 
+        DB::unprepared('DROP TRIGGER IF EXISTS trg_audit_events_immutable_delete');
         DB::unprepared(<<<'SQL'
-            DROP TRIGGER IF EXISTS trg_audit_events_immutable_delete;
             CREATE TRIGGER trg_audit_events_immutable_delete
             BEFORE DELETE ON audit_events
             FOR EACH ROW
             SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Audit events table is strictly append-only. Deletions are forbidden at the database layer.';
+            SET MESSAGE_TEXT = 'Audit events table is strictly append-only. Deletions are forbidden at the database layer.'
         SQL);
     }
 
     private function createSqliteTriggers(): void
     {
+        // Also one call per statement: SQLite's exec() accepts multiple
+        // statements, but keeping every driver uniform removes a class of
+        // "works here, fails there" surprise for whoever edits this next.
         DB::unprepared(<<<'SQL'
             CREATE TRIGGER IF NOT EXISTS trg_audit_events_immutable_update
             BEFORE UPDATE ON audit_events
             BEGIN
                 SELECT RAISE(ABORT, 'Audit events table is strictly append-only. Updates are forbidden at the database layer.');
-            END;
+            END
+        SQL);
 
+        DB::unprepared(<<<'SQL'
             CREATE TRIGGER IF NOT EXISTS trg_audit_events_immutable_delete
             BEFORE DELETE ON audit_events
             BEGIN
                 SELECT RAISE(ABORT, 'Audit events table is strictly append-only. Deletions are forbidden at the database layer.');
-            END;
+            END
         SQL);
     }
 
@@ -111,10 +122,11 @@ return new class extends Migration
                 DROP TRIGGER IF EXISTS trg_audit_events_immutable ON audit_events;
                 DROP FUNCTION IF EXISTS prevent_audit_events_mutation();
             SQL),
-            'mysql', 'mariadb' => DB::unprepared(<<<'SQL'
-                DROP TRIGGER IF EXISTS trg_audit_events_immutable_update;
-                DROP TRIGGER IF EXISTS trg_audit_events_immutable_delete;
-            SQL),
+            // Separate calls: PDO MySQL is single-statement (see createMysqlTriggers).
+            'mysql', 'mariadb' => [
+                DB::unprepared('DROP TRIGGER IF EXISTS trg_audit_events_immutable_update'),
+                DB::unprepared('DROP TRIGGER IF EXISTS trg_audit_events_immutable_delete'),
+            ],
             'sqlite' => DB::unprepared(<<<'SQL'
                 DROP TRIGGER IF EXISTS trg_audit_events_immutable_update;
                 DROP TRIGGER IF EXISTS trg_audit_events_immutable_delete;
