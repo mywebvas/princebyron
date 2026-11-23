@@ -293,7 +293,13 @@ jobs:
             # and without this the only way to check it is a local PHP install
             # that the sandbox may not have — which is how documentation drifts
             # away from reality.
-            totals=$(grep -E '^[[:space:]]*(Tests:|Duration:)' /tmp/test.log | tr -s ' ' | paste -sd' | ' -)
+            # The totals line is wrapped in ANSI colour ("\e[90mTests:\e[39m"),
+            # so strip escapes first — otherwise 'Tests:' is never at the start
+            # of the line and this reports nothing, which is how the first
+            # version of this step silently produced no number at all.
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
             echo "::notice title='Tests (PostgreSQL)'::${totals:-suite passed (no totals line found)}"
           fi
           exit $status
@@ -408,7 +414,13 @@ jobs:
               done
             echo "::error title='Tests (SQLite)'::exit code $status — see step log for full output"
           else
-            totals=$(grep -E '^[[:space:]]*(Tests:|Duration:)' /tmp/test.log | tr -s ' ' | paste -sd' | ' -)
+            # The totals line is wrapped in ANSI colour ("\e[90mTests:\e[39m"),
+            # so strip escapes first — otherwise 'Tests:' is never at the start
+            # of the line and this reports nothing, which is how the first
+            # version of this step silently produced no number at all.
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
             echo "::notice title='Tests (SQLite)'::${totals:-suite passed (no totals line found)}"
           fi
           exit $status
