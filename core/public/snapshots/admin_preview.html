@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0E0B09">
+  <meta name="description" content="Prince Byron — Official Gospel Music, Ministry & Store. High-craft worship releases, apparel, ministry bookings, and customer downloads.">
+  <meta name="csrf-token" content="bAzGvk4oNGa9F7heFokaXRgJjbCMN4DOrozWVskp">
+
+  <title>Backoffice Management Console (Simulation) — Prince Byron</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%23DFA759'>PB</text></svg>">
+
+  <link rel="preload" as="style" href="http://127.0.0.1:8001/build/assets/app-CS1ZuPM9.css" /><link rel="modulepreload" as="script" href="http://127.0.0.1:8001/build/js/app-7v6iDNV2.js" /><link rel="stylesheet" href="http://127.0.0.1:8001/build/assets/app-CS1ZuPM9.css" data-navigate-track="reload" /><script type="module" src="http://127.0.0.1:8001/build/js/app-7v6iDNV2.js" data-navigate-track="reload"></script></head>
+<body x-data>
+
+  <!-- Skip Navigation Link for Keyboard Accessibility (WCAG 2.2 AA) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="site-wrapper">
+
+    <!-- Mobile Navigation Drawer Overlay & Panel (Accessible Modal Dialog) -->
+    <div 
+      class="mobile-nav-overlay" 
+      id="mobile-nav-overlay" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-label="Mobile Navigation Menu" 
+      :class="{ 'open': $store.app.mobileNavOpen }"
+      :aria-hidden="(!$store.app.mobileNavOpen).toString()"
+      @click.self="$store.app.closeMobileNav()"
+      x-cloak
+    >
+      <div class="mobile-nav-panel" id="mobile-nav-panel">
+        <div class="mobile-nav-header">
+          <div class="brand-logo">
+            <div class="brand-monogram" aria-hidden="true">PB</div>
+            <div class="brand-titles">
+              <span class="mobile-menu-brand-name">Prince Byron</span>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            class="btn-close-mobile-nav" 
+            id="btn-close-mobile-nav" 
+            aria-label="Close navigation menu"
+            @click="$store.app.closeMobileNav()"
+          >&times;</button>
+        </div>
+
+        <nav class="mobile-nav-links" aria-label="Mobile Navigation Links">
+          <a href="http://127.0.0.1:8001" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Home</a>
+          <a href="http://127.0.0.1:8001/about" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Our Story &amp; Ministry</a>
+          <a href="http://127.0.0.1:8001/music" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Music Releases</a>
+          <a href="http://127.0.0.1:8001/store" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Official Store</a>
+          <a href="http://127.0.0.1:8001/cart" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Shopping Bag (<span x-text="$store.app.cartCount"></span>)</a>
+          <a href="http://127.0.0.1:8001/checkout" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Dedicated Checkout</a>
+          <a href="http://127.0.0.1:8001/booking" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Ministry Booking RFQ</a>
+          <a href="http://127.0.0.1:8001/account" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Fan Vault &amp; Entitlements</a>
+        </nav>
+
+        <div class="mobile-nav-footer">
+          <div class="mobile-nav-footer-title">Official Streaming &amp; Ministry</div>
+          <div class="mobile-nav-socials">
+            <a href="https://open.spotify.com/artist/089TupQTFoR8OvKrDOp1NA" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Spotify">Spotify</a>
+            <a href="https://www.youtube.com/channel/UCeeZS5FkmYj6F4fwykc7f0g" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on YouTube">YouTube</a>
+            <a href="https://www.instagram.com/prince_byron_official" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Instagram">Instagram</a>
+            <a href="https://www.tiktok.com/@princebyron94" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on TikTok">TikTok</a>
+            <a href="https://www.facebook.com/princebyron89/" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Facebook">Facebook</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Header (Cinematic Dark Hybrid) -->
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="http://127.0.0.1:8001" class="brand-logo" aria-label="Prince Byron Home">
+          <div class="brand-monogram" aria-hidden="true">PB</div>
+          <div class="brand-titles">
+            <h1>Prince Byron</h1>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="site-nav" aria-label="Main Navigation">
+          <a href="http://127.0.0.1:8001" class="nav-link ">Home</a>
+          <a href="http://127.0.0.1:8001/about" class="nav-link ">About</a>
+          <a href="http://127.0.0.1:8001/music" class="nav-link ">Music</a>
+          <a href="http://127.0.0.1:8001/store" class="nav-link ">Store</a>
+          <a href="http://127.0.0.1:8001/booking" class="nav-link ">Bookings</a>
+          <a href="http://127.0.0.1:8001/account" class="nav-link ">Account</a>
+        </nav>
+
+        <div class="header-actions">
+          <button 
+            type="button" 
+            class="btn-bag" 
+            id="btn-open-bag" 
+            aria-label="Open Shopping Bag"
+            :aria-expanded="$store.app.bagOpen.toString()"
+            @click="$store.app.openBag()"
+          >
+            <span>Bag</span>
+            <div class="badge-count" x-text="$store.app.cartCount"></div>
+          </button>
+          <button 
+            type="button" 
+            class="btn-mobile-menu" 
+            id="btn-menu-toggle" 
+            aria-label="Open Navigation Menu"
+            :aria-expanded="$store.app.mobileNavOpen.toString()"
+            @click="$store.app.openMobileNav()"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Injection -->
+    <main id="main-content">
+      <section 
+  class="section-editorial" 
+  style="background: var(--surface-dark); padding: 0 0 80px; min-height: 80vh;"
+  x-data="{
+    tab: 'music',
+    wireOrderPaid: false,
+    song2Paid: true,
+    teeInStock: true,
+    
+    reconcileWire() {
+      this.wireOrderPaid = true;
+      $store.app.showToast('Reconciled Order PB-202611-002: Bank funds independently verified. State updated to Paid & Settled.');
+    }
+  }"
+>
+  <div class="admin-preview-wrapper">
+    
+    <!-- Top Admin Security & Context Banner -->
+    <div class="admin-notice-bar" role="region" aria-label="Demo Notice">
+      <div class="admin-notice-content">
+        <span class="admin-role-badge">Public Simulated Demo</span>
+        <p>
+          <strong>Public Demonstration Mode:</strong> This interactive backoffice demonstrates the planned Filament 5 management screens. All pricing, inventory adjustments, and order reconciliations are simulated locally using fictional data. No real authentication, records, payment gateways, or customer data are modified. Production admin access requires authenticated owner permission on the server. For the live, authenticated owner dashboard, visit <a href="http://127.0.0.1:8001/admin" style="color: var(--color-gold); font-weight: 700; text-decoration: underline;">Live Owner Filament CMS (/admin)</a>.
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <a href="http://127.0.0.1:8001/admin" class="btn-primary-sm" style="background: var(--color-gold); color: var(--color-obsidian); text-decoration: none;">
+          Go to Live CMS (/admin) &rarr;
+        </a>
+        <div class="admin-session-pill">
+          <span class="admin-session-dot" aria-hidden="true">&#9679;</span> Simulated Theme Mock
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-container" style="max-width: 1360px; margin: 0 auto; padding: 36px 28px;">
+      
+      <!-- Admin Header Row -->
+      <div class="admin-header-row" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 20px;">
+        <div>
+          <nav class="admin-breadcrumb" aria-label="Admin Navigation Breadcrumb" style="font-size: 0.85rem; color: var(--color-sand-soft); margin-bottom: 8px;">
+            <a href="http://127.0.0.1:8001" style="color: var(--color-gold); text-decoration: none;">&larr; Return to Public Site</a>
+            <span aria-hidden="true" style="margin: 0 8px;">/</span>
+            <strong>Backoffice Theme Mock (Simulation)</strong>
+          </nav>
+          <h2 style="font-family: var(--font-display); font-size: 2.2rem; color: var(--text-inverse); margin: 0;">Ministry &amp; Commerce Management</h2>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <a href="http://127.0.0.1:8001/admin" class="btn-primary-sm" style="text-decoration: none;">Live Owner CMS (/admin)</a>
+          <button type="button" class="btn-secondary-sm" @click="$store.app.showToast('Simulated: Audit log exported to CSV (0 live records)')">Export Audit Log</button>
+        </div>
+      </div>
+
+      <!-- Admin Navigation Tabs -->
+      <div class="admin-tabs-nav" role="tablist" aria-label="Admin Management Tabs" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-dark); margin-bottom: 32px; overflow-x: auto;">
+        <button 
+          type="button" 
+          role="tab" 
+          class="admin-tab" 
+          :class="{ 'active': tab === 'music' }" 
+          @click="tab = 'music'"
+        >&#9835; Music Catalog &amp; Audio</button>
+        <button 
+          type="button" 
+          role="tab" 
+          class="admin-tab" 
+          :class="{ 'active': tab === 'products' }" 
+          @click="tab = 'products'"
+        >&#128085; Products &amp; Variants</button>
+        <button 
+          type="button" 
+          role="tab" 
+          class="admin-tab" 
+          :class="{ 'active': tab === 'orders' }" 
+          @click="tab = 'orders'"
+        >&#128179; Orders &amp; Bank Payments</button>
+        <button 
+          type="button" 
+          role="tab" 
+          class="admin-tab" 
+          :class="{ 'active': tab === 'bookings' }" 
+          @click="tab = 'bookings'"
+        >&#128197; Ministry Bookings</button>
+        <button 
+          type="button" 
+          role="tab" 
+          class="admin-tab" 
+          :class="{ 'active': tab === 'cms' }" 
+          @click="tab = 'cms'"
+        >&#9881; Brand CMS Settings</button>
+      </div>
+
+      <!-- Tab 1: Music Catalog & Audio -->
+      <div x-show="tab === 'music'" style="background: var(--color-charcoal); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 28px;">
+        <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--text-inverse); margin-bottom: 4px;">Five Approved Songs &bull; Entitlements &amp; Pricing</h3>
+            <p style="font-size: 0.85rem; color: var(--color-sand-soft); margin: 0;">Authoritative server-side pricing. Audio files reside outside public web root.</p>
+          </div>
+          <button type="button" class="btn-secondary-sm" @click="$store.app.showToast('Simulated: Audio storage integrity verified (5 master WAVs intact).')">Check Storage</button>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" aria-label="Music pricing and catalog settings">
+            <thead>
+              <tr>
+                <th scope="col">Track #</th>
+                <th scope="col">Title</th>
+                <th scope="col">Pricing Mode</th>
+                <th scope="col">Price (Cents)</th>
+                <th scope="col">Private Storage Path</th>
+                <th scope="col">Entitlements</th>
+                <th scope="col">Simulate Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>01</strong></td>
+                <td>Free (Lead Track)</td>
+                <td><span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); padding: 4px 8px; border-radius: var(--radius-sm);">Free Download</span></td>
+                <td><code>0 cents</code></td>
+                <td><code class="code-path">storage/private/audio/free-master.wav</code></td>
+                <td>1,420 Active</td>
+                <td><span style="font-size: 0.78rem; color: var(--color-sand-soft);">Always Free</span></td>
+              </tr>
+              <tr>
+                <td><strong>02</strong></td>
+                <td>Purify Me</td>
+                <td>
+                  <span class="badge" :style="song2Paid ? 'background: var(--status-warning-bg); color: var(--color-gold);' : 'background: var(--status-success-bg); color: var(--status-success-text);'" style="padding: 4px 8px; border-radius: var(--radius-sm);" x-text="song2Paid ? 'Paid Release' : 'Promotional Free'"></span>
+                </td>
+                <td><code x-text="song2Paid ? '199 cents ($1.99)' : '0 cents'"></code></td>
+                <td><code class="code-path">storage/private/audio/purify-me-master.wav</code></td>
+                <td>480 Active</td>
+                <td>
+                  <button type="button" class="btn-secondary-sm" @click="song2Paid = !song2Paid; $store.app.showToast('Simulated: Toggled Purify Me pricing mode.')">Toggle Mode</button>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>03</strong></td>
+                <td>I Always Win</td>
+                <td><span class="badge" style="background: var(--status-warning-bg); color: var(--color-gold); padding: 4px 8px; border-radius: var(--radius-sm);">Paid Release</span></td>
+                <td><code>199 cents ($1.99)</code></td>
+                <td><code class="code-path">storage/private/audio/i-always-win-master.wav</code></td>
+                <td>310 Active</td>
+                <td><span style="font-size: 0.78rem; color: var(--color-sand-soft);">Locked</span></td>
+              </tr>
+              <tr>
+                <td><strong>04</strong></td>
+                <td>Toduyun</td>
+                <td><span class="badge" style="background: var(--status-warning-bg); color: var(--color-gold); padding: 4px 8px; border-radius: var(--radius-sm);">Paid Release</span></td>
+                <td><code>199 cents ($1.99)</code></td>
+                <td><code class="code-path">storage/private/audio/toduyun-master.wav</code></td>
+                <td>290 Active</td>
+                <td><span style="font-size: 0.78rem; color: var(--color-sand-soft);">Locked</span></td>
+              </tr>
+              <tr>
+                <td><strong>05</strong></td>
+                <td>Follow Me</td>
+                <td><span class="badge" style="background: var(--status-warning-bg); color: var(--color-gold); padding: 4px 8px; border-radius: var(--radius-sm);">Paid Release</span></td>
+                <td><code>199 cents ($1.99)</code></td>
+                <td><code class="code-path">storage/private/audio/follow-me-master.wav</code></td>
+                <td>260 Active</td>
+                <td><span style="font-size: 0.78rem; color: var(--color-sand-soft);">Locked</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Products & Variants -->
+      <div x-show="tab === 'products'" style="background: var(--color-charcoal); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 28px;" x-cloak>
+        <div style="margin-bottom: 24px;">
+          <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--text-inverse); margin-bottom: 4px;">Apparel &amp; Merchandise Inventory</h3>
+          <p style="font-size: 0.85rem; color: var(--color-sand-soft); margin: 0;">Stock counts and material specifications are demonstration placeholders.</p>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" aria-label="Merchandise inventory and variants">
+            <thead>
+              <tr>
+                <th scope="col">SKU</th>
+                <th scope="col">Product Title</th>
+                <th scope="col">Category</th>
+                <th scope="col">Price</th>
+                <th scope="col">Stock Status</th>
+                <th scope="col">Inventory Count</th>
+                <th scope="col">Simulate Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>PB-TEE-001</code></td>
+                <td>Prince Byron Signature Tee</td>
+                <td>Apparel</td>
+                <td>$32.00 USD</td>
+                <td>
+                  <span class="badge" :style="teeInStock ? 'background: var(--status-success-bg); color: var(--status-success-text);' : 'background: var(--status-error-bg); color: var(--status-error-text);'" style="padding: 4px 8px; border-radius: var(--radius-sm);" x-text="teeInStock ? 'In Stock' : 'Out of Stock'"></span>
+                </td>
+                <td><span x-text="teeInStock ? '18 units (Demo)' : '0 units'"></span></td>
+                <td>
+                  <button type="button" class="btn-secondary-sm" @click="teeInStock = !teeInStock; $store.app.showToast('Simulated: Toggled Tee inventory state.')">Toggle Stock</button>
+                </td>
+              </tr>
+              <tr>
+                <td><code>PB-HD-002</code></td>
+                <td>Abide Arch Pullover Hoodie</td>
+                <td>Apparel</td>
+                <td>$68.00 USD</td>
+                <td><span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); padding: 4px 8px; border-radius: var(--radius-sm);">In Stock</span></td>
+                <td>12 units (Demo)</td>
+                <td><span style="font-size: 0.78rem; color: var(--color-sand-soft);">Active</span></td>
+              </tr>
+              <tr>
+                <td><code>PB-CAP-003</code></td>
+                <td>PB Monogram Curved Brim Cap</td>
+                <td>Accessories</td>
+                <td>$28.00 USD</td>
+                <td><span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); padding: 4px 8px; border-radius: var(--radius-sm);">In Stock</span></td>
+                <td>24 units (Demo)</td>
+                <td><span style="font-size: 0.78rem; color: var(--color-sand-soft);">Active</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Orders & Bank Payments -->
+      <div x-show="tab === 'orders'" style="background: var(--color-charcoal); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 28px;" x-cloak>
+        <div style="margin-bottom: 24px;">
+          <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--text-inverse); margin-bottom: 4px;">Orders &amp; Bank Payment Verification Workflow</h3>
+          <p style="font-size: 0.85rem; color: var(--color-sand-soft); margin: 0;">
+            Manual bank payments remain pending until the owner independently reconciles incoming funds.
+          </p>
+        </div>
+
+        <div class="admin-table-wrap" style="margin-bottom: 32px;">
+          <table class="admin-table" aria-label="Customer orders and verification states">
+            <thead>
+              <tr>
+                <th scope="col">Order Ref</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Items</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Gateway</th>
+                <th scope="col">Status</th>
+                <th scope="col">Owner Reconciliation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong style="color: var(--color-gold);">PB-202611-001</strong></td>
+                <td>Demo Fan (fan@example.com)</td>
+                <td>1x Purify Me (Master WAV)</td>
+                <td>$1.99 USD</td>
+                <td>Stripe Card</td>
+                <td><span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); padding: 4px 8px; border-radius: var(--radius-sm);">Paid &bull; Settled</span></td>
+                <td><span style="font-size: 0.78rem; color: var(--color-sand-soft);">Auto-Settled Webhook</span></td>
+              </tr>
+              <tr style="background: var(--status-warning-bg);">
+                <td><strong style="color: var(--color-gold);">PB-202611-002</strong></td>
+                <td>Grace Fellowship (pastor@grace.org)</td>
+                <td>1x Arch Hoodie (L) + 1x Cap</td>
+                <td>$93.00 USD</td>
+                <td><strong>Manual Bank Transfer</strong></td>
+                <td>
+                  <span 
+                    class="badge" 
+                    :style="wireOrderPaid ? 'background: var(--status-success-bg); color: var(--status-success-text);' : 'background: var(--status-warning-bg); color: var(--color-gold);'"
+                    style="padding: 4px 8px; border-radius: var(--radius-sm);"
+                    x-text="wireOrderPaid ? 'Paid & Settled' : 'Awaiting Bank Verification'"
+                  ></span>
+                </td>
+                <td>
+                  <button 
+                    type="button" 
+                    class="btn-primary-sm" 
+                    x-show="!wireOrderPaid" 
+                    @click="reconcileWire()"
+                  >&#10003; Verify Bank Funds &amp; Mark Paid</button>
+                  <span x-show="wireOrderPaid" style="color: var(--status-success-text); font-size: 0.8rem; font-weight: 700;">&#10003; Reconciled by Owner</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Simulated Audit Trail -->
+        <div>
+          <h4 style="font-family: var(--font-display); font-size: 1.1rem; color: var(--text-inverse); margin-bottom: 12px;">Simulated Immutable Audit Trail</h4>
+          <div style="background: var(--surface-dark); border: 1px solid var(--border-dark); border-radius: var(--radius-sm); padding: 16px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-sand-soft); line-height: 1.6;">
+            <div>[2026-11-17 08:35:12] Order PB-202611-001: Stripe webhook signed. Transaction #ch_3N19x settled. Entitlement granted.</div>
+            <div>[2026-11-17 08:40:02] Order PB-202611-002: Customer selected Manual Bank Transfer. Order state set to awaiting_bank_verification.</div>
+            <div x-show="wireOrderPaid" style="color: var(--status-success-text);">
+              [2026-11-17 10:15:44] Order PB-202611-002: Owner verified incoming wire on bank statement. Order state transitioned to Paid & Settled. Fulfillment pending.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Ministry Bookings -->
+      <div x-show="tab === 'bookings'" style="background: var(--color-charcoal); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 28px;" x-cloak>
+        <div style="margin-bottom: 24px;">
+          <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--text-inverse); margin-bottom: 4px;">Ministry Booking RFQ Queue</h3>
+          <p style="font-size: 0.85rem; color: var(--color-sand-soft); margin: 0;">Incoming ministry requests. Honoraria and logistics are privately negotiated.</p>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" aria-label="Ministry appearance queue">
+            <thead>
+              <tr>
+                <th scope="col">RFQ Ref</th>
+                <th scope="col">Organization</th>
+                <th scope="col">Event Type</th>
+                <th scope="col">Requested Date</th>
+                <th scope="col">Location</th>
+                <th scope="col">Status</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>PB-BK-202611-9402</code></td>
+                <td>Grace Community Church</td>
+                <td>Sunday Worship Service</td>
+                <td>Dec 12, 2026</td>
+                <td>Dallas, TX</td>
+                <td><span class="badge" style="background: var(--status-warning-bg); color: var(--color-gold); padding: 4px 8px; border-radius: var(--radius-sm);">Under Review</span></td>
+                <td><button type="button" class="btn-secondary-sm" @click="$store.app.showToast('Simulated: Opened RFQ proposal composer.')">Draft Quote</button></td>
+              </tr>
+              <tr>
+                <td><code>PB-BK-202611-8104</code></td>
+                <td>City Worship Collective</td>
+                <td>Worship Night / Concert</td>
+                <td>Jan 24, 2027</td>
+                <td>Atlanta, GA</td>
+                <td><span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); padding: 4px 8px; border-radius: var(--radius-sm);">Quoted</span></td>
+                <td><button type="button" class="btn-secondary-sm" @click="$store.app.showToast('Simulated: Quote history view.')">View Quote</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 5: Brand CMS Settings -->
+      <div x-show="tab === 'cms'" style="background: var(--color-charcoal); border: 1px solid var(--border-dark); border-radius: var(--radius-md); padding: 28px;" x-cloak>
+        <div style="margin-bottom: 24px;">
+          <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--text-inverse); margin-bottom: 4px;">Controlled Page Content &amp; Brand Palette</h3>
+          <p style="font-size: 0.85rem; color: var(--color-sand-soft); margin: 0;">Editors edit structured fields only; arbitrary HTML or scripts are prohibited.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+          <div>
+            <h4 style="color: var(--text-inverse); margin-bottom: 16px; font-size: 1rem;">Structured Content Fields</h4>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="cms-eyebrow" style="color: var(--color-sand-soft);">Hero Eyebrow Text:</label>
+              <input type="text" id="cms-eyebrow" class="form-control" value="Official Worship &amp; Music Ministry" style="background: var(--surface-dark); color: var(--text-inverse); border-color: var(--border-dark);">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="cms-headline" style="color: var(--color-sand-soft);">Main Stage Headline:</label>
+              <input type="text" id="cms-headline" class="form-control" value="A sound for every season." style="background: var(--surface-dark); color: var(--text-inverse); border-color: var(--border-dark);">
+            </div>
+            <div class="form-group">
+              <label for="cms-quote" style="color: var(--color-sand-soft);">Bio Pullquote:</label>
+              <textarea id="cms-quote" class="form-control" rows="3" style="background: var(--surface-dark); color: var(--text-inverse); border-color: var(--border-dark);">Music is not an escape from reality; it is the sanctuary where we meet God face-to-face and find the grace to carry forward.</textarea>
+            </div>
+          </div>
+
+          <div>
+            <h4 style="color: var(--text-inverse); margin-bottom: 16px; font-size: 1rem;">Approved Non-Arbitrary Palette Swatches</h4>
+            <div style="display: grid; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 14px; background: var(--surface-dark); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark);">
+                <div style="width: 32px; height: 32px; background: var(--color-obsidian); border: 1px solid var(--border-dark); border-radius: var(--radius-sm);"></div>
+                <div><strong style="color: var(--text-inverse); font-size: 0.88rem;">Obsidian Dark</strong><div style="font-size: 0.75rem; color: var(--color-sand-soft);">Primary Sanctuary Stage</div></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; background: var(--surface-dark); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark);">
+                <div style="width: 32px; height: 32px; background: var(--color-gold); border-radius: var(--radius-sm);"></div>
+                <div><strong style="color: var(--text-inverse); font-size: 0.88rem;">Luminous Gold</strong><div style="font-size: 0.75rem; color: var(--color-sand-soft);">Primary Brand Accent &amp; Focus</div></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; background: var(--surface-dark); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark);">
+                <div style="width: 32px; height: 32px; background: var(--color-clay); border-radius: var(--radius-sm);"></div>
+                <div><strong style="color: var(--text-inverse); font-size: 0.88rem;">Terracotta Clay</strong><div style="font-size: 0.75rem; color: var(--color-sand-soft);">Tactile Earth Tone</div></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px; background: var(--surface-dark); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-dark);">
+                <div style="width: 32px; height: 32px; background: var(--color-linen); border-radius: var(--radius-sm);"></div>
+                <div><strong style="color: var(--text-inverse); font-size: 0.88rem;">Linen Paper</strong><div style="font-size: 0.75rem; color: var(--color-sand-soft);">Editorial Light Surface</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="button" class="btn-primary-sm" @click="$store.app.showToast('Simulated: Content changes saved to database.')">Save CMS Content</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+    </main>
+
+    <!-- Site Footer (Intentional Multi-Device Grid Layout) -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <!-- 1. Artist / Site Name and Description First Across Full Width on Mobile -->
+        <div class="footer-brand">
+          <h4>Prince Byron</h4>
+          <p>Faith-led gospel music and ministry, dedicated to lifting spirits and uniting hearts under God's unfailing grace.</p>
+        </div>
+
+        <!-- 2. Footer Navigation Links in Intentional Columns -->
+        <div class="footer-col">
+          <h5>Music &amp; Ministry</h5>
+          <div class="footer-links">
+            <a href="http://127.0.0.1:8001">Home</a>
+            <a href="http://127.0.0.1:8001/about">Our Story &amp; Vision</a>
+            <a href="http://127.0.0.1:8001/music">All 5 Music Releases</a>
+            <a href="http://127.0.0.1:8001/music">Free Lead Track Download</a>
+            <a href="http://127.0.0.1:8001/booking">Ministry Booking &amp; RFQ</a>
+            <a href="http://127.0.0.1:8001/account">Fan Vault &amp; Entitlements</a>
+            <a href="http://127.0.0.1:8001/admin">Owner Admin (Filament CMS) &rarr;</a>
+            <a href="http://127.0.0.1:8001/admin/preview">Visual Demo Theme (Mock) &rarr;</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Store &amp; Orders</h5>
+          <div class="footer-links">
+            <a href="http://127.0.0.1:8001/store">All Apparel &amp; Merch</a>
+            <a href="http://127.0.0.1:8001/store/tee">Prince Byron Signature Tee</a>
+            <a href="http://127.0.0.1:8001/cart">Review Shopping Bag</a>
+            <a href="http://127.0.0.1:8001/checkout">Dedicated Checkout</a>
+            <a href="http://127.0.0.1:8001/account">Customer Entitlements</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Official Streaming &amp; Social</h5>
+          <div class="footer-links">
+            <a href="https://open.spotify.com/artist/089TupQTFoR8OvKrDOp1NA" target="_blank" rel="noopener noreferrer" aria-label="Listen on Spotify">Spotify Official &rarr;</a>
+            <a href="https://www.youtube.com/channel/UCeeZS5FkmYj6F4fwykc7f0g" target="_blank" rel="noopener noreferrer" aria-label="Watch on YouTube">YouTube Channel &rarr;</a>
+            <a href="https://www.instagram.com/prince_byron_official" target="_blank" rel="noopener noreferrer" aria-label="Follow on Instagram">Instagram &rarr;</a>
+            <a href="https://www.tiktok.com/@princebyron94" target="_blank" rel="noopener noreferrer" aria-label="Follow on TikTok">TikTok &rarr;</a>
+            <a href="https://www.facebook.com/princebyron89/" target="_blank" rel="noopener noreferrer" aria-label="Follow on Facebook">Facebook &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Prince Byron &bull; princebyron.com &bull; All Rights Reserved.</div>
+        <div>Faith-led worship music, ministry invitations, and author-verified apparel.</div>
+      </div>
+    </footer>
+
+    <!-- Shopping Bag Drawer Panel (95% mobile width with visible backdrop slice) -->
+    <div 
+      class="drawer-overlay" 
+      id="bag-drawer" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-label="Shopping Bag Drawer" 
+      :class="{ 'open': $store.app.bagOpen }"
+      :aria-hidden="(!$store.app.bagOpen).toString()"
+      @click.self="$store.app.closeBag()"
+      x-cloak
+    >
+      <aside class="drawer-panel" aria-label="Shopping Bag">
+        <div class="drawer-header">
+          <h3>Your Bag (<span x-text="$store.app.cartCount"></span>)</h3>
+          <button 
+            type="button" 
+            class="btn-close-drawer" 
+            id="btn-close-bag" 
+            aria-label="Close Shopping Bag"
+            @click="$store.app.closeBag()"
+          >&times;</button>
+        </div>
+
+        <div class="drawer-body" id="drawer-items-list">
+          <template x-if="$store.app.cart.length === 0">
+            <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+              <p style="font-size: 1.1rem; margin-bottom: 12px; font-family: var(--font-display);">Your bag is empty.</p>
+              <a href="http://127.0.0.1:8001/store" class="btn-secondary-sm" @click="$store.app.closeBag()">Discover Official Merchandise &rarr;</a>
+            </div>
+          </template>
+
+          <template x-for="(item, index) in $store.app.cart" :key="item.id + item.variant">
+            <div class="cart-item">
+              <div class="cart-item-thumb" aria-hidden="true">PB</div>
+              <div class="cart-item-info">
+                <h4 x-text="item.title"></h4>
+                <div class="meta" x-text="item.variant"></div>
+                <div class="meta" style="color: var(--color-gold); font-weight: 700;" x-text="'$' + (item.priceCents / 100).toFixed(2) + ' USD'"></div>
+                <div class="cart-qty-ctrl">
+                  <button type="button" @click="$store.app.updateQty(index, -1)" aria-label="Decrease quantity">&minus;</button>
+                  <span x-text="item.qty"></span>
+                  <button type="button" @click="$store.app.updateQty(index, 1)" aria-label="Increase quantity">&plus;</button>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: 700; color: var(--text-main);" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></div>
+                <button 
+                  type="button" 
+                  class="btn-remove" 
+                  @click="$store.app.removeItem(index)"
+                  aria-label="Remove item"
+                  style="margin-top: 12px; font-size: 0.75rem; color: var(--status-error-text); background: none; border: none; cursor: pointer; text-decoration: underline;"
+                >Remove</button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="drawer-footer">
+          <div class="drawer-subtotal">
+            <span>Subtotal (USD):</span>
+            <span class="amount" id="drawer-subtotal-val" x-text="$store.app.cartSubtotalFormatted"></span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 16px;">
+            * Sample pricing. Shipping and taxes calculated authoritatively at checkout.
+          </div>
+          <a 
+            href="http://127.0.0.1:8001/checkout" 
+            class="btn-primary" 
+            style="width: 100%; text-align: center; box-sizing: border-box; justify-content: center;"
+            @click="$store.app.closeBag()"
+          >Proceed to Dedicated Checkout &rarr;</a>
+          <a 
+            href="http://127.0.0.1:8001/cart" 
+            style="display: block; text-align: center; margin-top: 12px; font-size: 0.82rem; color: var(--color-amber); text-decoration: underline;"
+            @click="$store.app.closeBag()"
+          >Open Itemized Bag Page &rarr;</a>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Persistent Bottom Audio Player Bar -->
+    <div 
+      class="music-player-bar" 
+      id="music-player-bar" 
+      role="region" 
+      aria-label="Audio Player Preview"
+      x-show="$store.app.player.active"
+      x-cloak
+    >
+      <button 
+        type="button" 
+        class="player-ctrl-btn" 
+        id="player-toggle-btn" 
+        :aria-label="$store.app.player.playing ? 'Pause audio' : 'Play audio'"
+        @click="$store.app.togglePlay()"
+      >
+        <span x-html="$store.app.player.playing ? '&#10074;&#10074;' : '&#9658;'"></span>
+      </button>
+      <div class="player-track-info">
+        <strong id="player-track-title" x-text="$store.app.player.trackTitle"></strong>
+        <small id="player-track-subtitle" x-text="$store.app.player.trackSubtitle"></small>
+      </div>
+      <div class="player-scrubber" aria-label="Track progress bar">
+        <div class="player-scrubber-fill" id="player-scrubber-fill" :style="'width: ' + $store.app.player.progress + '%'"></div>
+      </div>
+      <button 
+        type="button" 
+        class="player-close-btn" 
+        aria-label="Close audio player" 
+        @click="$store.app.closePlayer()"
+      >&times;</button>
+    </div>
+
+    <!-- Toast Notification (Accessible Polite Status Announcement) -->
+    <div 
+      class="toast-notification" 
+      id="toast" 
+      role="status" 
+      aria-live="polite"
+      :class="{ 'visible': $store.app.toast.visible }"
+      x-text="$store.app.toast.message"
+    ></div>
+
+          <!-- Local Review Developer Dock (Strictly Dev Environment Only) -->
+      <aside class="review-dock" aria-label="Local Review Developer Dock">
+        <span class="dock-label">DEV REVIEW</span>
+        <div class="dock-btn-group">
+          <a href="http://127.0.0.1:8001/account" class="dock-btn">Fan Vault</a>
+          <a href="http://127.0.0.1:8001/admin" class="dock-btn">Owner CMS (Filament)</a>
+          <a href="http://127.0.0.1:8001/admin/preview" class="dock-btn">Theme Demo</a>
+          <a href="http://127.0.0.1:8025" target="_blank" rel="noopener noreferrer" class="dock-btn">Mailpit Inbox</a>
+        </div>
+      </aside>
+    
+  </div><!-- /site-wrapper -->
+
+</body>
+</html>

@@ -1,0 +1,578 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0E0B09">
+  <meta name="description" content="Prince Byron — Official Gospel Music, Ministry & Store. High-craft worship releases, apparel, ministry bookings, and customer downloads.">
+  <meta name="csrf-token" content="nI3wSJJpONyD8nx8VGpJPGPMO15QFrz7rkTIS1im">
+
+  <title>Order PB-202611-001 — Prince Byron</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%23DFA759'>PB</text></svg>">
+
+  <link rel="preload" as="style" href="http://127.0.0.1:8001/build/assets/app-CMS7VD1G.css" /><link rel="modulepreload" as="script" href="http://127.0.0.1:8001/build/js/app-7v6iDNV2.js" /><link rel="stylesheet" href="http://127.0.0.1:8001/build/assets/app-CMS7VD1G.css" data-navigate-track="reload" /><script type="module" src="http://127.0.0.1:8001/build/js/app-7v6iDNV2.js" data-navigate-track="reload"></script></head>
+<body x-data>
+
+  <!-- Skip Navigation Link for Keyboard Accessibility (WCAG 2.2 AA) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="site-wrapper">
+
+    <!-- Mobile Navigation Drawer Overlay & Panel (Accessible Modal Dialog) -->
+    <div 
+      class="mobile-nav-overlay" 
+      id="mobile-nav-overlay" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-label="Mobile Navigation Menu" 
+      :class="{ 'open': $store.app.mobileNavOpen }"
+      :aria-hidden="(!$store.app.mobileNavOpen).toString()"
+      @click.self="$store.app.closeMobileNav()"
+      x-cloak
+    >
+      <div class="mobile-nav-panel" id="mobile-nav-panel">
+        <div class="mobile-nav-header">
+          <div class="brand-logo">
+            <div class="brand-monogram" aria-hidden="true">PB</div>
+            <div class="brand-titles">
+              <span class="mobile-menu-brand-name">Prince Byron</span>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            class="btn-close-mobile-nav" 
+            id="btn-close-mobile-nav" 
+            aria-label="Close navigation menu"
+            @click="$store.app.closeMobileNav()"
+          >&times;</button>
+        </div>
+
+        <nav class="mobile-nav-links" aria-label="Mobile Navigation Links">
+          <a href="http://127.0.0.1:8001" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Home</a>
+          <a href="http://127.0.0.1:8001/about" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Our Story &amp; Ministry</a>
+          <a href="http://127.0.0.1:8001/music" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Music Releases</a>
+          <a href="http://127.0.0.1:8001/store" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Official Store</a>
+          <a href="http://127.0.0.1:8001/cart" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Shopping Bag (<span x-text="$store.app.cartCount"></span>)</a>
+          <a href="http://127.0.0.1:8001/checkout" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Dedicated Checkout</a>
+          <a href="http://127.0.0.1:8001/booking" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Ministry Booking RFQ</a>
+          <a href="http://127.0.0.1:8001/account" class="mobile-nav-link active" @click="$store.app.closeMobileNav()">Fan Vault &amp; Entitlements</a>
+        </nav>
+
+        <div class="mobile-nav-footer">
+          <div class="mobile-nav-footer-title">Official Streaming &amp; Ministry</div>
+          <div class="mobile-nav-socials">
+            <a href="https://open.spotify.com/artist/089TupQTFoR8OvKrDOp1NA" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Spotify">Spotify</a>
+            <a href="https://www.youtube.com/channel/UCeeZS5FkmYj6F4fwykc7f0g" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on YouTube">YouTube</a>
+            <a href="https://www.instagram.com/prince_byron_official" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Instagram">Instagram</a>
+            <a href="https://www.tiktok.com/@princebyron94" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on TikTok">TikTok</a>
+            <a href="https://www.facebook.com/princebyron89/" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Facebook">Facebook</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Header (Cinematic Dark Hybrid) -->
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="http://127.0.0.1:8001" class="brand-logo" aria-label="Prince Byron Home">
+          <div class="brand-monogram" aria-hidden="true">PB</div>
+          <div class="brand-titles">
+            <h1>Prince Byron</h1>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="site-nav" aria-label="Main Navigation">
+          <a href="http://127.0.0.1:8001" class="nav-link ">Home</a>
+          <a href="http://127.0.0.1:8001/about" class="nav-link ">About</a>
+          <a href="http://127.0.0.1:8001/music" class="nav-link ">Music</a>
+          <a href="http://127.0.0.1:8001/store" class="nav-link ">Store</a>
+          <a href="http://127.0.0.1:8001/booking" class="nav-link ">Bookings</a>
+          <a href="http://127.0.0.1:8001/account" class="nav-link active">Account</a>
+        </nav>
+
+        <div class="header-actions">
+          <button 
+            type="button" 
+            class="btn-bag" 
+            id="btn-open-bag" 
+            aria-label="Open Shopping Bag"
+            :aria-expanded="$store.app.bagOpen.toString()"
+            @click="$store.app.openBag()"
+          >
+            <span>Bag</span>
+            <div class="badge-count" x-text="$store.app.cartCount"></div>
+          </button>
+          <button 
+            type="button" 
+            class="btn-mobile-menu" 
+            id="btn-menu-toggle" 
+            aria-label="Open Navigation Menu"
+            :aria-expanded="$store.app.mobileNavOpen.toString()"
+            @click="$store.app.openMobileNav()"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Injection -->
+    <main id="main-content">
+      <section class="section-editorial" style="background: var(--surface-paper);">
+  <div class="section-container" style="max-width: 1040px;">
+
+          <!-- Customer Context Pill for Authenticated Fan -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 14px 20px; flex-wrap: wrap; gap: 12px;">
+        <div style="font-size: 0.88rem; color: var(--text-muted); word-break: break-word; max-width: 100%;">
+          Signed in as <strong style="color: var(--text-primary);">fan@princebyron.local</strong> (Demo Fan) &bull; Fan Supporter Account
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span style="font-size: 0.78rem; color: var(--status-success-text); font-weight: 700;">
+            &#9679; Entitlements Active &bull; Verified
+          </span>
+          <form method="POST" action="http://127.0.0.1:8001/logout" style="display: inline; margin: 0;">
+            <input type="hidden" name="_token" value="nI3wSJJpONyD8nx8VGpJPGPMO15QFrz7rkTIS1im" autocomplete="off">            <button type="submit" class="btn-secondary-sm" style="padding: 4px 12px; font-size: 0.8rem; cursor: pointer;">
+              Sign Out
+            </button>
+          </form>
+        </div>
+      </div>
+
+              <!-- Itemized Order Detail Receipt Card -->
+        <div class="account-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <span class="section-eyebrow">Customer Order Receipt</span>
+              <h3 style="font-family: var(--font-display); font-size: 1.6rem; color: var(--text-primary); margin: 0 0 6px;">
+                Order #PB-202611-001
+              </h3>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">
+                Placed on Nov 16, 2026 10:48 PM &bull; Payment via Stripe
+              </div>
+            </div>
+            <div>
+                              <span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-border); font-size: 0.82rem; padding: 6px 14px; border-radius: var(--radius-full); font-weight: 700;">Paid &bull; Settled</span>
+                          </div>
+          </div>
+
+          <!-- Items Table -->
+          <div class="cart-table-wrap" style="box-shadow: none; margin-bottom: 24px; overflow-x: auto;">
+            <table class="cart-table" style="min-width: 480px;" aria-label="Itemized order line items">
+              <thead>
+                <tr>
+                  <th scope="col">Item Description</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Unit Price</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col" style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                                  <tr>
+                    <td>
+                      <strong style="color: var(--text-primary);">Purify Me (Single Master WAV + MP3)</strong>
+                    </td>
+                    <td>
+                      <span style="font-size: 0.75rem; text-transform: uppercase; font-family: var(--font-mono); background: var(--surface-paper); padding: 3px 8px; border-radius: var(--radius-sm);">
+                        Digital Audio
+                      </span>
+                    </td>
+                    <td>$1.99</td>
+                    <td>1</td>
+                    <td style="text-align: right; font-weight: 700;">$1.99</td>
+                  </tr>
+                              </tbody>
+            </table>
+          </div>
+
+          <!-- Order Summary Totals -->
+          <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 400px;">
+                              <em>Digital audio delivery only. Instant master access enabled below.</em>
+                          </div>
+
+            <div style="min-width: 240px; text-align: right; font-size: 0.95rem;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text-muted);">Subtotal:</span>
+                <strong>$1.99</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: var(--text-muted);">Shipping:</span>
+                <strong>$0.00</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-top: 2px solid var(--border-light); padding-top: 10px; font-size: 1.15rem; color: var(--color-clay);">
+                <span>Total (USD):</span>
+                <strong>$1.99</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 28px; border-top: 1px solid var(--border-light); padding-top: 20px;">
+            <a href="http://127.0.0.1:8001/account" class="btn-secondary-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+              &larr; Back to Complete Fan Vault
+            </a>
+          </div>
+        </div>
+      
+      <span class="section-eyebrow">Customer Fan Vault</span>
+      <h2 class="section-title">My Digital Music &amp; Orders</h2>
+      <p class="section-desc" style="margin-bottom: 40px;">
+        Digital audio is delivered via authorized short-lived links. Verified orders create authorized download entitlements according to owner terms.
+      </p>
+
+      <!-- Active Digital Entitlements Section -->
+      <div style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 28px; margin-bottom: 40px; box-shadow: var(--shadow-sm);">
+        <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--text-primary); margin-bottom: 16px;">
+          Active Digital Entitlements (02 Tracks)
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 24px;">
+          Authorized master formats available for personal streaming and offline listening.
+        </p>
+
+        <div class="cart-table-wrap">
+          <table class="cart-table" aria-label="Customer digital audio entitlements">
+            <thead>
+              <tr>
+                <th scope="col">Release</th>
+                <th scope="col">Master Format</th>
+                <th scope="col">Downloads</th>
+                <th scope="col">Entitlement Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+                              <tr>
+                  <td>
+                    <strong style="color: var(--text-primary); font-size: 0.95rem;">Purify Me</strong>
+                    <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Prince Byron &bull; Official Single Master</span>
+                  </td>
+                  <td>
+                    <span style="font-family: var(--font-mono); font-size: 0.8rem; background: var(--surface-paper); padding: 4px 8px; border-radius: var(--radius-sm);">
+                      WAV Master
+                    </span>
+                  </td>
+                  <td style="font-size: 0.85rem; color: var(--text-muted);">
+                    0 delivered
+                  </td>
+                  <td>
+                    <span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); font-size: 0.72rem; padding: 4px 8px; border-radius: var(--radius-full); font-weight: 700;">
+                      Active &amp;bull; Verified
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 8px;">
+                      <button 
+                        type="button" 
+                        class="btn-secondary-sm" 
+                        @click="$store.app.playTrack('Purify Me', 199)"
+                      >&#9658; Stream</button>
+                      <a 
+                        href="http://127.0.0.1:8001/downloads/5" 
+                        class="btn-primary-sm" 
+                        style="text-decoration: none; display: inline-flex; align-items: center;"
+                      >Download</a>
+                    </div>
+                  </td>
+                </tr>
+                              <tr>
+                  <td>
+                    <strong style="color: var(--text-primary); font-size: 0.95rem;">Free</strong>
+                    <span style="font-size: 0.78rem; color: var(--text-muted); display: block;">Prince Byron &bull; Free Ministry Offering</span>
+                  </td>
+                  <td>
+                    <span style="font-family: var(--font-mono); font-size: 0.8rem; background: var(--surface-paper); padding: 4px 8px; border-radius: var(--radius-sm);">
+                      MP3 Master
+                    </span>
+                  </td>
+                  <td style="font-size: 0.85rem; color: var(--text-muted);">
+                    3 delivered
+                  </td>
+                  <td>
+                    <span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); font-size: 0.72rem; padding: 4px 8px; border-radius: var(--radius-full); font-weight: 700;">
+                      Active &amp;bull; Verified
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 8px;">
+                      <button 
+                        type="button" 
+                        class="btn-secondary-sm" 
+                        @click="$store.app.playTrack('Free', 0)"
+                      >&#9658; Stream</button>
+                      <a 
+                        href="http://127.0.0.1:8001/downloads/7" 
+                        class="btn-primary-sm" 
+                        style="text-decoration: none; display: inline-flex; align-items: center;"
+                      >Download</a>
+                    </div>
+                  </td>
+                </tr>
+                          </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Order History -->
+      <div style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 28px; box-shadow: var(--shadow-sm);">
+        <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--text-primary); margin-bottom: 16px;">
+          Recent Orders
+        </h3>
+
+        <div class="cart-table-wrap">
+          <table class="cart-table" aria-label="Customer order history">
+            <thead>
+              <tr>
+                <th scope="col">Order Ref</th>
+                <th scope="col">Date</th>
+                <th scope="col">Payment Gateway</th>
+                <th scope="col">Total</th>
+                <th scope="col">Lifecycle Status</th>
+              </tr>
+            </thead>
+            <tbody>
+                              <tr>
+                  <td>
+                    <a href="http://127.0.0.1:8001/account/orders/PB-202611-002" style="color: var(--color-clay); font-weight: 700; text-decoration: underline;">
+                      PB-202611-002 &rarr;
+                    </a>
+                  </td>
+                  <td>Nov 17, 2026</td>
+                  <td>Bank transfer</td>
+                  <td>$93.00 USD</td>
+                  <td>
+                                          <span class="badge" style="background: var(--status-warning-bg); color: var(--status-warning-text); font-size: 0.72rem; padding: 4px 8px; border-radius: var(--radius-full); font-weight: 700;">Awaiting Bank Verification</span>
+                                      </td>
+                </tr>
+                              <tr>
+                  <td>
+                    <a href="http://127.0.0.1:8001/account/orders/PB-202611-001" style="color: var(--color-clay); font-weight: 700; text-decoration: underline;">
+                      PB-202611-001 &rarr;
+                    </a>
+                  </td>
+                  <td>Nov 16, 2026</td>
+                  <td>Stripe</td>
+                  <td>$1.99 USD</td>
+                  <td>
+                                          <span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); font-size: 0.72rem; padding: 4px 8px; border-radius: var(--radius-full); font-weight: 700;">Paid &bull; Settled</span>
+                                      </td>
+                </tr>
+                              <tr>
+                  <td>
+                    <a href="http://127.0.0.1:8001/account/orders/PB-202611-000" style="color: var(--color-clay); font-weight: 700; text-decoration: underline;">
+                      PB-202611-000 &rarr;
+                    </a>
+                  </td>
+                  <td>Nov 15, 2026</td>
+                  <td>Card / Online</td>
+                  <td>$0.00 USD</td>
+                  <td>
+                                          <span class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); font-size: 0.72rem; padding: 4px 8px; border-radius: var(--radius-full); font-weight: 700;">Paid &bull; Settled</span>
+                                      </td>
+                </tr>
+                          </tbody>
+          </table>
+        </div>
+      </div>
+
+    
+  </div>
+</section>
+    </main>
+
+    <!-- Site Footer (Intentional Multi-Device Grid Layout) -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <!-- 1. Artist / Site Name and Description First Across Full Width on Mobile -->
+        <div class="footer-brand">
+          <h4>Prince Byron</h4>
+          <p>Faith-led gospel music and ministry, dedicated to lifting spirits and uniting hearts under God's unfailing grace.</p>
+        </div>
+
+        <!-- 2. Footer Navigation Links in Intentional Columns -->
+        <div class="footer-col">
+          <h5>Music &amp; Ministry</h5>
+          <div class="footer-links">
+            <a href="http://127.0.0.1:8001">Home</a>
+            <a href="http://127.0.0.1:8001/about">Our Story &amp; Vision</a>
+            <a href="http://127.0.0.1:8001/music">All 5 Music Releases</a>
+            <a href="http://127.0.0.1:8001/music">Free Lead Track Download</a>
+            <a href="http://127.0.0.1:8001/booking">Ministry Booking &amp; RFQ</a>
+            <a href="http://127.0.0.1:8001/account">Fan Vault &amp; Entitlements</a>
+            <a href="http://127.0.0.1:8001/admin">Owner Admin (Filament CMS) &rarr;</a>
+            <a href="http://127.0.0.1:8001/admin/preview">Visual Demo Theme (Mock) &rarr;</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Store &amp; Orders</h5>
+          <div class="footer-links">
+            <a href="http://127.0.0.1:8001/store">All Apparel &amp; Merch</a>
+            <a href="http://127.0.0.1:8001/store/tee">Prince Byron Signature Tee</a>
+            <a href="http://127.0.0.1:8001/cart">Review Shopping Bag</a>
+            <a href="http://127.0.0.1:8001/checkout">Dedicated Checkout</a>
+            <a href="http://127.0.0.1:8001/account">Customer Entitlements</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Official Streaming &amp; Social</h5>
+          <div class="footer-links">
+            <a href="https://open.spotify.com/artist/089TupQTFoR8OvKrDOp1NA" target="_blank" rel="noopener noreferrer" aria-label="Listen on Spotify">Spotify Official &rarr;</a>
+            <a href="https://www.youtube.com/channel/UCeeZS5FkmYj6F4fwykc7f0g" target="_blank" rel="noopener noreferrer" aria-label="Watch on YouTube">YouTube Channel &rarr;</a>
+            <a href="https://www.instagram.com/prince_byron_official" target="_blank" rel="noopener noreferrer" aria-label="Follow on Instagram">Instagram &rarr;</a>
+            <a href="https://www.tiktok.com/@princebyron94" target="_blank" rel="noopener noreferrer" aria-label="Follow on TikTok">TikTok &rarr;</a>
+            <a href="https://www.facebook.com/princebyron89/" target="_blank" rel="noopener noreferrer" aria-label="Follow on Facebook">Facebook &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Prince Byron &bull; princebyron.com &bull; All Rights Reserved.</div>
+        <div>Faith-led worship music, ministry invitations, and author-verified apparel.</div>
+      </div>
+    </footer>
+
+    <!-- Shopping Bag Drawer Panel (95% mobile width with visible backdrop slice) -->
+    <div 
+      class="drawer-overlay" 
+      id="bag-drawer" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-label="Shopping Bag Drawer" 
+      :class="{ 'open': $store.app.bagOpen }"
+      :aria-hidden="(!$store.app.bagOpen).toString()"
+      @click.self="$store.app.closeBag()"
+      x-cloak
+    >
+      <aside class="drawer-panel" aria-label="Shopping Bag">
+        <div class="drawer-header">
+          <h3>Your Bag (<span x-text="$store.app.cartCount"></span>)</h3>
+          <button 
+            type="button" 
+            class="btn-close-drawer" 
+            id="btn-close-bag" 
+            aria-label="Close Shopping Bag"
+            @click="$store.app.closeBag()"
+          >&times;</button>
+        </div>
+
+        <div class="drawer-body" id="drawer-items-list">
+          <template x-if="$store.app.cart.length === 0">
+            <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+              <p style="font-size: 1.1rem; margin-bottom: 12px; font-family: var(--font-display);">Your bag is empty.</p>
+              <a href="http://127.0.0.1:8001/store" class="btn-secondary-sm" @click="$store.app.closeBag()">Discover Official Merchandise &rarr;</a>
+            </div>
+          </template>
+
+          <template x-for="(item, index) in $store.app.cart" :key="item.id + item.variant">
+            <div class="cart-item">
+              <div class="cart-item-thumb" aria-hidden="true">PB</div>
+              <div class="cart-item-info">
+                <h4 x-text="item.title"></h4>
+                <div class="meta" x-text="item.variant"></div>
+                <div class="meta" style="color: var(--color-gold); font-weight: 700;" x-text="'$' + (item.priceCents / 100).toFixed(2) + ' USD'"></div>
+                <div class="cart-qty-ctrl">
+                  <button type="button" @click="$store.app.updateQty(index, -1)" aria-label="Decrease quantity">&minus;</button>
+                  <span x-text="item.qty"></span>
+                  <button type="button" @click="$store.app.updateQty(index, 1)" aria-label="Increase quantity">&plus;</button>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: 700; color: var(--text-main);" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></div>
+                <button 
+                  type="button" 
+                  class="btn-remove" 
+                  @click="$store.app.removeItem(index)"
+                  aria-label="Remove item"
+                  style="margin-top: 12px; font-size: 0.75rem; color: var(--status-error-text); background: none; border: none; cursor: pointer; text-decoration: underline;"
+                >Remove</button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="drawer-footer">
+          <div class="drawer-subtotal">
+            <span>Subtotal (USD):</span>
+            <span class="amount" id="drawer-subtotal-val" x-text="$store.app.cartSubtotalFormatted"></span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 16px;">
+            * Sample pricing. Shipping and taxes calculated authoritatively at checkout.
+          </div>
+          <a 
+            href="http://127.0.0.1:8001/checkout" 
+            class="btn-primary" 
+            style="width: 100%; text-align: center; box-sizing: border-box; justify-content: center;"
+            @click="$store.app.closeBag()"
+          >Proceed to Dedicated Checkout &rarr;</a>
+          <a 
+            href="http://127.0.0.1:8001/cart" 
+            style="display: block; text-align: center; margin-top: 12px; font-size: 0.82rem; color: var(--color-amber); text-decoration: underline;"
+            @click="$store.app.closeBag()"
+          >Open Itemized Bag Page &rarr;</a>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Persistent Bottom Audio Player Bar -->
+    <div 
+      class="music-player-bar" 
+      id="music-player-bar" 
+      role="region" 
+      aria-label="Audio Player Preview"
+      x-show="$store.app.player.active"
+      x-cloak
+    >
+      <button 
+        type="button" 
+        class="player-ctrl-btn" 
+        id="player-toggle-btn" 
+        :aria-label="$store.app.player.playing ? 'Pause audio' : 'Play audio'"
+        @click="$store.app.togglePlay()"
+      >
+        <span x-html="$store.app.player.playing ? '&#10074;&#10074;' : '&#9658;'"></span>
+      </button>
+      <div class="player-track-info">
+        <strong id="player-track-title" x-text="$store.app.player.trackTitle"></strong>
+        <small id="player-track-subtitle" x-text="$store.app.player.trackSubtitle"></small>
+      </div>
+      <div class="player-scrubber" aria-label="Track progress bar">
+        <div class="player-scrubber-fill" id="player-scrubber-fill" :style="'width: ' + $store.app.player.progress + '%'"></div>
+      </div>
+      <button 
+        type="button" 
+        class="player-close-btn" 
+        aria-label="Close audio player" 
+        @click="$store.app.closePlayer()"
+      >&times;</button>
+    </div>
+
+    <!-- Toast Notification (Accessible Polite Status Announcement) -->
+    <div 
+      class="toast-notification" 
+      id="toast" 
+      role="status" 
+      aria-live="polite"
+      :class="{ 'visible': $store.app.toast.visible }"
+      x-text="$store.app.toast.message"
+    ></div>
+
+          <!-- Local Review Developer Dock (Strictly Dev Environment Only) -->
+      <aside class="review-dock" aria-label="Local Review Developer Dock">
+        <span class="dock-label">DEV REVIEW</span>
+        <div class="dock-btn-group">
+          <a href="http://127.0.0.1:8001/account" class="dock-btn">Fan Vault</a>
+          <a href="http://127.0.0.1:8001/admin" class="dock-btn">Owner CMS (Filament)</a>
+          <a href="http://127.0.0.1:8001/admin/preview" class="dock-btn">Theme Demo</a>
+          <a href="http://127.0.0.1:8025" target="_blank" rel="noopener noreferrer" class="dock-btn">Mailpit Inbox</a>
+        </div>
+      </aside>
+    
+  </div><!-- /site-wrapper -->
+
+</body>
+</html>
+

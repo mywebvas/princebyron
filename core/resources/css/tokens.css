@@ -1,0 +1,181 @@
+/* ==========================================================================
+   PRINCE BYRON — COMPILED DESIGN TOKENS
+   AUTO-GENERATED FROM config/tokens.php — DO NOT EDIT DIRECTLY
+   ========================================================================== */
+
+:root {
+  /* Primitive Palette */
+  --color-black: #000000;
+  --color-obsidian: #0E0B09;
+  --color-obsidian-deep: #070504;
+  --color-charcoal: #181310;
+  --color-charcoal-light: #221B16;
+  --color-espresso: #2C221C;
+  --color-espresso-light: #3D3028;
+  --color-amber: #C8883B;
+  --color-amber-dark: #B6772D;
+  --color-amber-light: #D8994E;
+  --color-gold: #DFA759;
+  --color-gold-hover: #ECC78D;
+  --color-gold-muted: #BA8A46;
+  --color-clay: #9E472A;
+  --color-clay-dark: #7F361E;
+  --color-clay-light: #B85332;
+  --color-olive: #3B4E3E;
+  --color-olive-light: #526A56;
+  --color-olive-surface: #EDF3EE;
+  --color-sand-dark: #8E8271;
+  --color-sand-muted: #A89F91;
+  --color-sand-soft: #C5BCAD;
+  --color-sand: #EAE4D9;
+  --color-paper: #F3EFE6;
+  --color-linen: #F8F4ED;
+  --color-cream: #FCFAF6;
+  --color-white: #FFFFFF;
+  --color-gray-50: #F9F9F8;
+  --color-gray-100: #F2F0ED;
+  --color-gray-200: #E4E0D9;
+  --color-gray-300: #D0C9BF;
+  --color-gray-400: #A89F91;
+  --color-gray-500: #7E7467;
+  --color-gray-600: #5E5448;
+  --color-gray-700: #433A30;
+  --color-gray-800: #28211A;
+  --color-gray-900: #181310;
+  --color-success: #1E8E3E;
+  --color-success-light: #E6F4EA;
+  --color-success-border: #A8DAB5;
+  --color-warning: #D97706;
+  --color-warning-light: #FEF3C7;
+  --color-warning-border: #FCD34D;
+  --color-error: #C62828;
+  --color-error-light: #FCE8E6;
+  --color-error-border: #F5C6CB;
+  --color-info: #1A73E8;
+  --color-info-light: #E8F0FE;
+  --color-info-border: #AECBFA;
+
+  /* Semantic Surfaces */
+  --surface-base: #FCFAF6;
+  --surface-paper: #F3EFE6;
+  --surface-card: #FFFFFF;
+  --surface-card-subtle: #FAF7F2;
+  --surface-elevated: #FFFFFF;
+  --surface-sunken: #ECE7DC;
+  --surface-overlay: rgba(14, 11, 9, 0.78);
+  --surface-overlay-deep: rgba(14, 11, 9, 0.96);
+  --surface-modal-backdrop: rgba(14, 11, 9, 0.88);
+  --surface-dark: #0E0B09;
+  --surface-dark-card: #181310;
+  --surface-dark-subtle: #221B16;
+  --surface-dark-sunken: #070504;
+  --surface-dark-translucent: rgba(24, 19, 16, 0.85);
+  --surface-dark-glass: rgba(255, 255, 255, 0.05);
+  --surface-dark-glass-hover: rgba(255, 255, 255, 0.08);
+  --surface-dark-glass-active: rgba(255, 255, 255, 0.12);
+  --surface-gold-glow: rgba(223, 167, 89, 0.20);
+  --surface-amber-glow: rgba(200, 136, 59, 0.15);
+  --surface-clay-subtle: rgba(158, 71, 42, 0.06);
+  --surface-input: #FFFFFF;
+  --surface-input-dark: #181310;
+
+  /* Semantic Text */
+  --text-primary: #181310;
+  --text-secondary: #594C44;
+  --text-muted: #7E7066;
+  --text-subtle: #A89F91;
+  --text-inverse: #FDFBF7;
+  --text-inverse-muted: #C5BCAD;
+  --text-inverse-subtle: #8E8271;
+  --text-brand: #C8883B;
+  --text-gold: #DFA759;
+  --text-accent: #9E472A;
+  --text-link: #C8883B;
+  --text-link-hover: #B6772D;
+
+  /* Semantic Borders */
+  --border-subtle: rgba(24, 19, 16, 0.08);
+  --border-default: rgba(24, 19, 16, 0.14);
+  --border-strong: rgba(24, 19, 16, 0.28);
+  --border-dark-subtle: rgba(255, 255, 255, 0.08);
+  --border-dark-medium: rgba(255, 255, 255, 0.15);
+  --border-dark: rgba(200, 136, 59, 0.22);
+  --border-dark-strong: rgba(223, 167, 89, 0.45);
+  --border-gold: rgba(223, 167, 89, 0.40);
+  --border-gold-subtle: rgba(223, 167, 89, 0.20);
+  --border-gold-strong: #DFA759;
+  --border-clay: rgba(158, 71, 42, 0.35);
+  --border-focus: #9E472A;
+  --border-input: #8A7D71;
+  --border-input-hover: #9E472A;
+  --border-input-focus: #9E472A;
+  --border-input-dark: #7E6B5A;
+  --border-input-dark-hover: #DFA759;
+  --border-input-dark-focus: #DFA759;
+
+  /* Semantic Actions */
+  --action-primary-bg: #C8883B;
+  --action-primary-hover: #B6772D;
+  --action-primary-text: #FFFFFF;
+  --action-secondary-bg: transparent;
+  --action-secondary-border: #C8883B;
+  --action-secondary-text: #181310;
+  --action-secondary-hover-bg: rgba(200, 136, 59, 0.08);
+  --action-dark-primary-bg: #DFA759;
+  --action-dark-primary-hover: #ECC78D;
+  --action-dark-primary-text: #0E0B09;
+  --action-dark-secondary-border: rgba(223, 167, 89, 0.50);
+  --action-dark-secondary-text: #FDFBF7;
+
+  /* Focus Rings */
+  --focus-ring: #9E472A;
+  --focus-ring-dark: #DFA759;
+
+  /* Semantic Statuses */
+  --status-success-bg: #E6F4EA;
+  --status-success-text: #1E8E3E;
+  --status-success-border: #A8DAB5;
+  --status-warning-bg: #FEF3C7;
+  --status-warning-text: #D97706;
+  --status-warning-border: #FCD34D;
+  --status-error-bg: #FCE8E6;
+  --status-error-text: #C62828;
+  --status-error-border: #F5C6CB;
+  --status-info-bg: #E8F0FE;
+  --status-info-text: #1A73E8;
+  --status-info-border: #AECBFA;
+
+  /* Shadows & Glows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.20);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.40);
+  --shadow-glow: 0 0 40px rgba(200, 136, 59, 0.20);
+  --shadow-glow-gold: 0 0 32px rgba(223, 167, 89, 0.30);
+  --shadow-button-subtle: 0 1px 3px rgba(26, 23, 20, 0.06);
+  --shadow-button-clay-hover: 0 4px 14px rgba(184, 80, 66, 0.12);
+  --shadow-player-gold-glow: 0 0 24px rgba(223, 167, 89, 0.15);
+
+  /* Border Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 450ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Typography */
+  --font-serif: 'Cinzel', 'Playfair Display', Didot, 'Bodoni MT', 'Times New Roman', Georgia, serif;
+  --font-display: 'Cinzel', 'Playfair Display', Didot, Georgia, serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+
+  /* Backward Compatibility Aliases */
+  --text-main: var(--text-primary);
+  --text-on-dark: var(--text-inverse);
+  --text-muted-dark: var(--text-inverse-muted);
+}

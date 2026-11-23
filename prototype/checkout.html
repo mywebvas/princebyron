@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#191713">
+  <meta name="description" content="Review a Prince Byron demo order. This checkout preview does not take payment or submit an order.">
+  <title>Demo Checkout — Prince Byron</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/checkout.css">
+</head>
+<body class="checkout-page">
+  <div class="demo-ribbon"><span>PROTOTYPE PREVIEW</span><span>No payment is taken. No order or personal data is sent.</span><button class="ribbon-close" aria-label="Dismiss notice">×</button></div>
+  <header class="site-header">
+    <a class="wordmark" href="index.html#home" aria-label="Prince Byron home"><span class="mark">PB</span><span>PRINCE BYRON<small>MUSIC · MINISTRY · MORE</small></span></a>
+    <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+    <nav class="main-nav" aria-label="Main navigation"><a href="music.html">Music</a><a href="about.html">Our story</a><a href="store.html">Store</a><a href="booking.html">Bookings</a><a href="account.html">My account</a><a href="index.html#home">Home <span>↗</span></a></nav>
+  </header>
+  <main class="checkout-main">
+    <section class="checkout-empty" id="checkout-empty" hidden><p class="eyebrow eyebrow-dark">YOUR BAG IS EMPTY</p><h1>Nothing to check out yet.</h1><p>Add merchandise in the Store or a digital item in Music to see it here.</p><div><a class="button button-dark" href="store.html">Browse the store <span>→</span></a><a class="text-link" href="music.html">Explore music <span>↗</span></a></div></section>
+    <section class="checkout-success" id="checkout-success" tabindex="-1" role="status" hidden><p class="eyebrow eyebrow-dark">DEMO COMPLETE</p><h1>Your checkout preview is complete.</h1><p>No payment was taken and no order was placed. The contact and delivery details you entered were not sent or saved.</p><a class="button button-dark" href="store.html">Return to the store <span>→</span></a></section>
+    <div class="checkout-layout" id="checkout-layout" hidden>
+      <section class="checkout-flow">
+        <button class="checkout-back" id="checkout-back-to-bag" type="button">← &nbsp; BACK TO BAG</button>
+        <div class="checkout-intro"><p class="eyebrow eyebrow-dark">CHECKOUT PREVIEW</p><h1>Nearly <em>there.</em></h1><p>Review the sample items and walk through the demo checkout.</p><p class="sample-cart-note" id="sample-cart-note" hidden>Example cart loaded so you can preview checkout: one Everyday Faith Tee and one Purify Me digital track. This sample is not a real order.</p></div>
+        <div class="checkout-progress" aria-label="Checkout progress"><div class="active"><span>01</span><small>Contact</small></div><i></i><div><span>02</span><small>Delivery</small></div><i></i><div><span>03</span><small>Review</small></div></div>
+        <form id="checkout-form" novalidate>
+          <section class="checkout-step active" data-checkout-step="1"><h2>Contact information</h2><p class="checkout-step-note">Used for this demonstration only.</p><label>Full name<input name="name" required autocomplete="name" placeholder="Your name"></label><label>Email address<input name="email" type="email" required autocomplete="email" placeholder="you@example.com"></label><div class="checkout-form-actions"><span></span><button type="button" class="button button-dark checkout-next">Continue to delivery <span>→</span></button></div></section>
+          <section class="checkout-step" data-checkout-step="2" hidden><h2>Delivery details</h2><div id="delivery-form"><p class="checkout-step-note">For merchandise, delivery costs and timing are not calculated in this demo.</p><label>Country<select name="country" required><option value="">Choose a country</option><option>United States</option><option>United Kingdom</option><option>Canada</option><option>Nigeria</option><option>Other</option></select></label><label>Street address<input name="address" autocomplete="street-address" required placeholder="Street address"></label><div class="checkout-two-fields"><label>City<input name="city" autocomplete="address-level2" required></label><label>Postal code <span>(if available)</span><input name="postal" autocomplete="postal-code"></label></div></div><div class="digital-only-note" id="digital-only-note" hidden><span>↓</span><p>Your bag contains only digital items. No delivery address is needed in this demo.</p></div><div class="checkout-form-actions"><button type="button" class="button button-outline checkout-back-step">Back</button><button type="button" class="button button-dark checkout-next">Continue to review <span>→</span></button></div></section>
+          <section class="checkout-step" data-checkout-step="3" hidden><h2>Review your demo order</h2><div class="checkout-review-items" id="checkout-review-items"></div><div class="checkout-review-totals" id="checkout-review-totals"></div><fieldset class="demo-payment"><legend>Choose a demo payment method</legend><label><input type="radio" name="payment" value="card-demo" required> Card (simulation)</label><label><input type="radio" name="payment" value="wallet-demo" required> Digital wallet (simulation)</label><p>No card numbers, payment credentials or real money are used here.</p></fieldset><label class="checkout-consent"><input type="checkbox" name="demoConsent" required> I understand this is a demonstration. No order or payment will be created.</label><div class="checkout-form-actions"><button type="button" class="button button-outline checkout-back-step">Back</button><button type="submit" class="button button-dark">Place demo order <span>→</span></button></div></section>
+        </form>
+        <p class="checkout-privacy-note">All entered details stay in this page's memory and are cleared when you leave or complete the preview. No server is contacted.</p>
+      </section>
+      <aside class="checkout-summary" aria-labelledby="summary-title"><div class="checkout-summary-title"><p class="eyebrow eyebrow-dark">YOUR SELECTION</p><h2 id="summary-title">Order summary</h2></div><div id="checkout-items"></div><div class="checkout-summary-totals"><div><span>Sample subtotal (USD)</span><strong id="checkout-subtotal"></strong></div><div><span>Shipping</span><span>Not calculated</span></div><div><span>Tax</span><span>Not calculated</span></div><p>The displayed subtotal is not a final amount due. This demo does not calculate shipping or tax.</p></div><a class="checkout-edit-link" href="store.html">Continue shopping <span>↗</span></a></aside>
+    </div>
+  </main>
+  <footer class="site-footer"><a class="wordmark wordmark-footer" href="index.html#home"><span class="mark">PB</span><span>PRINCE BYRON<small>MUSIC · MINISTRY · MORE</small></span></a><span>© 2026 Prince Byron. All rights reserved.</span><a href="https://princebyron.com">princebyron.com</a><span class="footer-demo">DESIGN PROTOTYPE</span></footer>
+  <div class="toast" role="status" aria-live="polite"></div>
+  <script src="js/catalog.js"></script>
+  <script src="js/checkout.js"></script>
+</body>
+</html>

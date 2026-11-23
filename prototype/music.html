@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#191713">
+  <meta name="description" content="Explore Prince Byron's gospel music, song previews and digital collection.">
+  <title>Music — Prince Byron</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/music.css">
+</head>
+<body class="music-page">
+  <div class="demo-ribbon"><span>PROTOTYPE PREVIEW</span><span>Playback, purchases and downloads are demonstrations only.</span><button class="ribbon-close" aria-label="Dismiss notice">×</button></div>
+  <header class="site-header">
+    <a class="wordmark" href="index.html#home" aria-label="Prince Byron home"><span class="mark">PB</span><span>PRINCE BYRON<small>MUSIC · MINISTRY · MORE</small></span></a>
+    <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="music.html" aria-current="page">Music</a><a href="about.html">Our story</a><a href="store.html">Store</a><a href="booking.html">Bookings</a><a href="account.html">My account</a>
+      <a href="index.html#home">Home <span>↗</span></a>
+      <button class="icon-button music-bag-open" aria-label="Open digital music bag">Digital bag <span class="music-bag-count">0</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="music-hero">
+      <div class="music-hero-photo" role="img" aria-label="Prince Byron in an earthy studio portrait"></div>
+      <div class="music-hero-shade"></div>
+      <div class="music-hero-copy">
+        <p class="eyebrow"><i></i> GOSPEL · SOUL · WORSHIP</p>
+        <h1>A sound for<br><em>every season.</em></h1>
+        <p>Find a song for the stillness, the strength and the joy along the way.</p>
+        <div class="music-hero-actions"><a class="button button-light" href="#music-catalog">Explore the songs <span>↓</span></a><a class="text-link text-link-light" href="#collections">Discover the collection <span>→</span></a></div>
+      </div>
+      <div class="music-hero-foot"><span>01 / 05</span><span>FIVE SONGS · ONE MESSAGE OF HOPE</span></div>
+    </section>
+
+    <section class="music-intro">
+      <p class="eyebrow eyebrow-dark">LISTEN CLOSE</p>
+      <h2>Faith has a way<br>of finding <em>its melody.</em></h2>
+      <p>From quiet reflection to joyful praise, Prince Byron's music brings together different gospel sounds with faith at its center.</p>
+    </section>
+
+    <section class="music-collection" id="collections">
+      <div class="collection-art">
+        <div class="collection-disc"><span>PB</span></div>
+        <div class="collection-art-type">FAITH<br><em>FOR THE</em><br>IN-BETWEEN</div>
+        <span class="collection-art-edition">PRINCE BYRON · DIGITAL COLLECTION</span>
+      </div>
+      <div class="collection-copy">
+        <p class="eyebrow eyebrow-dark">FEATURED COLLECTION · FIVE SONGS</p>
+        <h2>For the in-<br><em>between.</em></h2>
+        <p>Five songs to return to when you need a little stillness, a reason to keep going or a reminder of joy.</p>
+        <div class="collection-details"><span>5 songs</span><span>Gospel / Soul</span><span>MP3 + WAV demo</span></div>
+        <div class="collection-actions"><button class="button button-dark" data-play="0">▶ &nbsp; Play collection</button><button class="button button-outline" data-buy-album>Get the collection <b>$12</b></button></div>
+        <small class="music-demo-note">Sample collection and price · No audio or files are connected.</small>
+      </div>
+    </section>
+
+    <section class="music-catalog" id="music-catalog">
+      <div class="catalog-heading"><div><p class="eyebrow eyebrow-dark">THE CATALOG</p><h2>Five songs.<br><em>Start anywhere.</em></h2></div><div class="catalog-tools"><label for="format-choice">Digital format</label><select id="format-choice"><option value="MP3">MP3</option><option value="WAV">WAV</option></select></div></div>
+      <div class="catalog-filters" role="group" aria-label="Filter songs"><button class="catalog-filter active" data-filter="all">All songs <span>05</span></button><button class="catalog-filter" data-filter="free">Free <span>01</span></button><button class="catalog-filter" data-filter="paid">Collection <span>04</span></button></div>
+      <div class="catalog-track-list" id="catalog-track-list"></div>
+      <p class="music-disclosure">The player is a visual demo. No audio stream is connected. MP3/WAV selections do not download files. Paid music buttons add demo items to the digital bag; checkout does not process payments or create orders.</p>
+    </section>
+
+    <section class="music-playlists">
+      <div class="playlist-intro"><p class="eyebrow">LISTEN BY MOMENT</p><h2>Keep a little<br><em>hope nearby.</em></h2><p>Demo playlists group the songs by feeling. Choose one to start its preview.</p></div>
+      <div class="playlist-grid">
+        <button class="playlist-card playlist-still" data-playlist="0"><span>01 · STILLNESS</span><strong>Take a<br>quiet moment.</strong><small>Purify Me · Follow Me</small><b>▶</b></button>
+        <button class="playlist-card playlist-strength" data-playlist="1"><span>02 · STRENGTH</span><strong>Keep<br>going.</strong><small>I Always Win · Follow Me</small><b>▶</b></button>
+        <button class="playlist-card playlist-joy" data-playlist="2"><span>03 · JOY</span><strong>Let the<br>joy rise.</strong><small>Free · Toduyun</small><b>▶</b></button>
+      </div>
+    </section>
+
+    <section class="music-follow">
+      <div class="follow-copy"><p class="eyebrow eyebrow-dark">TAKE THE MUSIC WITH YOU</p><h2>Listen wherever<br><em>you are.</em></h2><p>Follow Prince Byron on your preferred listening platform for music and updates.</p><div class="follow-links"><a href="https://open.spotify.com/artist/089TupQTFoR8OvKrDOp1NA" target="_blank" rel="noopener">Listen on Spotify ↗</a><a href="https://www.youtube.com/channel/UCeeZS5FkmYj6F4fwykc7f0g" target="_blank" rel="noopener">Watch on YouTube ↗</a></div></div>
+      <div class="follow-photo" role="img" aria-label="Prince Byron in a warm portrait"></div>
+    </section>
+
+    <section class="music-invite"><p class="eyebrow">MUSIC MADE TO BE SHARED</p><h2>Bring a song<br>into <em>the room.</em></h2><p>For worship gatherings, conferences and community celebrations, send a booking enquiry and request a tailored quote.</p><a class="button button-light" href="booking.html">Explore bookings <span>→</span></a></section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="wordmark wordmark-footer" href="index.html#home"><span class="mark">PB</span><span>PRINCE BYRON<small>MUSIC · MINISTRY · MORE</small></span></a>
+    <span>© 2026 Prince Byron. All rights reserved.</span><a href="https://princebyron.com">princebyron.com</a><span class="footer-demo">DESIGN PROTOTYPE</span>
+  </footer>
+
+  <div class="music-player" id="music-player" aria-live="polite"><button class="music-player-control" aria-label="Pause preview">Ⅱ</button><div class="music-player-meta"><strong id="playing-title">Choose a song</strong><small>Prince Byron · preview experience</small></div><div class="music-progress"><span id="music-progress-fill"></span></div><span class="music-player-time">PREVIEW</span><button class="music-player-close" aria-label="Close player">×</button></div>
+  <div class="music-toast" role="status" aria-live="polite"></div>
+  <div class="music-overlay" id="music-overlay" hidden></div>
+  <aside class="music-drawer" id="music-bag" role="dialog" aria-modal="true" aria-labelledby="music-bag-title" hidden><div class="music-drawer-head"><div><p class="eyebrow eyebrow-dark">DIGITAL MUSIC</p><h2 id="music-bag-title">Your music bag <span class="music-bag-count">0</span></h2></div><button class="music-drawer-close" aria-label="Close digital music bag">×</button></div><div class="music-bag-items" id="music-bag-items"></div><div class="music-bag-empty" id="music-bag-empty"><span>♫</span><h3>Room for a song.</h3><p>Choose a track or the full collection to see it here.</p><button class="text-link" data-close-music-bag>Explore the songs <span>→</span></button></div><div class="music-bag-bottom" id="music-bag-bottom"><div><span>Demo total (USD)</span><strong id="music-bag-total">$0.00</strong></div><button class="button button-dark music-checkout-open">Continue to demo checkout</button><small>No payment will be collected.</small></div></aside>
+  <section class="music-checkout" id="music-checkout" role="dialog" aria-modal="true" aria-labelledby="music-checkout-title" hidden><button class="music-checkout-close" aria-label="Close">×</button><p class="eyebrow eyebrow-dark">DEMO CHECKOUT · USD</p><h2 id="music-checkout-title">Almost <em>yours.</em></h2><div id="music-checkout-summary"></div><form id="music-checkout-form"><label>Email for the demo receipt<input type="email" required placeholder="you@example.com"></label><label class="music-check-confirm"><input type="checkbox" required> I understand this is a non-payment demonstration.</label><button class="button button-dark" type="submit">Place demo order <span>→</span></button></form><p class="music-demo-note">This prototype does not process payment, create an order or collect/store your information.</p></section>
+  <script src="js/checkout-link.js" defer></script>
+  <script src="js/music.js" defer></script>
+</body>
+</html>

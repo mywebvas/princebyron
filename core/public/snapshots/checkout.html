@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0E0B09">
+  <meta name="description" content="Prince Byron — Official Gospel Music, Ministry & Store. High-craft worship releases, apparel, ministry bookings, and customer downloads.">
+  <meta name="csrf-token" content="H1fyMz4wyB0pnAUyBUnIQzjhaeiYeiSzjcBz5Ijy">
+
+  <title>Dedicated USD Checkout — Prince Byron Store</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%23DFA759'>PB</text></svg>">
+
+  <link rel="preload" as="style" href="http://127.0.0.1:8001/build/assets/app-CS1ZuPM9.css" /><link rel="modulepreload" as="script" href="http://127.0.0.1:8001/build/js/app-7v6iDNV2.js" /><link rel="stylesheet" href="http://127.0.0.1:8001/build/assets/app-CS1ZuPM9.css" data-navigate-track="reload" /><script type="module" src="http://127.0.0.1:8001/build/js/app-7v6iDNV2.js" data-navigate-track="reload"></script></head>
+<body x-data>
+
+  <!-- Skip Navigation Link for Keyboard Accessibility (WCAG 2.2 AA) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="site-wrapper">
+
+    <!-- Mobile Navigation Drawer Overlay & Panel (Accessible Modal Dialog) -->
+    <div 
+      class="mobile-nav-overlay" 
+      id="mobile-nav-overlay" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-label="Mobile Navigation Menu" 
+      :class="{ 'open': $store.app.mobileNavOpen }"
+      :aria-hidden="(!$store.app.mobileNavOpen).toString()"
+      @click.self="$store.app.closeMobileNav()"
+      x-cloak
+    >
+      <div class="mobile-nav-panel" id="mobile-nav-panel">
+        <div class="mobile-nav-header">
+          <div class="brand-logo">
+            <div class="brand-monogram" aria-hidden="true">PB</div>
+            <div class="brand-titles">
+              <span class="mobile-menu-brand-name">Prince Byron</span>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            class="btn-close-mobile-nav" 
+            id="btn-close-mobile-nav" 
+            aria-label="Close navigation menu"
+            @click="$store.app.closeMobileNav()"
+          >&times;</button>
+        </div>
+
+        <nav class="mobile-nav-links" aria-label="Mobile Navigation Links">
+          <a href="http://127.0.0.1:8001" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Home</a>
+          <a href="http://127.0.0.1:8001/about" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Our Story &amp; Ministry</a>
+          <a href="http://127.0.0.1:8001/music" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Music Releases</a>
+          <a href="http://127.0.0.1:8001/store" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Official Store</a>
+          <a href="http://127.0.0.1:8001/cart" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Shopping Bag (<span x-text="$store.app.cartCount"></span>)</a>
+          <a href="http://127.0.0.1:8001/checkout" class="mobile-nav-link active" @click="$store.app.closeMobileNav()">Dedicated Checkout</a>
+          <a href="http://127.0.0.1:8001/booking" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Ministry Booking RFQ</a>
+          <a href="http://127.0.0.1:8001/account" class="mobile-nav-link " @click="$store.app.closeMobileNav()">Fan Vault &amp; Entitlements</a>
+        </nav>
+
+        <div class="mobile-nav-footer">
+          <div class="mobile-nav-footer-title">Official Streaming &amp; Ministry</div>
+          <div class="mobile-nav-socials">
+            <a href="https://open.spotify.com/artist/089TupQTFoR8OvKrDOp1NA" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Spotify">Spotify</a>
+            <a href="https://www.youtube.com/channel/UCeeZS5FkmYj6F4fwykc7f0g" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on YouTube">YouTube</a>
+            <a href="https://www.instagram.com/prince_byron_official" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Instagram">Instagram</a>
+            <a href="https://www.tiktok.com/@princebyron94" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on TikTok">TikTok</a>
+            <a href="https://www.facebook.com/princebyron89/" target="_blank" rel="noopener noreferrer" aria-label="Prince Byron on Facebook">Facebook</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Header (Cinematic Dark Hybrid) -->
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="http://127.0.0.1:8001" class="brand-logo" aria-label="Prince Byron Home">
+          <div class="brand-monogram" aria-hidden="true">PB</div>
+          <div class="brand-titles">
+            <h1>Prince Byron</h1>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="site-nav" aria-label="Main Navigation">
+          <a href="http://127.0.0.1:8001" class="nav-link ">Home</a>
+          <a href="http://127.0.0.1:8001/about" class="nav-link ">About</a>
+          <a href="http://127.0.0.1:8001/music" class="nav-link ">Music</a>
+          <a href="http://127.0.0.1:8001/store" class="nav-link ">Store</a>
+          <a href="http://127.0.0.1:8001/booking" class="nav-link ">Bookings</a>
+          <a href="http://127.0.0.1:8001/account" class="nav-link ">Account</a>
+        </nav>
+
+        <div class="header-actions">
+          <button 
+            type="button" 
+            class="btn-bag" 
+            id="btn-open-bag" 
+            aria-label="Open Shopping Bag"
+            :aria-expanded="$store.app.bagOpen.toString()"
+            @click="$store.app.openBag()"
+          >
+            <span>Bag</span>
+            <div class="badge-count" x-text="$store.app.cartCount"></div>
+          </button>
+          <button 
+            type="button" 
+            class="btn-mobile-menu" 
+            id="btn-menu-toggle" 
+            aria-label="Open Navigation Menu"
+            :aria-expanded="$store.app.mobileNavOpen.toString()"
+            @click="$store.app.openMobileNav()"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Injection -->
+    <main id="main-content">
+      <section 
+  class="section-editorial" 
+  style="background: var(--color-cream);"
+  x-data="{
+    step: 1,
+    contactEmail: 'fan@example.com',
+    contactName: 'Demo Supporter',
+    contactPhone: '+1 (555) 019-2834',
+    shippingAddress: '777 Worship Way, Suite 400',
+    shippingCity: 'Atlanta',
+    shippingCountry: 'United States',
+    shippingPostal: '30303',
+    shippingMethod: 'standard',
+    shippingFeeCents: 500,
+    selectedPayment: 'stripe',
+    simulateDecline: false,
+    orderCompleted: false,
+    orderRef: '',
+    orderSuccessStatus: '',
+
+    get totalCents() {
+      return $store.app.cartSubtotalCents + this.shippingFeeCents;
+    },
+
+    submitCheckout() {
+      if (this.simulateDecline && this.selectedPayment === 'stripe') {
+        $store.app.showToast('Stripe Decline Simulation: Card #4242 was declined (insufficient_funds). Please choose PayPal or Manual Bank Wire.');
+        return;
+      }
+
+      this.orderRef = 'PB-202611-' + Math.floor(1000 + Math.random() * 9000);
+      if (this.selectedPayment === 'wire') {
+        this.orderSuccessStatus = 'Status: Awaiting Bank Verification • Routing instructions dispatched to ' + this.contactEmail;
+      } else {
+        this.orderSuccessStatus = 'Status: Paid & Settled • Digital Entitlements Active in Fan Vault';
+      }
+
+      this.orderCompleted = true;
+      $store.app.clearCart();
+      $store.app.showToast('Demo order ' + this.orderRef + ' submitted successfully.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }"
+>
+  <div class="checkout-page-wrap">
+    
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb-nav" aria-label="Checkout Breadcrumbs">
+      <a href="http://127.0.0.1:8001/cart">&larr; Back to Shopping Bag</a>
+      <span>/</span>
+      <span>Dedicated USD Checkout</span>
+    </nav>
+
+    <!-- Success State View -->
+    <div x-show="orderCompleted" style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 56px 36px; text-align: center; box-shadow: var(--shadow-sm);" x-cloak>
+      <div style="width: 64px; height: 64px; background: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-border); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 20px;">
+        &#10003;
+      </div>
+      <span class="section-eyebrow" style="color: var(--status-success-text);">Order Confirmation</span>
+      <h2 style="font-family: var(--font-display); font-size: 2rem; color: var(--text-primary); margin-bottom: 12px;">Thank you for your order!</h2>
+      <p style="color: var(--text-muted); max-width: 520px; margin: 0 auto 24px;">
+        Your demonstration order has been created. A receipt and instructions have been simulated for <strong x-text="contactEmail"></strong>.
+      </p>
+      
+      <div style="background: var(--color-paper); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; max-width: 480px; margin: 0 auto 32px; text-align: left;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Order Reference:</span>
+          <strong style="color: var(--color-clay);" x-text="orderRef"></strong>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;" x-text="orderSuccessStatus"></div>
+      </div>
+
+      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <a href="http://127.0.0.1:8001/account" class="btn-primary">View in Fan Vault Account &rarr;</a>
+        <a href="http://127.0.0.1:8001/music" class="btn-secondary">Return to Music Catalog</a>
+      </div>
+    </div>
+
+    <!-- Active Checkout Flow -->
+    <div x-show="!orderCompleted" class="checkout-grid">
+      
+      <!-- Left: Multi-step Checkout Flow -->
+      <div class="checkout-flow-card">
+        
+        <!-- Stepper Indicator -->
+        <div class="checkout-stepper">
+          <div class="checkout-step-item" :class="{ 'active': step === 1 }">
+            <span class="checkout-step-num">1</span>
+            <span>Contact</span>
+          </div>
+          <span>&rarr;</span>
+          <div class="checkout-step-item" :class="{ 'active': step === 2 }">
+            <span class="checkout-step-num">2</span>
+            <span>Delivery</span>
+          </div>
+          <span>&rarr;</span>
+          <div class="checkout-step-item" :class="{ 'active': step === 3 }">
+            <span class="checkout-step-num">3</span>
+            <span>Payment Review</span>
+          </div>
+        </div>
+
+        <form @submit.prevent="if (step === 1) step = 2; else if (step === 2) step = 3; else submitCheckout()">
+          
+          <!-- Step 1: Contact Information -->
+          <div x-show="step === 1">
+            <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--color-obsidian); margin-bottom: 16px;">
+              Step 1: Contact &amp; Entitlement Account
+            </h3>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label for="chk-email">Email Address (for order receipts &amp; digital links):</label>
+              <input type="email" id="chk-email" class="form-control" x-model="contactEmail" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="chk-name">Full Name:</label>
+                <input type="text" id="chk-name" class="form-control" x-model="contactName" required>
+              </div>
+              <div class="form-group">
+                <label for="chk-phone">Mobile Phone (optional):</label>
+                <input type="tel" id="chk-phone" class="form-control" x-model="contactPhone">
+              </div>
+            </div>
+
+            <div style="margin-top: 28px; display: flex; justify-content: flex-end;">
+              <button type="button" class="btn-primary" @click="step = 2">
+                Continue to Delivery &rarr;
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 2: Shipping Delivery Address -->
+          <div x-show="step === 2" x-cloak>
+            <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--color-obsidian); margin-bottom: 16px;">
+              Step 2: Shipping &amp; Delivery Destination
+            </h3>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label for="chk-address">Street Address:</label>
+              <input type="text" id="chk-address" class="form-control" x-model="shippingAddress" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="chk-city">City:</label>
+                <input type="text" id="chk-city" class="form-control" x-model="shippingCity" required>
+              </div>
+              <div class="form-group">
+                <label for="chk-postal">Postal Code / ZIP:</label>
+                <input type="text" id="chk-postal" class="form-control" x-model="shippingPostal" required>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+              <label for="chk-country">Country / Region:</label>
+              <select id="chk-country" class="form-control" x-model="shippingCountry">
+                <option value="United States">United States</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Canada">Canada</option>
+                <option value="Nigeria">Nigeria</option>
+                <option value="Ghana">Ghana</option>
+                <option value="Other">Other Region (Calculated server-side)</option>
+              </select>
+            </div>
+
+            <div style="background: var(--color-paper); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 28px;">
+              <strong style="display: block; font-size: 0.9rem; color: var(--color-obsidian); margin-bottom: 8px;">Delivery Option:</strong>
+              <div style="display: flex; gap: 16px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer;">
+                  <input type="radio" name="shipping_method" value="standard" x-model="shippingMethod" @change="shippingFeeCents = 500">
+                  Standard Tracked (+$5.00 USD)
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer;">
+                  <input type="radio" name="shipping_method" value="express" x-model="shippingMethod" @change="shippingFeeCents = 1200">
+                  Express Courier (+$12.00 USD)
+                </label>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <button type="button" class="btn-secondary" @click="step = 1">&larr; Back to Contact</button>
+              <button type="button" class="btn-primary" @click="step = 3">Continue to Payment Review &rarr;</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Payment Method Selection -->
+          <div x-show="step === 3" x-cloak>
+            <h3 style="font-family: var(--font-display); font-size: 1.35rem; color: var(--color-obsidian); margin-bottom: 16px;">
+              Step 3: Payment Method Review
+            </h3>
+
+            <!-- Payment Options Radio Accordion -->
+            <div style="display: grid; gap: 16px; margin-bottom: 28px;">
+              
+              <!-- Option 1: Stripe -->
+              <div 
+                style="border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 18px; cursor: pointer;"
+                :style="selectedPayment === 'stripe' ? 'border-color: var(--color-gold); background: var(--surface-dark-glass);' : 'background: var(--surface-card);'"
+                @click="selectedPayment = 'stripe'"
+              >
+                <label style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-primary); cursor: pointer;">
+                  <input type="radio" name="payment_method" value="stripe" x-model="selectedPayment">
+                  <span>Credit / Debit Card (Stripe Simulation)</span>
+                </label>
+                <div x-show="selectedPayment === 'stripe'" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light);" x-cloak>
+                  <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px;">
+                    Test card: <code class="code-path">4242 &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4242</code> &bull; Exp: 12/28 &bull; CVC: 123
+                  </p>
+                  <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--status-error-text); cursor: pointer;">
+                    <input type="checkbox" x-model="simulateDecline">
+                    <span>Simulate card decline error to test failure recovery</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Option 2: PayPal -->
+              <div 
+                style="border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 18px; cursor: pointer;"
+                :style="selectedPayment === 'paypal' ? 'border-color: var(--color-gold); background: var(--surface-dark-glass);' : 'background: var(--surface-card);'"
+                @click="selectedPayment = 'paypal'"
+              >
+                <label style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-primary); cursor: pointer;">
+                  <input type="radio" name="payment_method" value="paypal" x-model="selectedPayment">
+                  <span>PayPal (Sandbox Simulation)</span>
+                </label>
+                <div x-show="selectedPayment === 'paypal'" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light); font-size: 0.82rem; color: var(--text-muted);" x-cloak>
+                  You will be directed to PayPal's secure sandbox simulation to finalize checkout.
+                </div>
+              </div>
+
+              <!-- Option 3: Manual Bank Transfer -->
+              <div 
+                style="border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 18px; cursor: pointer;"
+                :style="selectedPayment === 'wire' ? 'border-color: var(--color-gold); background: var(--surface-dark-glass);' : 'background: var(--surface-card);'"
+                @click="selectedPayment = 'wire'"
+              >
+                <label style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-primary); cursor: pointer;">
+                  <input type="radio" name="payment_method" value="wire" x-model="selectedPayment">
+                  <span>Manual Bank Wire Transfer</span>
+                </label>
+                <div x-show="selectedPayment === 'wire'" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light); font-size: 0.82rem; color: var(--text-muted);" x-cloak>
+                  <div style="background: var(--surface-amber-glow); border-left: 3px solid var(--color-gold); padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 8px;">
+                    <strong>Verification Requirement:</strong> Order will be placed in an <code class="code-path">awaiting_bank_verification</code> state. The owner must independently reconcile incoming bank funds before digital audio or merchandise is released.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Security Reassurance -->
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 28px; line-height: 1.5;">
+              &#128274; 256-bit TLS encrypted transaction &bull; Card data is never stored on the server &bull; Authoritative server-side pricing.
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <button type="button" class="btn-secondary" @click="step = 2">&larr; Back to Delivery</button>
+              <button type="submit" class="btn-primary" style="padding: 16px 32px;">
+                Complete Demo Order &bull; <span x-text="'$' + (totalCents / 100).toFixed(2) + ' USD'"></span>
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Right: Itemized Order Summary Card -->
+      <div>
+        <div style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 28px; box-shadow: var(--shadow-sm); position: sticky; top: 100px;">
+          <h4 style="font-family: var(--font-display); font-size: 1.25rem; color: var(--text-primary); margin-bottom: 20px;">
+            Items in Bag (<span x-text="$store.app.cartCount"></span>)
+          </h4>
+
+          <div style="max-height: 280px; overflow-y: auto; margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
+            <template x-for="item in $store.app.cart" :key="item.id + item.variant">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; font-size: 0.88rem;">
+                <div>
+                  <strong x-text="item.title" style="display: block; color: var(--text-primary);"></strong>
+                  <span style="font-size: 0.78rem; color: var(--text-muted);" x-text="item.variant + ' &bull; Qty: ' + item.qty"></span>
+                </div>
+                <strong style="color: var(--color-clay);" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></strong>
+              </div>
+            </template>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.88rem; color: var(--text-muted);">
+            <span>Subtotal:</span>
+            <strong style="color: var(--color-obsidian);" x-text="$store.app.cartSubtotalFormatted"></strong>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.88rem; color: var(--text-muted);">
+            <span>Shipping:</span>
+            <span x-text="'$' + (shippingFeeCents / 100).toFixed(2) + ' USD'"></span>
+          </div>
+
+          <div style="border-top: 1px solid var(--border-light); padding-top: 16px; margin-top: 16px; display: flex; justify-content: space-between; align-items: baseline;">
+            <span style="font-weight: 700; color: var(--color-obsidian);">Total (USD):</span>
+            <span style="font-size: 1.4rem; font-weight: 800; color: var(--color-clay);" x-text="'$' + (totalCents / 100).toFixed(2)"></span>
+          </div>
+
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 16px; line-height: 1.4;">
+            * Fictional demo checkout. No actual charges occur and no payment details are transmitted.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+    </main>
+
+    <!-- Site Footer (Intentional Multi-Device Grid Layout) -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <!-- 1. Artist / Site Name and Description First Across Full Width on Mobile -->
+        <div class="footer-brand">
+          <h4>Prince Byron</h4>
+          <p>Faith-led gospel music and ministry, dedicated to lifting spirits and uniting hearts under God's unfailing grace.</p>
+        </div>
+
+        <!-- 2. Footer Navigation Links in Intentional Columns -->
+        <div class="footer-col">
+          <h5>Music &amp; Ministry</h5>
+          <div class="footer-links">
+            <a href="http://127.0.0.1:8001">Home</a>
+            <a href="http://127.0.0.1:8001/about">Our Story &amp; Vision</a>
+            <a href="http://127.0.0.1:8001/music">All 5 Music Releases</a>
+            <a href="http://127.0.0.1:8001/music">Free Lead Track Download</a>
+            <a href="http://127.0.0.1:8001/booking">Ministry Booking &amp; RFQ</a>
+            <a href="http://127.0.0.1:8001/account">Fan Vault &amp; Entitlements</a>
+            <a href="http://127.0.0.1:8001/admin">Owner Admin (Filament CMS) &rarr;</a>
+            <a href="http://127.0.0.1:8001/admin/preview">Visual Demo Theme (Mock) &rarr;</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Store &amp; Orders</h5>
+          <div class="footer-links">
+            <a href="http://127.0.0.1:8001/store">All Apparel &amp; Merch</a>
+            <a href="http://127.0.0.1:8001/store/tee">Prince Byron Signature Tee</a>
+            <a href="http://127.0.0.1:8001/cart">Review Shopping Bag</a>
+            <a href="http://127.0.0.1:8001/checkout">Dedicated Checkout</a>
+            <a href="http://127.0.0.1:8001/account">Customer Entitlements</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Official Streaming &amp; Social</h5>
+          <div class="footer-links">
+            <a href="https://open.spotify.com/artist/089TupQTFoR8OvKrDOp1NA" target="_blank" rel="noopener noreferrer" aria-label="Listen on Spotify">Spotify Official &rarr;</a>
+            <a href="https://www.youtube.com/channel/UCeeZS5FkmYj6F4fwykc7f0g" target="_blank" rel="noopener noreferrer" aria-label="Watch on YouTube">YouTube Channel &rarr;</a>
+            <a href="https://www.instagram.com/prince_byron_official" target="_blank" rel="noopener noreferrer" aria-label="Follow on Instagram">Instagram &rarr;</a>
+            <a href="https://www.tiktok.com/@princebyron94" target="_blank" rel="noopener noreferrer" aria-label="Follow on TikTok">TikTok &rarr;</a>
+            <a href="https://www.facebook.com/princebyron89/" target="_blank" rel="noopener noreferrer" aria-label="Follow on Facebook">Facebook &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Prince Byron &bull; princebyron.com &bull; All Rights Reserved.</div>
+        <div>Faith-led worship music, ministry invitations, and author-verified apparel.</div>
+      </div>
+    </footer>
+
+    <!-- Shopping Bag Drawer Panel (95% mobile width with visible backdrop slice) -->
+    <div 
+      class="drawer-overlay" 
+      id="bag-drawer" 
+      role="dialog" 
+      aria-modal="true" 
+      aria-label="Shopping Bag Drawer" 
+      :class="{ 'open': $store.app.bagOpen }"
+      :aria-hidden="(!$store.app.bagOpen).toString()"
+      @click.self="$store.app.closeBag()"
+      x-cloak
+    >
+      <aside class="drawer-panel" aria-label="Shopping Bag">
+        <div class="drawer-header">
+          <h3>Your Bag (<span x-text="$store.app.cartCount"></span>)</h3>
+          <button 
+            type="button" 
+            class="btn-close-drawer" 
+            id="btn-close-bag" 
+            aria-label="Close Shopping Bag"
+            @click="$store.app.closeBag()"
+          >&times;</button>
+        </div>
+
+        <div class="drawer-body" id="drawer-items-list">
+          <template x-if="$store.app.cart.length === 0">
+            <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+              <p style="font-size: 1.1rem; margin-bottom: 12px; font-family: var(--font-display);">Your bag is empty.</p>
+              <a href="http://127.0.0.1:8001/store" class="btn-secondary-sm" @click="$store.app.closeBag()">Discover Official Merchandise &rarr;</a>
+            </div>
+          </template>
+
+          <template x-for="(item, index) in $store.app.cart" :key="item.id + item.variant">
+            <div class="cart-item">
+              <div class="cart-item-thumb" aria-hidden="true">PB</div>
+              <div class="cart-item-info">
+                <h4 x-text="item.title"></h4>
+                <div class="meta" x-text="item.variant"></div>
+                <div class="meta" style="color: var(--color-gold); font-weight: 700;" x-text="'$' + (item.priceCents / 100).toFixed(2) + ' USD'"></div>
+                <div class="cart-qty-ctrl">
+                  <button type="button" @click="$store.app.updateQty(index, -1)" aria-label="Decrease quantity">&minus;</button>
+                  <span x-text="item.qty"></span>
+                  <button type="button" @click="$store.app.updateQty(index, 1)" aria-label="Increase quantity">&plus;</button>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: 700; color: var(--text-main);" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></div>
+                <button 
+                  type="button" 
+                  class="btn-remove" 
+                  @click="$store.app.removeItem(index)"
+                  aria-label="Remove item"
+                  style="margin-top: 12px; font-size: 0.75rem; color: var(--status-error-text); background: none; border: none; cursor: pointer; text-decoration: underline;"
+                >Remove</button>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="drawer-footer">
+          <div class="drawer-subtotal">
+            <span>Subtotal (USD):</span>
+            <span class="amount" id="drawer-subtotal-val" x-text="$store.app.cartSubtotalFormatted"></span>
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 16px;">
+            * Sample pricing. Shipping and taxes calculated authoritatively at checkout.
+          </div>
+          <a 
+            href="http://127.0.0.1:8001/checkout" 
+            class="btn-primary" 
+            style="width: 100%; text-align: center; box-sizing: border-box; justify-content: center;"
+            @click="$store.app.closeBag()"
+          >Proceed to Dedicated Checkout &rarr;</a>
+          <a 
+            href="http://127.0.0.1:8001/cart" 
+            style="display: block; text-align: center; margin-top: 12px; font-size: 0.82rem; color: var(--color-amber); text-decoration: underline;"
+            @click="$store.app.closeBag()"
+          >Open Itemized Bag Page &rarr;</a>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Persistent Bottom Audio Player Bar -->
+    <div 
+      class="music-player-bar" 
+      id="music-player-bar" 
+      role="region" 
+      aria-label="Audio Player Preview"
+      x-show="$store.app.player.active"
+      x-cloak
+    >
+      <button 
+        type="button" 
+        class="player-ctrl-btn" 
+        id="player-toggle-btn" 
+        :aria-label="$store.app.player.playing ? 'Pause audio' : 'Play audio'"
+        @click="$store.app.togglePlay()"
+      >
+        <span x-html="$store.app.player.playing ? '&#10074;&#10074;' : '&#9658;'"></span>
+      </button>
+      <div class="player-track-info">
+        <strong id="player-track-title" x-text="$store.app.player.trackTitle"></strong>
+        <small id="player-track-subtitle" x-text="$store.app.player.trackSubtitle"></small>
+      </div>
+      <div class="player-scrubber" aria-label="Track progress bar">
+        <div class="player-scrubber-fill" id="player-scrubber-fill" :style="'width: ' + $store.app.player.progress + '%'"></div>
+      </div>
+      <button 
+        type="button" 
+        class="player-close-btn" 
+        aria-label="Close audio player" 
+        @click="$store.app.closePlayer()"
+      >&times;</button>
+    </div>
+
+    <!-- Toast Notification (Accessible Polite Status Announcement) -->
+    <div 
+      class="toast-notification" 
+      id="toast" 
+      role="status" 
+      aria-live="polite"
+      :class="{ 'visible': $store.app.toast.visible }"
+      x-text="$store.app.toast.message"
+    ></div>
+
+          <!-- Local Review Developer Dock (Strictly Dev Environment Only) -->
+      <aside class="review-dock" aria-label="Local Review Developer Dock">
+        <span class="dock-label">DEV REVIEW</span>
+        <div class="dock-btn-group">
+          <a href="http://127.0.0.1:8001/account" class="dock-btn">Fan Vault</a>
+          <a href="http://127.0.0.1:8001/admin" class="dock-btn">Owner CMS (Filament)</a>
+          <a href="http://127.0.0.1:8001/admin/preview" class="dock-btn">Theme Demo</a>
+          <a href="http://127.0.0.1:8025" target="_blank" rel="noopener noreferrer" class="dock-btn">Mailpit Inbox</a>
+        </div>
+      </aside>
+    
+  </div><!-- /site-wrapper -->
+
+</body>
+</html>

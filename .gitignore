@@ -1,0 +1,71 @@
+# Prince Byron — Git ignore rules for the production Laravel application
+
+# -----------------------------------------------------------------------
+# SECRETS — never commit these
+# -----------------------------------------------------------------------
+core/.env
+core/.env.*
+!core/.env.example
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------
+# Laravel runtime / generated
+# -----------------------------------------------------------------------
+core/vendor/
+core/node_modules/
+core/bootstrap/cache/*.php
+core/storage/*.key
+core/storage/logs/
+core/storage/framework/cache/data/
+core/storage/framework/sessions/
+core/storage/framework/testing/
+core/storage/framework/views/
+core/public/hot
+core/public/storage
+
+# -----------------------------------------------------------------------
+# Compiled assets (tracked for zero-node deployment)
+# -----------------------------------------------------------------------
+# core/public/build/
+
+# -----------------------------------------------------------------------
+# Node / frontend build tools (dev-only on this machine)
+# -----------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# -----------------------------------------------------------------------
+# OS and editor
+# -----------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.code-workspace
+
+# -----------------------------------------------------------------------
+# Logs and temporary files
+# -----------------------------------------------------------------------
+*.log
+*.cache
+*.tmp
+
+# -----------------------------------------------------------------------
+# Release / deployment artifacts
+# -----------------------------------------------------------------------
+*.zip
+*.tar.gz
+release/
+
+# -----------------------------------------------------------------------
+# Test / scratch
+# -----------------------------------------------------------------------
+core/.phpunit.result.cache
+core/.phpunit.cache/

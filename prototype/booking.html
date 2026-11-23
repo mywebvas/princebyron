@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#191713">
+  <meta name="description" content="Invite Prince Byron to a worship gathering, conference, concert or other ministry event. Request a tailored quote.">
+  <title>Bookings — Prince Byron</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/booking.css">
+</head>
+<body class="booking-page">
+  <div class="demo-ribbon"><span>PROTOTYPE PREVIEW</span><span>Booking form is a demonstration only. No request is sent.</span><button class="ribbon-close" aria-label="Dismiss notice">×</button></div>
+  <header class="site-header">
+    <a class="wordmark" href="index.html#home" aria-label="Prince Byron home"><span class="mark">PB</span><span>PRINCE BYRON<small>MUSIC · MINISTRY · MORE</small></span></a>
+    <button class="menu-toggle" aria-label="Open navigation" aria-expanded="false">☰</button>
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="music.html">Music</a><a href="about.html">Our story</a><a href="store.html">Store</a><a href="booking.html" aria-current="page">Bookings</a><a href="account.html">My account</a><a href="index.html#home">Home <span>↗</span></a>
+    </nav>
+  </header>
+  <main>
+    <section class="booking-hero">
+      <div class="booking-hero-image" role="img" aria-label="Prince Byron in a warm studio portrait"></div><div class="booking-hero-shade"></div>
+      <div class="booking-hero-copy"><a class="booking-backlink" href="index.html#home">← &nbsp; BACK TO HOME</a><p class="eyebrow"><i></i> INVITE THE MINISTRY</p><h1>Make room<br>for a <em>moment.</em></h1><p>From worship gatherings and conferences to community celebrations, share a few details and request a tailored quote.</p><a class="button button-light" href="#booking-form">Start an enquiry <span>↓</span></a><small>No public booking fees · Each invitation is reviewed individually</small></div>
+      <div class="booking-hero-note"><span>WORSHIP · CONFERENCES · COMMUNITY</span><span>QUOTE BY REQUEST</span></div>
+    </section>
+    <section class="booking-process" aria-label="Booking enquiry steps"><div><span>01</span><p>Your event</p></div><i></i><div><span>02</span><p>Details</p></div><i></i><div><span>03</span><p>Your contact</p></div></section>
+    <section class="booking-form-section" id="booking-form-section">
+      <div class="booking-form-intro"><p class="eyebrow eyebrow-dark">BOOKING ENQUIRY</p><h2>Tell us about<br><em>your gathering.</em></h2><p>Share what you know so far. The team can discuss availability and fees after reviewing your invitation.</p><div class="booking-form-note"><span>✳</span><p>Your information stays in this preview. No booking request is sent or stored.</p></div></div>
+      <div class="booking-card" id="booking-card">
+        <div class="booking-step-label"><span class="step-count" id="step-count">STEP 1 OF 3</span><div class="step-dots" aria-hidden="true"><i class="active"></i><i></i><i></i></div></div>
+        <form id="booking-form" novalidate>
+          <fieldset class="booking-pane active" data-pane="1"><legend>Tell us about the event</legend><label>What kind of event?<select name="eventType" required><option value="">Select an event type</option><option>Worship service</option><option>Conference or concert</option><option>Community gathering</option><option>Private event</option><option>Other ministry invitation</option></select></label><div class="booking-fields-row"><label>Event date<input type="date" name="eventDate" required></label><label>Estimated attendance<select name="attendance" required><option value="">Choose a range</option><option>Under 100</option><option>100–300</option><option>300–1,000</option><option>1,000+</option></select></label></div></fieldset>
+          <fieldset class="booking-pane" data-pane="2" hidden><legend>Share the event details</legend><label>Where is the event?<input name="location" required autocomplete="country-name" placeholder="City, state / country"></label><label>Tell us a little more<textarea name="details" rows="4" placeholder="Venue, programme, travel or ministry details"></textarea></label></fieldset>
+          <fieldset class="booking-pane" data-pane="3" hidden><legend>How can we reach you?</legend><label>Your name<input name="name" required autocomplete="name" placeholder="Full name"></label><label>Email address<input name="email" type="email" required autocomplete="email" placeholder="you@example.com"></label><label>Phone <span>(optional)</span><input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 000 0000"></label></fieldset>
+          <div class="booking-form-actions"><button type="button" class="button button-outline back-step" hidden>Back</button><button type="button" class="button button-dark next-step">Continue <span>→</span></button><button type="submit" class="button button-dark submit-booking" hidden>Submit demo enquiry <span>→</span></button></div>
+        </form>
+        <p class="booking-demo-note">Prototype only. No enquiry is transmitted or saved. A live booking process will need a secure submission and follow-up workflow.</p>
+        <div class="booking-success" id="booking-success" role="status" tabindex="-1" hidden><span>✳</span><p class="eyebrow eyebrow-dark">DEMO COMPLETE</p><h3>Your enquiry preview is ready.</h3><p>No request was sent. In the live site, the team would review availability and follow up about a quote.</p><button type="button" class="text-link" id="start-another">Start another enquiry <span>↻</span></button></div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer"><a class="wordmark wordmark-footer" href="index.html#home"><span class="mark">PB</span><span>PRINCE BYRON<small>MUSIC · MINISTRY · MORE</small></span></a><span>© 2026 Prince Byron. All rights reserved.</span><a href="https://princebyron.com">princebyron.com</a><span class="footer-demo">DESIGN PROTOTYPE</span></footer>
+  <script src="js/booking.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+# Implementation roadmap
+
+Use the checkboxes to record completed work. Do not mark a task complete without the named evidence. The phases separate local setup, design approval, production features, and the fixed $750 contract boundary. The user has directed that all production implementation happen in Antigravity; this package here is limited to the prototype and documentation handoff. Follow `docs/ANTIGRAVITY-HANDOFF.md` before beginning Phase 1.
+
+## Phase 0 — Foundation and scope (current)
+
+- [x] Record approved product decisions and unresolved host verification.
+- [x] Preserve the existing static prototype under `/prototype` as a reference-only artifact.
+- [x] Define the initial architecture, security boundaries, and phased build sequence.
+- [ ] Reconcile the feature roadmap against the written $750 deliverables before treating any item as contracted work.
+- [ ] Confirm exact shared-host plan later; this roadmap targets generic cPanel only until then.
+
+## Phase 1 — Local development environment and application base
+
+- [x] Inventory installed Docker Desktop, PostgreSQL, PHP 8.5, Composer, Node, enabled PHP extensions, running services, and free disk; record exact versions and distinguish host installs from containers. (Evidence: [`docs/PHASE-1-EVIDENCE.md`](file:///c:/Users/autoc/Documents/princebyron/docs/PHASE-1-EVIDENCE.md#1-workstation--environment-inventory))
+- [x] Decide on a reproducible local database runtime using the existing Docker/PostgreSQL setup; create a dedicated least-privilege project database without replacing or reconfiguring unrelated services. (Evidence: [`docs/PHASE-1-EVIDENCE.md`](file:///c:/Users/autoc/Documents/princebyron/docs/PHASE-1-EVIDENCE.md#2-containerized-services--health-status))
+- [x] Preserve existing PC software and databases; make any required version change only after compatibility evidence, backup, and rollback plan. (Evidence: [`docs/PHASE-1-EVIDENCE.md`](file:///c:/Users/autoc/Documents/princebyron/docs/PHASE-1-EVIDENCE.md#1-workstation--environment-inventory))
+- [x] Scaffold Laravel 13+ and lock dependency versions; add Tailwind CSS 4/Vite, Alpine.js, Lucide SVG subset, and Filament 5 only after compatibility checks. (Evidence: [`docs/PHASE-1-EVIDENCE.md`](file:///c:/Users/autoc/Documents/princebyron/docs/PHASE-1-EVIDENCE.md#3-technology-stack--compatibility-rationale))
+- [x] Add safe `.env.example`, local bootstrap instructions, database migrations, seed data, and a health check. Never commit `.env`. (Evidence: [`docs/PHASE-1-EVIDENCE.md`](file:///c:/Users/autoc/Documents/princebyron/docs/PHASE-1-EVIDENCE.md#4-database-migrations--seed-replay-evidence))
+- [x] Verify idempotent local setup, migration replay, and owner/customer authorization boundaries. (Evidence: [`docs/PHASE-1-EVIDENCE.md`](file:///c:/Users/autoc/Documents/princebyron/docs/PHASE-1-EVIDENCE.md#5-automated-test-suite-results))
+- [x] Record initial performance budgets and repeatable measurement profiles; target good Core Web Vitals at the 75th percentile as production targets. Meaningful field measurement is deferred until a deployed production build has real traffic; prototype checks verify zero CDN requests, layout stability, and asset weight qualitatively. (Documented in [`docs/DESIGN_REVIEW.md`](file:///c:/Users/autoc/Documents/princebyron/docs/DESIGN_REVIEW.md#5-performance--verification-boundaries))
+- [x] Adopt OWASP ASVS 5.0 Level 2 as the application verification target and track applicable controls and exceptions. Phase 1 codified baseline controls; full ASVS verification is an ongoing lifecycle process. (Evidence: [`docs/PHASE-1-EVIDENCE.md`](file:///c:/Users/autoc/Documents/princebyron/docs/PHASE-1-EVIDENCE.md#6-phase-1-implemented-security-controls))
+
+## Phase 2 — Premium visual design and review
+
+- [x] Extract the two supplied artist photos into the project assets without facial retouching; verify source rights and image quality. (Assets: `design-review/assets/images/prince-byron-hero.jpeg` and `prince-byron-portrait.jpeg`)
+- [x] Define concrete design tokens, typography, responsive grid, image treatment, motion, focus, contrast, and reduced-motion rules from the earthy palette. (Documented in `docs/DESIGN_REVIEW.md`)
+- [x] Produce a separate clickable review concept for music/store/checkout and booking paths; it is available in `/design-review` and is not yet approved for production.
+- [x] Show loading, empty, invalid, pending, offline/unavailable, success, retry, cancellation and return states where applicable. (Simulated in `design-review/index.html` via floating dock)
+- [x] Review phone/tablet/desktop, basic navigation and interactions, validation, demo checkout, booking, and mobile overflow; preserve the review URL and design notes.
+- [ ] Complete keyboard-only and assistive-technology review before production design approval. (In progress: `:focus-visible`, skip link, modal dialog focus traps, and mathematical color contrast ratios >= 6.2:1 verified in prototype; formal screen-reader testing across JAWS/NVDA/VoiceOver and production dynamic states remain an ongoing requirement).
+- [ ] Include low-end mobile/low-bandwidth use, WCAG 2.2 AA, responsive states, and reduced-motion behavior in the concrete design review. (In progress: prototype incorporates zero CDN fonts, local system font stack, and reduced-motion resets; full WCAG 2.2 AA conformance is an ongoing acceptance target through production release).
+- [x] Capture the owner's approve/revise/reject decision for the concrete visual direction in Antigravity before building production screens. (Owner approved the visual hybrid direction on 2026-11-17 and authorized Phase 2 production screens).
+- [x] Only after approval, build the production Blade/Alpine interface and admin visual theme. Do not carry prototype review controls into production. (Evidence: Built production Blade templates in `core/resources/views/`, compiled Tailwind CSS 4 assets via Vite in `core/public/build/`, established dedicated routes in `core/routes/web.php` for Home, About, Music, Store, single-product detail, Cart, Checkout, Booking, Account, and Demo Admin Preview; verified 27 passing tests in PHPUnit test suite).
+
+## Phase 3 — Backend foundation and owner CMS
+
+- [x] Create data model and migrations for users, owner permissions, pages/section types, settings, products/variants, music/offers, bookings, orders, payments, entitlements and audit events. (Evidence: PostgreSQL migrations 000001 through 000009 in `core/database/migrations/`, models in `core/app/Models/`, seeders in `core/database/seeders/`; verified against PostgreSQL 17.9 container on port 5437).
+- [x] Build owner authentication, secure account recovery, policies, rate limits and audit history. (Evidence: Filament 5 `AdminPanelProvider.php` with `User::canAccessPanel()` role check, password reset, profile, rate limiting; immutable `AuditEventResource` with `canCreate/Edit/Delete` disabled; verified in `core/tests/Feature/Phase3BackendTest.php` and `AuthorizationTest.php`).
+- [x] Build the controlled section editor for supported text, image, ordering, visibility and allowlisted colors. (Evidence: `ContentSectionResource.php` and `ContentSection.php` with HTML/script stripping on write and strict enforcement of the allowlisted 5-color palette: `#0E0B09`, `#181310`, `#DFA759`, `#9E472A`, `#F8F4ED`; tested in `Phase3BackendTest.php`).
+- [x] Build owner management for music prices/free status, product prices/stock/options, owner-managed shipping zones/rates, booking requests and order review. (Evidence: `SongResource.php`, `ProductResource.php` with variants/inventory, `ShippingRateResource.php`, `BookingRequestResource.php`, `SettingResource.php` with encrypted secrets, and `OrderResource.php` with independent bank transfer verification action; tested in `Phase3BackendTest.php`).
+- [x] Validate all ownership, cross-account denial, server-side pricing and lifecycle transitions. (Evidence: 35 passing tests in `core/tests/` covering state machine transitions, cross-account denial, unauthorized backoffice rejection, bank transfer verification, and hardened `/up` health check without diagnostic leakage).
+
+## Phase 4 — Customer flows and live commerce
+
+- [x] Build product discovery, product variants, cart persistence, USD checkout and order confirmation. (Evidence: `CartService.php` with server-authoritative live recalculation; `CheckoutService.php` with stock decrement and integer-cents calculation; verified in `Phase4CommerceTest.php`).
+- [x] Integrate Stripe and PayPal in sandbox; verify signatures, callbacks, idempotency, amount/currency, refund and failure states. (Evidence: `StripeSandboxService.php` and `PayPalSandboxService.php` with HMAC signature verification, replay protection against duplicate event IDs, amount/currency verification, and refund entitlement revocation; tested in `Phase4CommerceTest.php`).
+- [x] Add manual bank transfer as an awaiting-verification payment; owner records independent reconciliation before paid status. (Evidence: Order created in `awaiting_bank_verification` with clearly labeled demo instructions; digital entitlements withheld until owner records verified bank receipt in backoffice; tested in `Phase4CommerceTest.php` and `OrderStateMachineTest.php`).
+- [x] Add owner-managed shipping rates and destination allowlists; resolve tax collection and customer policy with qualified advisors before release. (Evidence: Inactive demo seed rates require owner configuration before physical checkout; unconfigured state gracefully alerts customer; server-authoritative flat rate and free shipping calculation in `ShippingRate.php` tested in `Phase4CommerceTest.php`).
+- [x] Build fan accounts and customer-owned order history. (Evidence: `CustomerAuthController.php` with rate-limited registration and login; `CustomerAccountController.php` with strict cross-account isolation denying customer B from accessing customer A's orders; tested in `Phase4CommerceTest.php`).
+- [x] Deliver free and paid MP3/WAV according to owner-configured catalog rules; store files privately and verify entitlements, expiry, refund and abuse behavior. (Evidence: `DownloadController.php` delivering private audio only with active unexpired entitlement; clean pending masters demo state when audio files are awaiting studio release; download count auditing; tested in `Phase4CommerceTest.php`).
+- [x] Build quote-based bookings with email acknowledgement/owner notification and a recoverable admin workflow. (Evidence: `BookingController.php` with validation, rate limiting, and Mailpit dispatch of `BookingAcknowledgementMail` and `BookingNotificationMail`; tested with `Mail::fake()` in `Phase4CommerceTest.php`).
+
+## Phase 5 — Upload-ready cPanel package
+
+- [x] Build release artifact structure locally with locked `vendor/` and compiled frontend assets; exclude secrets, test data, local files, and development-only dependencies. (Evidence: production assets compiled in `core/public/build/`, locked production `vendor/` dependencies, and sensitive path denial configured in `.htaccess`).
+- [x] Add root loader, safe `.htaccess`, private `core/` path protections, and one-time browser installer/lock. (Evidence: root loader `index.php`, root `.htaccess`, one-time HTTPS installer `install/index.php`, `install/.htaccess`; verified with 20 automated test scenarios in `core/tests/Feature/Phase5InstallerTest.php` covering directory denial, preflight requirements, lockout immutability, zero-bypass, loopback-only HTTPS exemption rejecting remote Host spoofing, trusted reverse proxy handling, CSRF token validation, stable mutex file persistence preventing inode races, newline injection prevention, credential sanitization, secure key generation, byte-verified writes, and server-side log redaction).
+- [ ] Verify setup without Composer or Node on a staging cPanel account matching the target PHP/PostgreSQL/extensions/cron capabilities. (Awaiting user selection of actual cPanel shared hosting plan and staging environment).
+- [ ] Verify backups, restore, log redaction, permissions, HTTPS, email, webhook reachability, storage limits, and rollback. (Automated tests verify local error sanitization, file permissions, and sandbox webhook flows; live provider verification pending hosting environment).
+- [ ] Confirm the actual shared-host provider/plan and run a fresh install and customer/admin walkthrough before calling the package ready. (Awaiting owner selection of provider and plan).
+
+## Interim Review Milestone — Local UX, Flow, Token Centralization & Hosting Readiness (Phase 6 Paused)
+
+- [x] **Stage 1: Baseline & Architectural Analysis**:
+  - Full browser audit across all public, customer, and backoffice journeys.
+  - Read-only comparative analysis of legacy Vazzet architecture (root loader, `.htaccess`, one-time installer, webhooks, inventory concurrency, download entitlement gates).
+  - Technical and economic evaluation of multi-engine database support: PostgreSQL 17 (tested baseline) vs MySQL 8.0 and MariaDB 10.11 (preliminary assessed targets only, not supported or certified). Preliminary effort estimate (~12–16h) documented as an uncontracted proposal; fixed $750 contract boundary remains preserved.
+  - Hosting readiness matrix established: cPanel with local PostgreSQL (default), no-Redis file driver fallback (`SESSION_DRIVER=file`, `CACHE_STORE=file`, `QUEUE_CONNECTION=sync`/`database` via cron), external PostgreSQL/Redis deployment requirements with TLS and regional co-location, and optional Cloudflare proxy deployment guidance (unverified in local testing).
+  - Host PC PostgreSQL 17.9 service on port 5432 preserved completely untouched; development database isolated on port 5437 (`princebyron_dev`).
+- [x] **Stage 2: Cohesive Redesign & Design Token Centralization**:
+  - 100% centralized design tokens: defined semantic tokens in `config/tokens.php` and compiled `tokens.css`; verified 0 raw color literals across 46 application-owned frontend files.
+  - Form & UI Accessibility: Visible unfocused borders (`#8A7D71`, contrast >= 3:1 against white and paper), focus rings (`#9E472A`, contrast >= 5.4:1 on light; `#DFA759`, contrast >= 8.6:1 on dark) meeting WCAG 2.2 Level AA SC 1.4.11 and SC 2.4.7. (Note: SC 2.4.13 Focus Appearance is Level AAA and is not claimed as an AA criterion). Screen-reader and physical device testing are explicitly marked unverified.
+  - Strict heading hierarchy: eliminated redundant `<h1>` in global header brand logo; enforced single page `<h1>` followed by strictly sequential `<h2>` and `<h3>` tags; corrected excessive header margin spacing.
+  - Customer Dashboard (`/account`): SaaS-clean layout with 3 KPI metric cards, factual status label ("Account Status: Active • Verified", "Session authenticated; private file access"), responsive dual-view (desktop tables + mobile stacked cards) eliminating horizontal scrolling on mobile viewports, responsive itemized receipt view.
+  - Public Demo Preview vs Live Backoffice: `/admin/preview` remains a public demonstration preview using clearly labeled static sample data, with no real authentication, live data, or record-modifying actions. Live operational work queues and reconciliation actions reside exclusively on `/admin` under server-side owner authorization (`OwnerWorkQueueWidget.php`).
+  - Truth boundaries codified: 5 approved songs (*Free*, *Purify Me*, *I Always Win*, *Toduyun*, *Follow Me*); synthesized/acoustic preview audio explicitly labeled with official masters pending owner supply; demo merchandise and shipping rates labeled as unconfigured demo fixtures; seeded test bookings marked as `[DEMO FIXTURE]`.
+- [x] **Stage 3: Local Verification & Documentation**:
+  - Local review server verified on loopback at `http://127.0.0.1:8001`.
+  - Comprehensive suite of 42 standardized screenshots confirmed on disk across 14 core views at 3 standard viewports (Desktop 1440x900, Tablet 768x1024, Mobile 375x812).
+  - Test evidence separated: automated test suite (71 passed out of 71 tests, 492 assertions, 0 regressions) verifies backend models/policies, commerce checkout, and installer safeguards; visual design, responsive layouts, and contrast verified via manual browser/CDP checks.
+  - Local review credentials (`fan@princebyron.local`, `owner@princebyron.local`) documented as local-only development review fixtures and strictly excluded from production documentation and release packages.
+  - Project documentation updated: `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, and `docs/ROADMAP.md`.
+  - Commercial boundary preserved: Fixed $750 scope maintained; Phase 6 explicitly paused pending owner review.
+
+## Phase 6 — Later editorial work and launch operations (PAUSED)
+
+- [ ] Add blog and newsletter after an email provider, consent language, unsubscribe flow, retention and abuse controls are decided.
+- [ ] Add PWA only if offline access adds real customer value and can exclude private account/payment/download state.
+- [ ] Complete legal copy, sales tax, refund, privacy, shipping and music download policies with the owner's qualified advisors.
+- [ ] Obtain explicit owner approval before payment activation, DNS change or production release.
+
+## Scope and evidence rules
+
+- The fixed $750 engagement remains separate. Obtain a written change order before adding its excluded features or treating roadmap work as contracted.
+- Each completion checkbox should link to an issue, commit, test/runtime evidence, or release checklist item once those artifacts exist.
+- Database runtime discipline: Preserve the PC's active PostgreSQL version (17.9 on port 5432). With the upstream release of PostgreSQL 18.7, plan and verify a compatibility matrix for PostgreSQL 15, 16, 17, and 18 in automated CI/CD test runners, avoiding engine-exclusive syntax. Treat version compatibility as a verification test plan rather than an already-certified status.
+- Hosting compatibility, real payment activation, tax compliance, email delivery, DNS, and production behavior remain unverified until tested with the owner's actual providers and credentials.
+- Production application setup and implementation are assigned to Antigravity; do not mark those roadmap items complete from prototype work in this workspace.
+- Performance, security, accessibility, and maintainability targets are acceptance criteria, not proof of implementation. Keep dated evidence and report any exception explicitly.

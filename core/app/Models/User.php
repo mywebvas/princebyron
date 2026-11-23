@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class User extends Authenticatable implements MustVerifyEmail, FilamentUser
+{
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, Notifiable;
+
+    // Role constants — the only valid role values.
+    const ROLE_OWNER    = 'owner';
+    const ROLE_CUSTOMER = 'customer';
+
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role',
+        'phone',
+        'is_active',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'last_login_at'     => 'datetime',
+            'is_active'         => 'boolean',
+            'password'          => 'hashed',
+        ];
+    }
+
+    // -------------------------------------------------------------------------
+    // Filament panel access — owner-only, active accounts only.
+    // This is enforced server-side on every request to /admin.
+    // -------------------------------------------------------------------------
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->isOwner() && $this->is_active;
+    }
+
+    // -------------------------------------------------------------------------
+    // Role helpers — always check server-side, never rely on client claims.
+    // -------------------------------------------------------------------------
+
+    public function isOwner(): bool
+    {
+        return $this->role === self::ROLE_OWNER;
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->role === self::ROLE_CUSTOMER;
+    }
+
+    // -------------------------------------------------------------------------
+    // Relationships
+    // -------------------------------------------------------------------------
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function downloadEntitlements(): HasMany
+    {
+        return $this->hasMany(DownloadEntitlement::class);
+    }
+}
