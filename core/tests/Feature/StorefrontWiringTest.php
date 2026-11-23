@@ -84,14 +84,28 @@ class StorefrontWiringTest extends TestCase
     {
         $product = Product::where('slug', 'prince-byron-t-shirt')->firstOrFail();
 
-        $variant = ProductVariant::where('product_id', $product->id)->firstOrFail();
-        $variant->update(['color' => 'Terracotta', 'size' => 'XXL', 'price_cents' => 4100]);
+        // Replace the whole variant matrix, not one row: the catalogue shows the
+        // cheapest variant as the "from" price, so a single edited row would be
+        // outranked by its siblings and the assertion would be meaningless.
+        ProductVariant::where('product_id', $product->id)->delete();
+        ProductVariant::create([
+            'product_id' => $product->id,
+            'label' => 'Terracotta / XXL',
+            'sku' => 'PB-TEE-TEST-1',
+            'price_cents' => 4100,
+            'stock_quantity' => 3,
+            'is_active' => true,
+            'color' => 'Terracotta',
+            'size' => 'XXL',
+        ]);
 
-        // Offer sizes that do not exist must not be advertised.
+        // Only real variants may be advertised. The seeded Black/White/S/M/L
+        // options are gone, so none of them may appear.
         $this->get('/store/'.$product->slug)
             ->assertStatus(200)
             ->assertSee('Terracotta')
-            ->assertSee('41.00');
+            ->assertSee('41.00')
+            ->assertDontSee('Charcoal Obsidian');
     }
 
     // =========================================================================
