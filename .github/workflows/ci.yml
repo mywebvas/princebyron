@@ -413,33 +413,21 @@ jobs:
           cat /tmp/test.log
 
           if [ $status -ne 0 ]; then
+            # GitHub publishes at most ~10 annotations per step and keeps the
+            # LAST ones, so a 36-line annotation dump silently lost every detail
+            # line. Everything is resolved to at most 7 annotations here.
+            detail=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -nE 'SQLSTATE|FAILED|Failed asserting|Exception|Error:|no such|Unknown|incompatible|Tests:' \
+              | head -6)
             echo "================ FAILURE DETAIL ================"
-            grep -nE 'FAILED|Failed asserting|does not contain|must be of type|Call to|Exception:|SQLSTATE\(|Tests: ' /tmp/test.log \
-              | head -80 || true
+            printf '%s\n' "$detail"
             echo "================================================"
-            # The step log is not retrievable from the authoring sandbox, so the
-            # first 15 error lines are republished as annotations — including
-            # migration/DDL failures, which do not contain the word "FAILED" and
-            # were therefore invisible in the first version of this block.
-            grep -nE 'SQLSTATE|Exception|Error:|error|FAILED|at /' /tmp/test.log \
-              | head -15 | while IFS= read -r line; do
-                esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
-                echo "::error title='MySQL detail'::$esc"
-              done
-            grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
-              | grep -vE '^[[:space:]]*$' | head -20 | while IFS= read -r line; do
-                esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
-                echo "::error title='Tests (MySQL/MariaDB)'::$esc"
-              done
-            echo "::error title='Tests (MySQL/MariaDB)'::exit code $status — see step log for full output"
-            # Annotation lines above are capped/flaky when the log is very
-            # structured; the step summary always lands.
-            {
-              echo "### MySQL/MariaDB suite failed (exit $status)"
-              echo '```'
-              sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -60
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' "$detail" | while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
+              echo "::error title='MySQL/MariaDB'::$esc"
+            done
+            echo "::error title='MySQL/MariaDB'::exit code $status"
           else
             totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
               | grep -E '^[[:space:]]*(Tests:|Duration:)' \
