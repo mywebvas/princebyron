@@ -428,7 +428,7 @@ codebase is normalised in its own commit.
 | **P0-5** Filament assets gitignored | **Mitigated** | Rewrites added + `tools/check-release.mjs` blocks an archive without them. The build itself still needs a PHP+Node machine — reported as INCOMPLETE, not claimed as done |
 | **P0-7** installer writes Mailpit | **Closed** | Real mail step with an honest "record to log" option; test asserts Mailpit literals are gone |
 | **P1-1** demo credentials rendered | **Closed** | Banner and pre-filled credentials removed; test asserts the page contains neither |
-| **P1-4** bank transfer bypasses entitlements | **Open** | Unchanged by design; needs an owner decision on manual release |
+| **P1-4** bank transfer bypasses entitlements | **Closed in Sprint 2** | See the Sprint 2 table below |
 | **NEW** `CartService` did not validate song ids | **Closed** | An invented id returned `success: true` while the summary dropped it. Now 422 |
 | **NEW** music page advertised delisted tracks | **Closed** | Curated playlists are gated on those tracks being published |
 
@@ -439,7 +439,52 @@ container or database failed while static-markup tests passed; and four
 assertions described a storefront that no longer existed. Both are fixed, which
 is why the suite now means something.
 
-Verified: **97 tests / 576 assertions** passing on SQLite and PostgreSQL, full
+Verified: **97 tests / 576 assertions** at the close of Sprint 1.
+
+**2026-11-23 · Sprint 2 delivered — money and records integrity.**
+
+Every finding here was a silent failure: nothing crashed and the storefront
+looked healthy while the record underneath was wrong. Each is pinned by a test
+that asserts what a customer or an auditor would notice.
+
+| Finding | Status | Evidence |
+|---|---|---|
+| **P1-3** encrypted settings saved in plaintext from the admin form | **Closed** | The form bound the raw `value` column, bypassing the model's mutator. It now never renders the stored secret, encrypts on submit, keeps the ciphertext when the field is blank, and a `Setting::saving()` guard covers non-form writers. `Phase5SettingsFormTest` drives the real Filament page and inspects the column |
+| **P1-4** bank transfer granted no entitlements | **Closed** | Inline Stripe/PayPal code (two copies, one path missing) replaced by `App\Services\GrantEntitlementsForOrder`; `Verify Bank Funds` calls it. Guest orders return `skipped_guest` and the owner is notified by name |
+| **P1-5** financial records could be deleted | **Closed** | `Order::delete()` throws; bulk delete removed from the order resource. The same hole from the other side of the FK: `orders.user_id` is `nullOnDelete`, so a customer with orders could be deleted, orphaning their orders — now refused too |
+| **P1-6** no audit trail for catalog/content/settings edits | **Closed** | `App\Models\Concerns\Auditable` on products, variants, songs, settings, content sections, shipping rates. Secrets redacted per column — the log records *that* a secret rotated and by whom, never its value or ciphertext |
+| **P1-7** no refund action | **Closed** | Owner-only action: guarded reason, negative `Payment`, entitlements revoked (deactivated, not deleted), audit event. Required a migration — `payments.amount_cents` was `unsignedInteger` and could not have stored a refund |
+| **P1-8** cart/checkout/downloads/webhooks unthrottled | **Closed** | Named limiters in `AppServiceProvider`: cart reads, cart mutations, checkout (per-IP + global ceiling), downloads (per user), webhooks, auth |
+| **P1-9** no trusted proxies | **Closed** | `App\Http\Middleware\TrustProxies` reads `config('security.trusted_proxies')` per request; empty by default. Behind a CDN every throttle key previously collapsed onto the proxy IP |
+| **P1-10** security headers only in `.htaccess` | **Closed** | `App\Http\Middleware\SecurityHeaders` sends CSP/HSTS/nosniff/frame/ referrer/permissions headers from the application. Storefront CSP needs no `unsafe-inline` because the front end ships no inline script; Filament gets only what it needs |
+| **P1-11** session cookie not Secure in production | **Closed** | Installer derives `SESSION_SECURE_COOKIE` from the site URL and writes `SESSION_ENCRYPT`, `SESSION_SAME_SITE`, `SESSION_HTTP_ONLY`, plus a documented `TRUSTED_PROXIES` placeholder |
+
+**Defects this sprint introduced, and how they were caught.** Both were wrong
+code that the pipeline rejected within a minute of the push — the reason the
+suite is run before any status is claimed:
+
+1. `config()` called inside `bootstrap/app.php`'s `withMiddleware()` closure.
+   That closure runs while the container is resolving the kernel, before `config`
+   is bound, so every artisan command died with "Target class [config] does not
+   exist" — which broke `composer install` (post-autoload-dump runs
+   `package:discover`) and would have taken production down completely. Proxies
+   are now read at request time.
+2. Deleting the `Request` import from `bootstrap/app.php` because a grep said it
+   was unused. It is a closure parameter type hint; every request died with a
+   `TypeError`. **An import may only be deleted on the strength of a compile,
+   never a grep.**
+
+Also: `property_exists($this, 'type')` is false for an Eloquent attribute
+(attributes are not declared properties), so the first audit-redaction
+implementation redacted nothing and archived ciphertext. The test caught it.
+
+**Infrastructure.** CI step logs are not retrievable from the development
+sandbox, which made a failing step indistinguishable from a broken commit. The
+workflow now retries the composer install with backoff, republishes composer's
+error tail as an annotation, and publishes suite totals as a notice on green
+runs — which is how the README figure is verifiable at all.
+
+Verified: **128 tests / 670 assertions** passing on SQLite and PostgreSQL, full
 migration replay from an empty database, Blade compilation, PHP syntax over
 every tracked file, packaging rules and the asset budget. Every job green.
 

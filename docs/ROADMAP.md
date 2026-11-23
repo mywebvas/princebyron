@@ -140,10 +140,103 @@ Every item below is enforced by a test that fails if the wiring regresses.
 
 ### Sprint 2 — Money and records integrity
 
-- [ ] Encrypted settings actually encrypted when saved from the admin form (P1-3).
-- [ ] Grant digital entitlements on owner-verified bank transfer (P1-4).
-- [ ] No destructive deletion of financial records (P1-5); audit trail for catalog/content/settings edits (P1-6); owner-accessible refund action (P1-7).
-- [ ] Rate limiters for cart, checkout, downloads and webhooks (P1-8); trusted proxies (P1-9); application-level security headers incl. CSP/HSTS (P1-10); secure session cookie in production (P1-11).
+- [x] Encrypted settings actually encrypted when saved from the admin form (P1-3).
+- [x] Grant digital entitlements on owner-verified bank transfer (P1-4).
+- [x] No destructive deletion of financial records (P1-5); audit trail for catalog/content/settings edits (P1-6); owner-accessible refund action (P1-7).
+- [x] Rate limiters for cart, checkout, downloads and webhooks (P1-8); trusted proxies (P1-9); application-level security headers incl. CSP/HSTS (P1-10); secure session cookie in production (P1-11).
+
+#### Sprint 2 — Outcome: money is recorded correctly and records survive (2026-11-23)
+
+Every finding in this sprint was a **silent** failure — nothing crashed, nothing
+logged an error, and the storefront looked healthy while the record underneath it
+was wrong. That is why each one is pinned by a test that asserts what a customer
+or an auditor would notice, rather than by an assertion about our own code.
+
+**P1-3 — encrypted settings (was: stored in plaintext).** The admin form bound
+the raw `value` column, so choosing "Encrypted Secret" wrote cleartext to the
+database; the model's own encryption mutator was bypassed entirely. The form now
+never renders the stored secret at all (a blank field means "keep it"), encrypts
+on submit, and refuses to lose a secret when only the label is edited. A
+`Setting::saving()` guard encrypts as well, because the form is not the only
+writer — seeders and console commands reach the model directly. The list view
+also refuses to leak, and the audit trail records `[redacted]` for the secret
+column while still recording *which* setting changed.
+
+**P1-4 — bank-transfer entitlements (was: paid, no download).** Entitlement
+granting lived inline in the Stripe webhook and was copy-pasted into the PayPal
+webhook. `Verify Bank Funds` — the only path by which a bank-transfer customer
+becomes paid — never did it, so those customers were marked Paid and could not
+download what they had bought. All three paths now call one service,
+`GrantEntitlementsForOrder`, which is idempotent, ignores merchandise lines, and
+returns `skipped_guest` instead of throwing when a guest order cannot receive
+entitlements (the owner gets a notification naming the customer instead of a
+mystery).
+
+**P1-5 — financial records survive.** `Order::delete()` now throws, and the bulk
+delete toolbar is gone. The same hole existed from the other side of the foreign
+key: `orders.user_id` is `nullOnDelete`, so deleting a customer did not fail — it
+silently orphaned their orders, made the purchase unattributable and cut the
+customer off from their downloads forever. A customer with orders now cannot be
+deleted either; the error names the supported operation (deactivate or anonymise).
+
+**P1-6 — audit coverage.** Only ten order-state call sites wrote audit events;
+price, stock, visibility, content and settings changes wrote none. An `Auditable`
+trait on products, variants, songs, settings, content sections and shipping rates
+now records created/updated/deleted with before/after values. A trait rather than
+per-resource hooks because the old coverage failed precisely by being opt-in.
+Secrets are redacted per column, so the log says "this secret was rotated, by
+whom" without storing either the plaintext or the ciphertext.
+
+**P1-7 — refunds.** The owner can now refund an order: a guarded reason, a
+negative `Payment` row, entitlements revoked (deactivated, never deleted) and an
+audit event. This needed a migration — `payments.amount_cents` was
+`unsignedInteger`, so a refund could not have been stored at all.
+
+**P1-8 … P1-11 — the security surface.** Only login, register and booking were
+throttled, so order creation, stock reservation and entitlement probing were
+unbounded; there are now named limiters for cart reads, cart mutations, checkout
+(per-IP plus a global ceiling), downloads (per user), webhooks and auth.
+Trusted proxies are configurable and empty by default (behind a CDN every
+throttle key used to collapse onto the proxy's IP, so one abuser could lock out
+every customer). Security headers are now sent by the application, not only by
+`.htaccess` — a host that ignores `.htaccess` previously served the storefront
+with no CSP and no HSTS. The CSP is strict on the storefront (the front end ships
+no inline script, so it does not need `unsafe-inline`) and relaxed only as far as
+Filament requires. The installer writes `SESSION_SECURE_COOKIE` derived from the
+site URL, plus `SESSION_ENCRYPT`, `SESSION_SAME_SITE` and a documented
+`TRUSTED_PROXIES` placeholder.
+
+**Defects this sprint's own work introduced, and how they were caught.** Two
+changes were wrong and the pipeline said so within a minute of each push, which
+is the point of enforcing CI before claiming a status:
+
+1. `config()` called from `bootstrap/app.php`'s `withMiddleware()` closure — it
+   runs while the container is still resolving the kernel, so `config` is not
+   bound and every artisan command died with "Target class [config] does not
+   exist". This broke `composer install` (post-autoload-dump runs
+   `package:discover`) and would have taken production down entirely. Proxies are
+   now read at request time by `App\Http\Middleware\TrustProxies`.
+2. Removing the `Request` import from `bootstrap/app.php` because a grep said it
+   was unused — it is used as a closure parameter type hint, and every request
+   died with a `TypeError`. **An import may only be deleted on the strength of a
+   compile, never a grep.**
+
+Additionally, `property_exists($this, 'type')` is false for an Eloquent attribute
+(attributes live in `$attributes`, not declared properties), so the first version
+of the audit redaction redacted nothing and archived ciphertext. The test caught
+it before it shipped; the fix reads the attribute through the model.
+
+**Infrastructure learned here:** CI's step logs are not retrievable from the
+development sandbox, so a failing step was indistinguishable from a broken commit.
+The workflow now republishes composer failures as annotations, retries the
+install, and publishes the suite totals as a notice on a green run — which is how
+the figure in README is verifiable at all.
+
+**Still not live after Sprint 2:** online payment capture (no gateway enabled),
+and the two build products (`vendor/`, Filament assets). Refunds are recorded
+through the platform, but the money movement itself still happens at the
+provider's dashboard — the action records and revokes, it does not call the
+Stripe or PayPal refund API.
 
 ### Sprint 3 — Craft pass
 
