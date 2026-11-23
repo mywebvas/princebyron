@@ -1,0 +1,258 @@
+name: CI
+
+# Baseline verification for the Prince Byron platform.
+#
+# Why this exists
+# ---------------
+# README/ROADMAP previously claimed "71 tests passed" with no mechanism to
+# re-check it: a regression could ship silently and every later fix would be
+# unverifiable. This workflow makes the test suite, the syntax check, the
+# frontend build and the release-packaging rules reproducible on every push.
+#
+# Repository layout note
+# ----------------------
+# The Laravel application lives in `core/` behind a root loader (cPanel
+# deployment shape), so Composer/Artisan/npm steps run there while
+# repository-wide checks run at the root.
+#
+# Job matrix
+# ----------
+#   static          Composer manifest + PHP syntax + Blade compile + Pint
+#   tests-postgres  PRIMARY test job (production parity)
+#   tests-sqlite    Fast regression pass (in-memory)
+#   assets          Vite build must succeed and stay within budget
+#   package         Release-archive rules must hold (no secrets, no dev files)
+#
+# PHP version
+# -----------
+# core/composer.json requires "php": "^8.5" and install/index.php refuses to
+# install on anything older (see test_installer_php_floor_matches_composer_constraint).
+# `shivammathur/setup-php` resolves the newest available PHP for a bare
+# major.minor request and fails loudly instead of silently downgrading, so this
+# pipeline cannot go green on a runtime the installer would reject.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.5'
+  APP_DIR: core
+  COMPOSER_NO_INTERACTION: '1'
+  COMPOSER_PROCESS_TIMEOUT: '900'
+
+jobs:
+  static:
+    name: Static checks (syntax, Blade compile, style)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, sqlite3, pdo_sqlite, pgsql, pdo_pgsql
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: PHP syntax check (every tracked PHP file)
+        # Scope is deliberately the whole repository: dev scripts and the
+        # installer are checked too, so a broken file can never reach the
+        # release archive unnoticed.
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.php')
+          echo "Checking ${#files[@]} PHP files"
+          fail=0
+          for f in "${files[@]}"; do
+            if ! out=$(php -l "$f" 2>&1); then echo "FAIL: $f"; echo "$out"; fail=1; fi
+          done
+          exit $fail
+
+      - name: Validate composer.json
+        working-directory: ${{ env.APP_DIR }}
+        run: composer validate --no-check-publish
+
+      - name: Install Composer dependencies from lock
+        # Uses `install` (never `update`): fails if composer.json was edited
+        # without re-locking, which would make the shipped vendor/ tree
+        # disagree with its own manifest.
+        working-directory: ${{ env.APP_DIR }}
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          php artisan key:generate --force
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+          php artisan config:clear
+
+      - name: Compile all Blade templates
+        # Catches malformed Blade/PHP inside templates, which `php -l` cannot.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan view:cache
+          echo "All Blade templates compiled."
+
+      - name: Check code style (Pint)
+        working-directory: ${{ env.APP_DIR }}
+        run: vendor/bin/pint --test
+
+  tests-postgres:
+    name: Tests (PostgreSQL — primary)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: princebyron_test
+          POSTGRES_USER: princebyron
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U princebyron -d princebyron_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_DATABASE: princebyron_test
+      DB_USERNAME: princebyron
+      DB_PASSWORD: secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, pgsql, pdo_pgsql
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: Install Composer dependencies from lock
+        working-directory: ${{ env.APP_DIR }}
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          php artisan key:generate --force
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+          php artisan config:clear
+
+      - name: Run test suite on PostgreSQL
+        working-directory: ${{ env.APP_DIR }}
+        run: php artisan test --configuration=phpunit.pgsql.xml
+
+      - name: Verify full migration replay from an empty database
+        # The cPanel installer runs `migrate --force` against a fresh database.
+        # Prove the whole chain (including the PL/pgSQL audit trigger) works
+        # from zero, not only on top of an already-migrated schema.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan migrate:fresh --force
+          php artisan migrate:status
+
+      - name: Seed a clean database (installer parity)
+        # The installer runs SettingsSeeder after migrating. Verify seeders are
+        # idempotent and do not require the local review fixtures.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+
+  tests-sqlite:
+    name: Tests (SQLite — fast regression pass)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, sqlite3, pdo_sqlite
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: Install Composer dependencies from lock
+        working-directory: ${{ env.APP_DIR }}
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          php artisan key:generate --force
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+          php artisan config:clear
+
+      - name: Run test suite (default phpunit.xml → in-memory SQLite)
+        working-directory: ${{ env.APP_DIR }}
+        run: php artisan test
+
+  assets:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: core/package-lock.json
+
+      - name: Install Node dependencies from lock
+        working-directory: ${{ env.APP_DIR }}
+        run: npm ci --no-audit --no-fund
+
+      - name: Build production assets
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run build
+
+      - name: Assert build output and payload budget
+        run: node tools/check-assets.mjs
+
+      - name: Upload built assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-build
+          path: core/public/build
+          if-no-files-found: error
+
+  package:
+    name: Release packaging rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify release-archive manifest
+        # No install step on purpose: packaging correctness must be provable
+        # from the repository alone, exactly as the host receives it.
+        run: node tools/check-package.mjs

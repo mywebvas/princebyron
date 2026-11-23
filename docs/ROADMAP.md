@@ -82,6 +82,61 @@ Use the checkboxes to record completed work. Do not mark a task complete without
   - Project documentation updated: `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, and `docs/ROADMAP.md`.
   - Commercial boundary preserved: Fixed $750 scope maintained; Phase 6 explicitly paused pending owner review.
 
+## Phase 5.5 — Production readiness review and verified baseline (IN PROGRESS)
+
+A full senior review of the codebase was completed on 2026-11-23. The findings, evidence, prioritized backlog and decisions required are recorded in [`docs/PRODUCTION-READINESS-REVIEW.md`](PRODUCTION-READINESS-REVIEW.md). The review's central conclusion: **the server-side foundation is sound, but the public storefront is not wired to it**, so earlier "Phase 4 complete" checkmarks describe code that exists and is tested, not a flow a visitor can complete. Those checkmarks are left intact for history; this phase tracks closing the gap.
+
+### Sprint 0 — Trustworthy baseline (COMPLETE 2026-11-23)
+
+- [x] **Add CI so every status claim is reproducible.** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml): PHP syntax over every tracked PHP file, Composer manifest validation, Blade compilation, Pint style check, test suite on **PostgreSQL (primary)** and SQLite (fast pass), migration replay from an empty database, seeder idempotency, frontend build with a payload budget, and the release packaging rules. Previously the "71 tests / 492 assertions" claim had no mechanism to re-verify it (review P3-2).
+- [x] **Make the release rules executable.** [`tools/check-package.mjs`](../tools/check-package.mjs) enforces what `docs/ARCHITECTURE.md` only described: required files present, compiled assets tracked, and no secrets, `.env`, logs, runtime state, local databases, dev scripts, or web-root screenshots tracked. [`tools/check-assets.mjs`](../tools/check-assets.mjs) enforces the compiled CSS/JS budget (currently 16.5 kB and 20.3 kB gzip). Both verified to fail on injected violations.
+- [x] **Align the PHP floor (review P0-6).** `composer.json` pins `config.platform.php = 8.5.0`; the installer now enforces PHP ≥ 8.5 as a single `$requiredPhp` constant instead of the previous 8.3 mismatch that allowed a fatal-after-install outcome. New test `test_installer_php_floor_matches_composer_constraint` fails CI if the two drift.
+- [x] **Enforce preflight server-side.** The installer previously only *hid* the submit button when a requirement failed; a crafted POST could still continue. It now aborts with a clear message before touching the filesystem or database.
+- [x] **Close the storage/application exposure gap.** Added `core/.htaccess` and `core/storage/.htaccess` (deny-all), so private audio, sessions, logs and `.env` stay blocked even if the root rewrite rules are bypassed or the document root is misconfigured.
+- [x] **Remove dev artifacts from the application tree (review P1-13).** Deleted the committed SQLite database (`core/princebyron`), `scratch_check_pass.php`, `scratch_update_data.php`, `scratch_test_routes.cjs`, the syntactically invalid `redis_test.php`, `public/find_overflow.js`, and capture output in `storage/`. PHP syntax check over the whole tracked tree now passes (previously 1 failure).
+- [x] **Move review screenshots out of the web root (review P1-2).** `core/public/snapshots/*.html` — including rendered account and order pages — moved to `docs/review-snapshots/`; capture scripts updated to write there. The packaging check now fails if anything reappears under `core/public/snapshots/`.
+- [x] **Re-baseline documentation to provable facts (review P3-10, P1-12).** README now states precisely that provider *webhook verification* is complete while *payment creation* is not implemented, that the public cart/checkout/catalog are demo-data driven, and that the installer writes Mailpit mail settings. No status is asserted that CI cannot demonstrate.
+
+### Owner decisions recorded
+
+- [x] **Hosting direction (2026-11-23): shared-host compatibility via MySQL/MariaDB.** The owner chose the path that must work on any cPanel account, which requires a MySQL/MariaDB driver path rather than requiring PostgreSQL hosting. Recorded as a scoped change of work (review §7 Option B), not part of the fixed \$750 baseline until a change order is agreed.
+
+### Sprint 1 — "It actually works" (NEXT, P0 findings)
+
+- [ ] Wire the public cart to `/api/cart*` and hydrate state from the server; remove the seeded demo cart and fake product IDs (P0-1).
+- [ ] Replace the simulated checkout with a real `POST /api/checkout/process` and a server-rendered order confirmation (P0-2).
+- [ ] Drive the public catalog from Eloquent instead of `PageController` literal arrays, with `abort(404)` for unknown slugs (P0-3, P2-2).
+- [ ] Fix host asset serving so `/images/*` and `/audio/*` resolve (P0-4).
+- [ ] Ship Filament compiled assets (P0-5).
+- [ ] Add a mail configuration step to the installer and stop writing Mailpit settings into production (P0-7).
+- [ ] Remove the publicly rendered demo credentials and pre-filled password from the login view (P1-1).
+
+### Sprint 2 — Money and records integrity
+
+- [ ] Encrypted settings actually encrypted when saved from the admin form (P1-3).
+- [ ] Grant digital entitlements on owner-verified bank transfer (P1-4).
+- [ ] No destructive deletion of financial records (P1-5); audit trail for catalog/content/settings edits (P1-6); owner-accessible refund action (P1-7).
+- [ ] Rate limiters for cart, checkout, downloads and webhooks (P1-8); trusted proxies (P1-9); application-level security headers incl. CSP/HSTS (P1-10); secure session cookie in production (P1-11).
+
+### Sprint 3 — Craft pass
+
+- [ ] Author the 26 Blade classes that have no CSS rule, including the bag drawer and toast (P2-1).
+- [ ] Responsive image derivatives (AVIF/WebP/JPEG + `srcset`, intrinsic dimensions) and self-hosted display/text fonts (P2-6, P2-7).
+- [ ] Branded 404/403/419/429/500/503 views (P2-3), SEO/social metadata and sitemap (P2-4), real favicon set (P2-5).
+- [ ] Truth and price corrections: unapproved $12 collection, WAV claims, invented specifications, price drift (P2-8, P2-9).
+- [ ] Accessibility set: `aria-current`, `aria-invalid`, live regions, table semantics (P2-11). Screen-reader testing stays marked unverified until performed.
+
+### Sprint 4 — Packaging and operations
+
+- [ ] `tools/package.sh` producing a versioned archive with `vendor/` and Filament assets, plus an extraction test (P3-1).
+- [ ] Backup/restore procedure with a rehearsed restore (P3-6); scheduler entries (P3-7); daily log rotation in the installer template (P3-5); lighter health endpoint (P3-9).
+- [ ] Documented `install/` removal and release-rollback steps (P3-8).
+
+### Sprint 5 — Hosting proof (requires the owner)
+
+- [ ] Implement and certify the MySQL/MariaDB path: `jsonb` → dialect-aware JSON, audit immutability triggers for MySQL and MariaDB, installer driver selection with `pdo_mysql` preflight, and a CI matrix across PostgreSQL 17 / MySQL 8.0 / MariaDB 10.11.
+- [ ] Fresh install on a named cPanel plan matching the target PHP/extensions/cron; complete a customer and owner walkthrough; verify SMTP, backups, restore and rollback.
+
 ## Phase 6 — Later editorial work and launch operations (PAUSED)
 
 - [ ] Add blog and newsletter after an email provider, consent language, unsubscribe flow, retention and abuse controls are decided.

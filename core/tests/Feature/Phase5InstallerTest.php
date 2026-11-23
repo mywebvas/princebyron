@@ -738,4 +738,46 @@ ENV;
         // Assert lock file still exists after release
         $this->assertFileExists($this->installLockPath);
     }
+
+    /**
+     * 21. The installer's PHP floor must match composer.json.
+     *
+     * The release archive ships a prebuilt vendor/, so Composer performs no
+     * platform_requirements check on the host. If the installer accepts a PHP
+     * version the locked dependencies reject, installation "succeeds" and then
+     * every request fatals. This test keeps the two declarations in lock-step.
+     */
+    public function test_installer_php_floor_matches_composer_constraint(): void
+    {
+        $composer = json_decode((string) file_get_contents(base_path('composer.json')), true);
+        $this->assertIsArray($composer, 'composer.json must be valid JSON.');
+        $constraint = $composer['require']['php'] ?? '';
+        $this->assertMatchesRegularExpression(
+            '/\^(\d+\.\d+)/',
+            $constraint,
+            'composer.json require.php must be a caret constraint, e.g. "^8.5".'
+        );
+        preg_match('/\^(\d+\.\d+)/', $constraint, $m);
+        $composerFloor = $m[1];
+
+        $installer = (string) file_get_contents($this->installerPath);
+        $this->assertMatchesRegularExpression(
+            '/\$requiredPhp\s*=\s*\'(\d+\.\d+(?:\.\d+)?)\'/',
+            $installer,
+            'install/index.php must declare a single $requiredPhp floor.'
+        );
+        preg_match('/\$requiredPhp\s*=\s*\'(\d+\.\d+(?:\.\d+)?)\'/', $installer, $m2);
+        $installerFloor = $m2[1];
+
+        $this->assertSame(
+            $composerFloor,
+            implode('.', array_slice(explode('.', $installerFloor), 0, 2)),
+            "Installer PHP floor ({$installerFloor}) must equal composer.json floor ({$composerFloor}). "
+            .'Update install/index.php and composer.json together.'
+        );
+
+        // The rendered preflight must advertise the same number to the operator.
+        $response = $this->runInstaller(['action' => 'requirements']);
+        $this->assertStringContainsString("PHP Version >= {$installerFloor}", $response['output']);
+    }
 }

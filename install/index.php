@@ -180,12 +180,18 @@ function escapeEnv(string $value): string
 $checks = [];
 $allPassed = true;
 
-// PHP Version
-$phpOk = version_compare(PHP_VERSION, '8.3.0', '>=');
+// PHP Version — must match composer.json ("php": "^8.5"). The release ships a
+// prebuilt vendor/, so Composer performs no platform check on the host: this
+// gate is the only thing preventing an "install succeeded, every page fatals"
+// outcome. Keep this value in lock-step with core/composer.json.
+$requiredPhp = '8.5.0';
+$phpOk = version_compare(PHP_VERSION, $requiredPhp, '>=');
 $checks[] = [
-    'label'  => 'PHP Version >= 8.3 (Current: ' . PHP_VERSION . ')',
+    'label'  => 'PHP Version >= ' . $requiredPhp . ' (Current: ' . PHP_VERSION . ')',
     'passed' => $phpOk,
-    'detail' => $phpOk ? 'Satisfied' : 'PHP 8.3 or higher is required for Laravel 13 & Filament 5.',
+    'detail' => $phpOk
+        ? 'Satisfied'
+        : 'PHP ' . $requiredPhp . ' or higher is required. Select a newer PHP version in cPanel > MultiPHP Manager, then reload this page.',
 ];
 if (! $phpOk) $allPassed = false;
 
@@ -251,6 +257,12 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $submittedCsrf = (string) ($_POST['csrf_token'] ?? '');
     if (empty($submittedCsrf) || !hash_equals($_SESSION['installer_csrf_token'] ?? '', $submittedCsrf)) {
         $error = 'Invalid or missing CSRF session token. Please reload the page and submit again.';
+    }
+
+    // Server-side preflight gate. The template only hides the submit button when
+    // a requirement fails; this blocks a crafted POST from continuing anyway.
+    if (! $error && ! $allPassed) {
+        $error = 'Server requirements are not satisfied. Resolve the failed preflight checks above and reload this page.';
     }
 
     if (! $error) {
