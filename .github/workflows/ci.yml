@@ -461,6 +461,15 @@ jobs:
           set -euo pipefail
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+      - name: Upload test log
+        # TEMPORARY DIAGNOSTIC — removed once the MySQL suite is green.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mysql-test-log
+          path: /tmp/test.log
+          if-no-files-found: ignore
+
 
   tests-sqlite:
     name: Tests (SQLite — fast regression pass)
