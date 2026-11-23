@@ -49,13 +49,9 @@
           >
             &#9658; Play Full Collection
           </button>
-          <button 
-            type="button" 
-            class="btn-secondary" 
-            @click="$store.app.addToCart({ id: 'album-collection', title: 'Faith for the In-Between (Digital Collection)', variant: activeFormat, priceCents: 1200, type: 'digital' })"
-          >
-            Add Collection &bull; $12.00 USD
-          </button>
+          <a href="#tracklist" class="btn-secondary" style="text-decoration: none;">
+            Browse the Tracks &darr;
+          </a>
         </div>
       </div>
     </div>
@@ -110,7 +106,7 @@
       </p>
     @endif
 
-    <div class="track-grid">
+    <div class="track-grid" id="tracklist">
       @foreach($songs as $song)
         <div 
           class="track-row {{ $song['isFree'] ? 'music-item-free' : 'music-item-paid' }}"
@@ -137,13 +133,19 @@
                 download
               >Receive Free Track &darr;</a>
             @else
-              <button 
-                type="button" 
-                class="btn-add-track" 
-                @click="$store.app.addToCart({ id: 'song-{{ $song['index'] }}', title: '{{ $song['title'] }} (Digital Track)', variant: activeFormat, priceCents: {{ $song['priceCents'] }}, type: 'digital' })"
-              >
-                Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
-              </button>
+              @if(! empty($song['dbId']))
+                <button
+                  type="button"
+                  class="btn-add-track"
+                  @click="$store.app.addSongToCart({{ $song['dbId'] }}).then(ok => { if (ok) $store.app.openBag(); })"
+                >
+                  Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
+                </button>
+              @else
+                <button type="button" class="btn-add-track" disabled aria-disabled="true" title="This track has not been published for sale yet.">
+                  Not yet available
+                </button>
+              @endif
             @endif
           </div>
         </div>

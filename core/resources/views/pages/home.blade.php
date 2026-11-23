@@ -128,13 +128,19 @@
                 download
               >Receive Free Track &darr;</a>
             @else
-              <button 
-                type="button" 
-                class="btn-add-track" 
-                @click="$store.app.addToCart({ id: 'song-{{ $song['index'] }}', title: '{{ $song['title'] }} (Digital Track)', variant: '24-bit WAV', priceCents: {{ $song['priceCents'] }}, type: 'digital' })"
-              >
-                Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
-              </button>
+              @if(! empty($song['dbId']))
+                <button
+                  type="button"
+                  class="btn-add-track"
+                  @click="$store.app.addSongToCart({{ $song['dbId'] }}).then(ok => { if (ok) $store.app.openBag(); })"
+                >
+                  Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
+                </button>
+              @else
+                <button type="button" class="btn-add-track" disabled aria-disabled="true" title="This track has not been published for sale yet.">
+                  Not yet available
+                </button>
+              @endif
             @endif
           </div>
         </div>

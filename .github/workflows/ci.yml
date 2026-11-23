@@ -367,6 +367,13 @@ jobs:
         # from the repository alone, exactly as the host receives it.
         run: node tools/check-package.mjs
 
+      - name: Release completeness (what the archive needs)
+        # Reports which build products the upload still needs. Not a gate in CI:
+        # vendor/ and Filament assets are produced on the release machine, so
+        # their absence here is expected. In --strict mode this becomes the
+        # final check before zipping.
+        run: node tools/check-release.mjs || true
+
       - name: Validate workflow files
         # A malformed workflow does not fail loudly — GitHub accepts the push
         # and publishes a run with zero jobs, which looks like a test failure.

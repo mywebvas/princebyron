@@ -287,6 +287,7 @@ foreach ($writableDirs as $dir) {
 // -----------------------------------------------------------------------------
 $error = null;
 $success = false;
+$mailerConfigured = null;
 
 if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRF Token Validation
@@ -302,8 +303,13 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (! $error) {
+        $dbDriver  = strtolower(trim($_POST['db_driver'] ?? 'mysql'));
+        if (! in_array($dbDriver, ['mysql', 'pgsql'], true)) {
+            $dbDriver = 'mysql';
+        }
+
         $dbHost    = trim($_POST['db_host'] ?? '127.0.0.1');
-        $dbPort    = trim($_POST['db_port'] ?? '5432');
+        $dbPort    = trim($_POST['db_port'] ?? ($dbDriver === 'mysql' ? '3306' : '5432'));
         $dbName    = trim($_POST['db_name'] ?? '');
         $dbUser    = trim($_POST['db_user'] ?? '');
         $dbPass    = (string) ($_POST['db_pass'] ?? '');
@@ -316,8 +322,28 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $siteUrl   = trim($_POST['app_url'] ?? detectAppUrl());
         $siteName  = trim($_POST['site_name'] ?? 'Prince Byron Official Platform');
 
+        // Mail. The installer previously wrote Mailpit's localhost:1025, which
+        // silently discarded every message on a real host — so a customer could
+        // place an order and never receive a receipt (review P0-7). "none" is an
+        // explicit, honest choice: Laravel's log driver records mail instead of
+        // pretending to send it.
+        $mailer      = strtolower(trim($_POST['mail_mailer'] ?? 'smtp'));
+        if (! in_array($mailer, ['smtp', 'none'], true)) {
+            $mailer = 'smtp';
+        }
+        $mailHost    = trim($_POST['mail_host'] ?? '');
+        $mailPort    = trim($_POST['mail_port'] ?? '587');
+        $mailUser    = trim($_POST['mail_user'] ?? '');
+        $mailPass    = (string) ($_POST['mail_pass'] ?? '');
+        $mailEnc     = strtolower(trim($_POST['mail_encryption'] ?? 'tls'));
+        if (! in_array($mailEnc, ['tls', 'ssl', 'none'], true)) {
+            $mailEnc = 'tls';
+        }
+        $mailFrom    = trim($_POST['mail_from'] ?? $adminEmail);
+
         // Newline injection protection against .env splitting
-        $allInputs = $dbHost . $dbPort . $dbName . $dbUser . $dbPass . $adminName . $adminEmail . $siteName . $siteUrl;
+        $allInputs = $dbHost . $dbPort . $dbName . $dbUser . $dbPass . $adminName . $adminEmail
+            . $siteName . $siteUrl . $mailHost . $mailPort . $mailUser . $mailPass . $mailFrom;
         if (preg_match('/[\r\n]/', $allInputs)) {
             $error = 'Form inputs must not contain newline characters.';
         } elseif (!ctype_digit($dbPort) || (int)$dbPort < 1 || (int)$dbPort > 65535) {
@@ -328,6 +354,12 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'All owner administrator fields are required.';
         } elseif (! filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
             $error = 'Invalid owner email address format.';
+        } elseif ($mailer === 'smtp' && empty($mailHost)) {
+            $error = 'A mail server host is required so order receipts and enquiry notifications can be delivered. Choose "Record to log (no email yet)" if the host has no mail server configured.';
+        } elseif ($mailer === 'smtp' && (! ctype_digit($mailPort) || (int)$mailPort < 1 || (int)$mailPort > 65535)) {
+            $error = 'Invalid mail server port (must be 1-65535).';
+        } elseif ($mailFrom !== '' && ! filter_var($mailFrom, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Invalid "from" email address for outgoing mail.';
         } elseif (strlen($adminPass) < 8) {
             $error = 'Owner password must be at least 8 characters in length.';
         } elseif ($adminPass !== $adminPassC) {
@@ -346,9 +378,11 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (file_exists($installedLockFile)) {
                         $error = 'The platform was already initialized by a concurrent setup request.';
                     } else {
-                        // Step A: Test PostgreSQL Connection
+                        // Step A: Test the database connection for the chosen driver
                         try {
-                            $dsn = "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName}";
+                            $dsn = $dbDriver === 'mysql'
+                                ? "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4"
+                                : "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName}";
                             $pdo = new PDO($dsn, $dbUser, $dbPass, [
                                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                                 PDO::ATTR_TIMEOUT => 5,
@@ -356,7 +390,8 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         } catch (\Throwable $e) {
                             $cleanMsg = $dbPass !== '' ? str_replace($dbPass, '********', $e->getMessage()) : $e->getMessage();
                             @file_put_contents($installLogFile, '[' . date('c') . "] [DB CONNECTION ERROR] {$cleanMsg}\n{$e->getTraceAsString()}\n", FILE_APPEND);
-                            $error = 'Database Connection Failed: Unable to connect to PostgreSQL with provided credentials. Please check host, port, database name, and user permissions.';
+                            $dbLabel = $dbDriver === 'mysql' ? 'MySQL/MariaDB' : 'PostgreSQL';
+                            $error = "Database Connection Failed: Unable to connect to {$dbLabel} with the provided credentials. Please check host, port, database name, and user permissions.";
                         }
 
                         // Step B: Write .env file
@@ -370,6 +405,7 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $escDbName   = escapeEnv($dbName);
                                 $escDbUser   = escapeEnv($dbUser);
                                 $escDbPass   = escapeEnv($dbPass);
+                                $escMailPass = escapeEnv($mailPass);
 
                                 $envTemplate = <<<ENV
 APP_NAME="{$escSiteName}"
@@ -382,7 +418,7 @@ LOG_CHANNEL=stack
 LOG_DEPRECATIONS_CHANNEL=null
 LOG_LEVEL=error
 
-DB_CONNECTION=pgsql
+DB_CONNECTION={$dbDriver}
 DB_HOST={$escDbHost}
 DB_PORT={$escDbPort}
 DB_DATABASE={$escDbName}
@@ -395,14 +431,14 @@ CACHE_STORE=file
 QUEUE_CONNECTION=sync
 FILESYSTEM_DISK=local
 
-MAIL_MAILER=smtp
-MAIL_SCHEME=null
-MAIL_HOST=127.0.0.1
-MAIL_PORT=1025
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_FROM_ADDRESS="booking@princebyron.local"
-MAIL_FROM_NAME="Prince Byron"
+MAIL_MAILER={$mailer}
+MAIL_HOST="{$mailHost}"
+MAIL_PORT={$mailPort}
+MAIL_USERNAME="{$mailUser}"
+MAIL_PASSWORD="{$escMailPass}"
+MAIL_ENCRYPTION={$mailEnc}
+MAIL_FROM_ADDRESS="{$mailFrom}"
+MAIL_FROM_NAME="{$escSiteName}"
 
 # Payment gateways remain in sandbox mode until owner authorizes live release
 STRIPE_MODE=sandbox
@@ -414,6 +450,7 @@ ENV;
                                     throw new \RuntimeException('Failed to write configuration file (.env). Verify filesystem permissions.');
                                 }
                                 @chmod($envFile, 0600);
+                                $mailerConfigured = $mailer;
                             } catch (\Throwable $e) {
                                 @file_put_contents($installLogFile, '[' . date('c') . '] [CONFIG WRITE ERROR] ' . $e->getMessage() . "\n", FILE_APPEND);
                                 $error = 'Failed to write configuration file (.env). Verify directory write permissions.';
@@ -591,7 +628,7 @@ ENV;
             color: rgba(248,244,237,0.85);
             margin-bottom: 6px;
         }
-        input {
+        input, select {
             width: 100%;
             padding: 10px 14px;
             background: rgba(255,255,255,0.05);
@@ -602,6 +639,10 @@ ENV;
             box-sizing: border-box;
             outline: none;
             transition: border-color 0.2s;
+        }
+        select option {
+            background: #181310;
+            color: #FFF;
         }
         input:focus {
             border-color: var(--accent-gold);
@@ -682,6 +723,32 @@ ENV;
                 <p style="color: #FFD54F; font-size: 14px; font-weight: 600;">
                     Security Notice: The installer is now permanently locked. For maximum production security, please remove or rename the <code>install/</code> directory from cPanel File Manager.
                 </p>
+
+                <div style="text-align: left; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 18px; margin-top: 20px;">
+                    <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 1.4px; color: #DFA759; font-weight: 700; margin-bottom: 10px;">
+                        Two steps left before you open the doors
+                    </div>
+                    <ol style="margin: 0; padding-left: 20px; color: #F8F4ED; font-size: 14px; line-height: 1.8;">
+                        <li>
+                            <strong>Add your products and song files.</strong>
+                            Sign in at <code>/admin</code> and publish at least one product or song.
+                            Until you do, the storefront shows clearly-labelled sample items that
+                            cannot be purchased.
+                        </li>
+                        <li>
+                            <strong>Check outgoing email.</strong>
+                            <?php if ($mailerConfigured === 'none'): ?>
+                                Email is set to record to the application log. Add SMTP credentials to
+                                <code>.env</code> (MAIL_*) when your host provides a mailbox, otherwise
+                                customers will not receive receipts.
+                            <?php else: ?>
+                                Place a test order and confirm the receipt arrives, then ask a friend on
+                                another network to confirm the same.
+                            <?php endif; ?>
+                        </li>
+                    </ol>
+                </div>
+
                 <div style="display: flex; gap: 12px; margin-top: 24px;">
                     <a href="../" class="btn" style="flex: 1;">Visit Platform</a>
                     <a href="../admin" class="btn" style="flex: 1; background: #FFF;">Owner Login</a>
@@ -715,15 +782,22 @@ ENV;
             <form action="?action=execute" method="POST">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">
                 <div class="card">
-                    <div class="section-heading">2. PostgreSQL Database Connection</div>
+                    <div class="section-heading">2. Database Connection</div>
                     <div class="form-grid">
+                        <div>
+                            <label for="db_driver">Database Type</label>
+                            <select id="db_driver" name="db_driver" onchange="pbSyncDbPort(this.value)">
+                                <option value="mysql" <?php echo (($_POST['db_driver'] ?? 'mysql') === 'mysql') ? 'selected' : ''; ?>>MySQL / MariaDB (most shared cPanel hosts)</option>
+                                <option value="pgsql" <?php echo (($_POST['db_driver'] ?? 'mysql') === 'pgsql') ? 'selected' : ''; ?>>PostgreSQL</option>
+                            </select>
+                        </div>
                         <div>
                             <label>Database Host</label>
                             <input type="text" name="db_host" value="<?php echo htmlspecialchars($_POST['db_host'] ?? '127.0.0.1'); ?>" required>
                         </div>
                         <div>
                             <label>Port</label>
-                            <input type="text" name="db_port" value="<?php echo htmlspecialchars($_POST['db_port'] ?? '5432'); ?>" required>
+                            <input type="text" id="db_port" name="db_port" value="<?php echo htmlspecialchars($_POST['db_port'] ?? '3306'); ?>" required>
                         </div>
                         <div class="form-group-full">
                             <label>Database Name</label>
@@ -759,7 +833,51 @@ ENV;
                         </div>
                     </div>
 
-                    <div class="section-heading" style="margin-top: 24px;">4. Platform General Settings</div>
+                    <div class="section-heading" style="margin-top: 24px;">4. Outgoing Email</div>
+                    <p style="font-size: 13px; color: rgba(248,244,237,0.65); line-height: 1.6; margin: 0 0 14px;">
+                        Used for order receipts and ministry enquiry notifications. If your host has no mail server
+                        configured yet, choose &ldquo;Record to log&rdquo; — messages are written to the application log
+                        instead of being silently discarded.
+                    </p>
+                    <div class="form-grid">
+                        <div class="form-group-full">
+                            <label for="mail_mailer">Delivery Method</label>
+                            <select id="mail_mailer" name="mail_mailer" onchange="pbToggleMail(this.value)">
+                                <option value="smtp" <?php echo (($_POST['mail_mailer'] ?? 'smtp') === 'smtp') ? 'selected' : ''; ?>>SMTP server (recommended)</option>
+                                <option value="none" <?php echo (($_POST['mail_mailer'] ?? 'smtp') === 'none') ? 'selected' : ''; ?>>Record to log (no email yet)</option>
+                            </select>
+                        </div>
+                        <div class="mail-field">
+                            <label>SMTP Host</label>
+                            <input type="text" name="mail_host" value="<?php echo htmlspecialchars($_POST['mail_host'] ?? ''); ?>" placeholder="mail.yourdomain.com">
+                        </div>
+                        <div class="mail-field">
+                            <label>SMTP Port</label>
+                            <input type="text" name="mail_port" value="<?php echo htmlspecialchars($_POST['mail_port'] ?? '587'); ?>" placeholder="587">
+                        </div>
+                        <div class="mail-field">
+                            <label>Encryption</label>
+                            <select name="mail_encryption">
+                                <option value="tls" <?php echo (($_POST['mail_encryption'] ?? 'tls') === 'tls') ? 'selected' : ''; ?>>TLS (587)</option>
+                                <option value="ssl" <?php echo (($_POST['mail_encryption'] ?? 'tls') === 'ssl') ? 'selected' : ''; ?>>SSL (465)</option>
+                                <option value="none" <?php echo (($_POST['mail_encryption'] ?? 'tls') === 'none') ? 'selected' : ''; ?>>None</option>
+                            </select>
+                        </div>
+                        <div class="mail-field">
+                            <label>SMTP Username</label>
+                            <input type="text" name="mail_user" value="<?php echo htmlspecialchars($_POST['mail_user'] ?? ''); ?>" autocomplete="off">
+                        </div>
+                        <div class="mail-field" style="grid-column: 1 / -1;">
+                            <label>SMTP Password</label>
+                            <input type="password" name="mail_pass" value="" autocomplete="new-password">
+                        </div>
+                        <div class="form-group-full">
+                            <label>"From" Email Address</label>
+                            <input type="email" name="mail_from" value="<?php echo htmlspecialchars($_POST['mail_from'] ?? ($_POST['admin_email'] ?? '')); ?>" placeholder="orders@yourdomain.com">
+                        </div>
+                    </div>
+
+                    <div class="section-heading" style="margin-top: 24px;">5. Platform General Settings</div>
                     <div class="form-grid">
                         <div class="form-group-full">
                             <label>Platform Name</label>
@@ -786,5 +904,31 @@ ENV;
             Prince Byron Gospel Platform &bull; Fixed Scope Engagement &bull; Release Candidate Installer
         </div>
     </div>
+
+    <script>
+        // Keep the port field sensible when the engine changes, without
+        // overwriting a value the operator has deliberately typed.
+        function pbSyncDbPort(driver) {
+            var port = document.getElementById('db_port');
+            if (!port) return;
+            var current = port.value.trim();
+            if (current === '' || current === '3306' || current === '5432') {
+                port.value = driver === 'pgsql' ? '5432' : '3306';
+            }
+        }
+
+        // Hide SMTP fields when the operator chooses "record to log", so the
+        // form cannot ask for settings that will not be used.
+        function pbToggleMail(mailer) {
+            var fields = document.querySelectorAll('.mail-field');
+            for (var i = 0; i < fields.length; i++) {
+                fields[i].style.display = (mailer === 'smtp') ? '' : 'none';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            var sel = document.getElementById('mail_mailer');
+            if (sel) pbToggleMail(sel.value);
+        });
+    </script>
 </body>
 </html>

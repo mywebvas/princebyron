@@ -2,10 +2,24 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class Phase2ScreensTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The storefront is database-driven (Sprint 1). Without seeding, only
+        // the presentation fallback catalogue exists, which is deliberately
+        // non-purchasable and labelled as sample data.
+        $this->seed(\Database\Seeders\ProductsSeeder::class);
+        $this->seed(\Database\Seeders\SongsSeeder::class);
+    }
+
     /**
      * Test Home View renders successfully with approved hero, bio, music, and merch.
      */
@@ -76,9 +90,9 @@ class Phase2ScreensTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Worn in faith');
-        $response->assertSee('Prince Byron Signature Tee');
-        $response->assertSee('Abide Arch Pullover Hoodie');
-        $response->assertSee('PB Monogram Curved Brim Cap');
+        $response->assertSee('Prince Byron T-Shirt');
+        $response->assertSee('Prince Byron Hoodie');
+        $response->assertSee('Prince Byron Cap');
 
         // Merchandise shows real-looking money, so the same placeholder-pricing
         // disclosure is required here as on the music page.
@@ -90,17 +104,17 @@ class Phase2ScreensTest extends TestCase
      */
     public function test_single_product_detail_page_renders_successfully(): void
     {
-        $response = $this->get('/store/tee');
+        $response = $this->get('/store/prince-byron-t-shirt');
 
         $response->assertStatus(200);
-        $response->assertSee('Prince Byron Signature Tee');
+        $response->assertSee('Prince Byron T-Shirt');
         $response->assertSee('Apparel');
-        $response->assertSee('PB-TEE-001');
-        $response->assertSee('Sand Linen');
-        $response->assertSee('Charcoal Obsidian');
         $response->assertSee('Add to Bag');
-        $response->assertSee('Materials');
-        $response->assertSee('Details');
+
+        // Options are rendered from real variant rows, so the picker labels
+        // come from the seeder rather than a hardcoded palette.
+        $response->assertSee('Black');
+        $response->assertSee('White');
     }
 
     /**
@@ -163,12 +177,37 @@ class Phase2ScreensTest extends TestCase
         $response = $this->get('/account');
 
         $response->assertStatus(200);
+
+        // A guest gets the Fan Vault sign-in surface. This test previously
+        // asserted a hardcoded email and entitlement titles that only existed
+        // inside the demo-credentials banner removed in Sprint 1 (review P1-1),
+        // so it was validating the leak rather than the page.
         $response->assertSee('Customer Fan Vault');
-        $response->assertSee('fan@example.com');
+        $response->assertSee('Sign In to My Library');
+        $response->assertDontSee('TemporaryFanPass2026!');
+        $response->assertDontSee('Local Demo Access');
+    }
+
+    /**
+     * An authenticated customer sees their own orders and entitlements.
+     */
+    public function test_authenticated_customer_sees_their_own_vault(): void
+    {
+        $customer = \App\Models\User::create([
+            'name' => 'Vault Owner',
+            'email' => 'vault@example.com',
+            'password' => \Illuminate\Support\Facades\Hash::make('secret-password-123'),
+            'role' => \App\Models\User::ROLE_CUSTOMER,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->actingAs($customer)->get('/account');
+
+        $response->assertStatus(200);
+        $response->assertSee('vault@example.com');
         $response->assertSee('Active Digital Entitlements');
         $response->assertSee('Recent Orders');
-        $response->assertSee('Purify Me (Single Master)');
-        $response->assertSee('Free (Lead Track)');
     }
 
     /**
@@ -195,7 +234,7 @@ class Phase2ScreensTest extends TestCase
      */
     public function test_pages_do_not_contain_unapproved_claims(): void
     {
-        $endpoints = ['/', '/about', '/music', '/store', '/store/tee', '/cart', '/checkout', '/booking', '/account', '/admin/preview'];
+        $endpoints = ['/', '/about', '/music', '/store', '/store/prince-byron-t-shirt', '/cart', '/checkout', '/booking', '/account', '/admin/preview'];
 
         foreach ($endpoints as $url) {
             $content = $this->get($url)->getContent();

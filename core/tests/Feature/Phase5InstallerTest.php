@@ -801,6 +801,70 @@ ENV;
      * version the locked dependencies reject, installation "succeeds" and then
      * every request fatals. This test keeps the two declarations in lock-step.
      */
+    /**
+     * 21. The installer must never write Mailpit's development mail settings.
+     *
+     * Regression (review P0-7): it wrote MAIL_HOST=127.0.0.1 / MAIL_PORT=1025,
+     * so on a real host every order receipt and ministry enquiry notification
+     * was silently discarded. An operator would have had no idea email was
+     * broken, because nothing failed.
+     */
+    public function test_installer_never_writes_mailpit_settings(): void
+    {
+        $installer = (string) file_get_contents($this->installerPath);
+
+        $this->assertStringNotContainsString(
+            'MAIL_PORT=1025',
+            $installer,
+            'install/index.php must not hardcode the Mailpit port.'
+        );
+        $this->assertStringNotContainsString(
+            'MAIL_HOST=127.0.0.1',
+            $installer,
+            'install/index.php must not hardcode a loopback mail host.'
+        );
+        $this->assertStringNotContainsString(
+            'booking@princebyron.local',
+            $installer,
+            'install/index.php must not hardcode a placeholder sender address.'
+        );
+    }
+
+    /**
+     * 22. The installer must offer a real mail step and an explicit opt-out.
+     */
+    public function test_installer_offers_mail_configuration_and_a_database_driver_choice(): void
+    {
+        $installer = (string) file_get_contents($this->installerPath);
+
+        // Mail is configurable from the form.
+        $this->assertStringContainsString('name="mail_mailer"', $installer);
+        $this->assertStringContainsString('name="mail_host"', $installer);
+
+        // "No email yet" must be an honest, selectable choice rather than a
+        // silent failure.
+        $this->assertStringContainsString('Record to log (no email yet)', $installer);
+
+        // Both database drivers are selectable, matching the approved
+        // MySQL/MariaDB hosting direction.
+        $this->assertStringContainsString('name="db_driver"', $installer);
+        $this->assertStringContainsString('MySQL / MariaDB', $installer);
+
+        // The written .env must take the connection name from that choice.
+        $this->assertStringContainsString('DB_CONNECTION={$dbDriver}', $installer);
+    }
+
+    /**
+     * 23. The success screen must tell the owner what still has to happen.
+     */
+    public function test_installer_success_screen_lists_remaining_owner_steps(): void
+    {
+        $installer = (string) file_get_contents($this->installerPath);
+
+        $this->assertStringContainsString('Two steps left before you open the doors', $installer);
+        $this->assertStringContainsString('publish at least one product or song', $installer);
+    }
+
     public function test_installer_php_floor_matches_composer_constraint(): void
     {
         $composer = json_decode((string) file_get_contents(base_path('composer.json')), true);

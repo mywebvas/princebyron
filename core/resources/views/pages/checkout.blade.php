@@ -6,45 +6,97 @@
   style="background: var(--color-cream);"
   x-data="{
     step: 1,
-    contactEmail: 'fan@example.com',
-    contactName: 'Demo Supporter',
-    contactPhone: '+1 (555) 019-2834',
-    shippingAddress: '777 Worship Way, Suite 400',
-    shippingCity: 'Atlanta',
-    shippingCountry: 'United States',
-    shippingPostal: '30303',
-    shippingMethod: 'standard',
-    shippingFeeCents: 500,
+    contactEmail: '',
+    contactName: '',
+    contactPhone: '',
+
+    shippingAddress: '',
+    shippingCity: '',
+    shippingPostal: '',
+    shippingCountry: 'US',
+
     selectedPayment: 'stripe',
-    simulateDecline: false,
+
+
+    submitting: false,
+    errorMessage: '',
+
     orderCompleted: false,
     orderRef: '',
     orderSuccessStatus: '',
+    orderBankInstructions: null,
 
-    get totalCents() {
-      return $store.app.cartSubtotalCents + this.shippingFeeCents;
+    // Server-calculated totals. Shipping and tax are never computed in the
+    // browser: CheckoutService prices from the database and the active
+    // ShippingRate, and this state mirrors the answer.
+    calculation: { subtotal_cents: 0, shipping_cents: 0, tax_cents: 0, total_cents: 0, has_physical: false },
+    calcError: '',
+
+    get totalCents() { return this.calculation.total_cents || 0; },
+    get shippingCents() { return this.calculation.shipping_cents || 0; },
+    get subtotalCents() { return this.calculation.subtotal_cents ?? $store.app.cartSubtotalCents; },
+    get needsShipping() { return !!this.calculation.has_physical; },
+
+    init() {
+      this.refreshTotals();
     },
 
-    submitCheckout() {
-      if (this.simulateDecline && this.selectedPayment === 'stripe') {
-        $store.app.showToast('Stripe Decline Simulation: Card #4242 was declined (insufficient_funds). Please choose PayPal or Manual Bank Wire.');
+    /** Ask the server what this bag costs to this destination. */
+    async refreshTotals() {
+      const q = this.needsShipping || this.shippingCountry ? '?country=' + encodeURIComponent(this.shippingCountry) : '';
+      const result = await $store.app.apiFetch('GET', '/api/checkout/calculate' + q);
+      if (!result.success) {
+        // A failed calculation is information, not a crash: surface it.
+        this.calcError = result.message;
+        return;
+      }
+      this.calculation = result.payload || this.calculation;
+      this.calcError = result.payload.success === false ? (result.payload.message || '') : '';
+    },
+
+    async submitCheckout() {
+      if (this.submitting) return;
+      this.errorMessage = '';
+      this.submitting = true;
+
+      const payload = {
+        name: this.contactName,
+        email: this.contactEmail,
+        payment_method: this.selectedPayment
+      };
+
+      if (this.needsShipping) {
+        payload.address_line1 = this.shippingAddress;
+        payload.city = this.shippingCity;
+        payload.postal_code = this.shippingPostal;
+        payload.country = this.shippingCountry;
+      }
+
+      const result = await $store.app.apiFetch('POST', '/api/checkout/process', payload);
+      this.submitting = false;
+
+      if (!result.success) {
+        this.errorMessage = result.message;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
 
-      this.orderRef = 'PB-202611-' + Math.floor(1000 + Math.random() * 9000);
-      if (this.selectedPayment === 'wire') {
-        this.orderSuccessStatus = 'Status: Awaiting Bank Verification • Routing instructions dispatched to ' + this.contactEmail;
+      const data = result.payload;
+      this.orderRef = data.order_reference;
+      this.orderBankInstructions = data.bank_instructions || null;
+
+      if (data.status === 'awaiting_bank_verification') {
+        this.orderSuccessStatus = 'Awaiting bank verification — your order is reserved.';
       } else {
-        this.orderSuccessStatus = 'Status: Paid & Settled • Digital Entitlements Active in Fan Vault';
+        this.orderSuccessStatus = 'Order recorded — payment confirmation pending.';
       }
 
+      // The server is the source of truth for what remains in the bag.
+      await $store.app.loadCart();
       this.orderCompleted = true;
-      $store.app.clearCart();
-      $store.app.showToast('Demo order ' + this.orderRef + ' submitted successfully.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }"
->
+  }">
   <div class="checkout-page-wrap">
     
     <!-- Breadcrumb -->
@@ -62,6 +114,12 @@
       </p>
     </div>
 
+    <!-- Error surface: server rejections must be visible, not silent. -->
+    <div x-show="errorMessage" x-cloak role="alert"
+         style="background: var(--status-error-bg); border: 1px solid var(--status-error-border); color: var(--status-error-text); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 24px; font-size: 0.9rem;">
+      <strong>We couldn't place this order:</strong> <span x-text="errorMessage"></span>
+    </div>
+
     <!-- Success State View -->
     <div x-show="orderCompleted" style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 56px 36px; text-align: center; box-shadow: var(--shadow-sm);" x-cloak>
       <div style="width: 64px; height: 64px; background: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-border); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 20px;">
@@ -70,8 +128,25 @@
       <span class="section-eyebrow" style="color: var(--status-success-text);">Order Confirmation</span>
       <h2 style="font-family: var(--font-display); font-size: 2rem; color: var(--text-primary); margin-bottom: 12px;">Thank you for your order!</h2>
       <p style="color: var(--text-muted); max-width: 520px; margin: 0 auto 24px;">
-        Your demonstration order has been created. A receipt and instructions have been simulated for <strong x-text="contactEmail"></strong>.
+        Your order has been recorded and is attributed to <strong x-text="contactEmail"></strong>.
+        Keep the reference below for any enquiry.
       </p>
+      <p style="color: var(--color-clay); font-weight: 700; max-width: 560px; margin: 0 auto 8px;" x-text="orderSuccessStatus"></p>
+      <p style="color: var(--text-muted); font-size: 0.85rem; max-width: 560px; margin: 0 auto 24px;">
+        Online card and PayPal payments are not yet enabled on this installation, so no money has been taken.
+        The owner will confirm payment and release your order.
+      </p>
+
+      <template x-if="orderBankInstructions">
+        <div style="background: var(--surface-amber-glow); border-left: 3px solid var(--color-gold); padding: 16px; border-radius: var(--radius-sm); max-width: 480px; margin: 0 auto 24px; text-align: left;">
+          <strong style="display:block; margin-bottom: 8px;" x-text="orderBankInstructions.notice"></strong>
+          <div style="font-size: 0.85rem; line-height: 1.7;">
+            <div>Bank: <span x-text="orderBankInstructions.bank_name"></span></div>
+            <div>Account name: <span x-text="orderBankInstructions.account_name"></span></div>
+            <div>Payment reference: <strong x-text="orderBankInstructions.reference"></strong></div>
+          </div>
+        </div>
+      </template>
       
       <div style="background: var(--color-paper); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; max-width: 480px; margin: 0 auto 32px; text-align: left;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -166,28 +241,31 @@
 
             <div class="form-group" style="margin-bottom: 24px;">
               <label for="chk-country">Country / Region:</label>
-              <select id="chk-country" class="form-control" x-model="shippingCountry">
-                <option value="United States">United States</option>
-                <option value="United Kingdom">United Kingdom</option>
-                <option value="Canada">Canada</option>
-                <option value="Nigeria">Nigeria</option>
-                <option value="Ghana">Ghana</option>
-                <option value="Other">Other Region (Calculated server-side)</option>
+              <select id="chk-country" class="form-control" x-model="shippingCountry" @change="refreshTotals()">
+                <option value="US">United States</option>
+                <option value="GB">United Kingdom</option>
+                <option value="CA">Canada</option>
+                <option value="NG">Nigeria</option>
+                <option value="GH">Ghana</option>
+                <option value="ZA">South Africa</option>
+                <option value="KE">Kenya</option>
               </select>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 6px;">
+                Shipping availability and rates are decided server-side for the selected destination.
+              </p>
             </div>
 
             <div style="background: var(--color-paper); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 28px;">
-              <strong style="display: block; font-size: 0.9rem; color: var(--color-obsidian); margin-bottom: 8px;">Delivery Option:</strong>
-              <div style="display: flex; gap: 16px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer;">
-                  <input type="radio" name="shipping_method" value="standard" x-model="shippingMethod" @change="shippingFeeCents = 500">
-                  Standard Tracked (+$5.00 USD)
-                </label>
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer;">
-                  <input type="radio" name="shipping_method" value="express" x-model="shippingMethod" @change="shippingFeeCents = 1200">
-                  Express Courier (+$12.00 USD)
-                </label>
-              </div>
+              <strong style="display: block; font-size: 0.9rem; color: var(--color-obsidian); margin-bottom: 8px;">Shipping:</strong>
+              <template x-if="calcError">
+                <p style="font-size: 0.85rem; color: var(--status-error-text); margin: 0;" x-text="calcError"></p>
+              </template>
+              <template x-if="!calcError">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                  <span x-text="'$' + (shippingCents / 100).toFixed(2) + ' USD'"></span>
+                  &bull; calculated by the server for the destination above.
+                </p>
+              </template>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -213,16 +291,13 @@
               >
                 <label style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-primary); cursor: pointer;">
                   <input type="radio" name="payment_method" value="stripe" x-model="selectedPayment">
-                  <span>Credit / Debit Card (Stripe Simulation)</span>
+                  <span>Credit / Debit Card</span>
                 </label>
                 <div x-show="selectedPayment === 'stripe'" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light);" x-cloak>
-                  <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px;">
-                    Test card: <code class="code-path">4242 &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; 4242</code> &bull; Exp: 12/28 &bull; CVC: 123
+                  <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                    Online card capture is not enabled on this installation. Your order will be recorded and the
+                    owner will confirm payment before anything is released. No card details are collected here.
                   </p>
-                  <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--status-error-text); cursor: pointer;">
-                    <input type="checkbox" x-model="simulateDecline">
-                    <span>Simulate card decline error to test failure recovery</span>
-                  </label>
                 </div>
               </div>
 
@@ -234,24 +309,25 @@
               >
                 <label style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-primary); cursor: pointer;">
                   <input type="radio" name="payment_method" value="paypal" x-model="selectedPayment">
-                  <span>PayPal (Sandbox Simulation)</span>
+                  <span>PayPal</span>
                 </label>
                 <div x-show="selectedPayment === 'paypal'" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light); font-size: 0.82rem; color: var(--text-muted);" x-cloak>
-                  You will be directed to PayPal's secure sandbox simulation to finalize checkout.
+                  Online PayPal capture is not enabled on this installation. Your order will be recorded and the
+                  owner will confirm payment before anything is released.
                 </div>
               </div>
 
               <!-- Option 3: Manual Bank Transfer -->
               <div 
                 style="border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 18px; cursor: pointer;"
-                :style="selectedPayment === 'wire' ? 'border-color: var(--color-gold); background: var(--surface-dark-glass);' : 'background: var(--surface-card);'"
-                @click="selectedPayment = 'wire'"
+                :style="selectedPayment === 'bank_transfer' ? 'border-color: var(--color-gold); background: var(--surface-dark-glass);' : 'background: var(--surface-card);'"
+                @click="selectedPayment = 'bank_transfer'"
               >
                 <label style="display: flex; align-items: center; gap: 12px; font-weight: 700; color: var(--text-primary); cursor: pointer;">
-                  <input type="radio" name="payment_method" value="wire" x-model="selectedPayment">
+                  <input type="radio" name="payment_method" value="bank_transfer" x-model="selectedPayment">
                   <span>Manual Bank Wire Transfer</span>
                 </label>
-                <div x-show="selectedPayment === 'wire'" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light); font-size: 0.82rem; color: var(--text-muted);" x-cloak>
+                <div x-show="selectedPayment === 'bank_transfer'" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-light); font-size: 0.82rem; color: var(--text-muted);" x-cloak>
                   <div style="background: var(--surface-amber-glow); border-left: 3px solid var(--color-gold); padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 8px;">
                     <strong>Verification Requirement:</strong> Order will be placed in an <code class="code-path">awaiting_bank_verification</code> state. The owner must independently reconcile incoming bank funds before digital audio or merchandise is released.
                   </div>
@@ -268,7 +344,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <button type="button" class="btn-secondary" @click="step = 2">&larr; Back to Delivery</button>
               <button type="submit" class="btn-primary" style="padding: 16px 32px;">
-                Complete Demo Order &bull; <span x-text="'$' + (totalCents / 100).toFixed(2) + ' USD'"></span>
+                <span x-show="!submitting">Place Order &bull; <span x-text="'$' + (totalCents / 100).toFixed(2) + ' USD'"></span></span>
+                <span x-show="submitting">Placing order&hellip;</span>
               </button>
             </div>
           </div>
@@ -284,25 +361,28 @@
           </h2>
 
           <div style="max-height: 280px; overflow-y: auto; margin-bottom: 20px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px;">
-            <template x-for="item in $store.app.cart" :key="item.id + item.variant">
+            <template x-for="item in $store.app.cartItems" :key="item.key">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; font-size: 0.88rem;">
                 <div>
                   <strong x-text="item.title" style="display: block; color: var(--text-primary);"></strong>
-                  <span style="font-size: 0.78rem; color: var(--text-muted);" x-text="item.variant + ' &bull; Qty: ' + item.qty"></span>
+                  <span style="font-size: 0.78rem; color: var(--text-muted);" x-text="item.variant_label + ' · Qty: ' + item.quantity"></span>
                 </div>
-                <strong style="color: var(--color-clay);" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></strong>
+                <strong style="color: var(--color-clay);" x-text="'$' + (item.line_total_cents / 100).toFixed(2)"></strong>
               </div>
             </template>
+            <p x-show="$store.app.cartIsEmpty" style="font-size: 0.85rem; color: var(--text-muted);">
+              Your bag is empty. <a href="{{ url('/store') }}" style="color: var(--color-clay);">Browse the store</a>.
+            </p>
           </div>
 
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.88rem; color: var(--text-muted);">
             <span>Subtotal:</span>
-            <strong style="color: var(--color-obsidian);" x-text="$store.app.cartSubtotalFormatted"></strong>
+            <strong style="color: var(--color-obsidian);" x-text="'$' + (subtotalCents / 100).toFixed(2) + ' ' + $store.app.cart.currency"></strong>
           </div>
 
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.88rem; color: var(--text-muted);">
             <span>Shipping:</span>
-            <span x-text="'$' + (shippingFeeCents / 100).toFixed(2) + ' USD'"></span>
+            <span x-text="needsShipping ? ('$' + (shippingCents / 100).toFixed(2) + ' USD') : 'Not applicable (digital only)'"></span>
           </div>
 
           <div style="border-top: 1px solid var(--border-light); padding-top: 16px; margin-top: 16px; display: flex; justify-content: space-between; align-items: baseline;">

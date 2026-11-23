@@ -200,7 +200,7 @@
         </div>
 
         <div class="drawer-body" id="drawer-items-list">
-          <template x-if="$store.app.cart.length === 0">
+          <template x-if="$store.app.cartIsEmpty">
             <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
               <p style="font-size: 1.15rem; margin-bottom: 8px; font-family: var(--font-display); color: var(--text-primary);">Your bag is currently empty.</p>
               <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--text-muted);">Explore our worship releases and sacred apparel to support Prince Byron's ministry.</p>
@@ -208,25 +208,28 @@
             </div>
           </template>
 
-          <template x-for="(item, index) in $store.app.cart" :key="item.id + item.variant">
+          <!-- Items come from the server summary: prices, stock and
+               availability are decided server-side on every refresh. -->
+          <template x-for="item in $store.app.cartItems" :key="item.key">
             <div class="cart-item">
               <div class="cart-item-thumb" aria-hidden="true">PB</div>
               <div class="cart-item-info">
                 <h4 x-text="item.title"></h4>
-                <div class="meta" x-text="item.variant"></div>
-                <div class="meta" style="color: var(--color-gold); font-weight: 700;" x-text="'$' + (item.priceCents / 100).toFixed(2) + ' USD'"></div>
-                <div class="cart-qty-ctrl">
-                  <button type="button" @click="$store.app.updateQty(index, -1)" aria-label="Decrease quantity">&minus;</button>
-                  <span x-text="item.qty"></span>
-                  <button type="button" @click="$store.app.updateQty(index, 1)" aria-label="Increase quantity">&plus;</button>
+                <div class="meta" x-text="item.variant_label"></div>
+                <div class="meta" style="color: var(--color-gold); font-weight: 700;" x-text="'$' + (item.unit_price_cents / 100).toFixed(2) + ' USD'"></div>
+                <div class="cart-qty-ctrl" x-show="item.type === 'variant'">
+                  <button type="button" @click="$store.app.decrementItem(item)" aria-label="Decrease quantity">&minus;</button>
+                  <span x-text="item.quantity"></span>
+                  <button type="button" @click="$store.app.incrementItem(item)" aria-label="Increase quantity">&plus;</button>
                 </div>
+                <div class="meta" x-show="item.type === 'song'">Digital single &bull; 1 copy</div>
               </div>
               <div style="text-align: right;">
-                <div style="font-weight: 700; color: var(--text-main);" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></div>
+                <div style="font-weight: 700; color: var(--text-main);" x-text="'$' + (item.line_total_cents / 100).toFixed(2)"></div>
                 <button 
                   type="button" 
                   class="btn-remove" 
-                  @click="$store.app.removeItem(index)"
+                  @click="$store.app.removeItem(item)"
                   aria-label="Remove item"
                   style="margin-top: 12px; font-size: 0.75rem; color: var(--status-error-text); background: none; border: none; cursor: pointer; text-decoration: underline;"
                 >Remove</button>

@@ -3,10 +3,41 @@
 @section('content')
 <section class="section-editorial" style="background: var(--color-cream);" 
   x-data="{
-    selectedColor: '{{ $product['colors'][0] }}',
-    selectedSize: '{{ $product['sizes'][0] }}',
+    variants: {{ Illuminate\Support\Json::encode($product['variants']) }},
+    purchasable: {{ $product['purchasable'] ? 'true' : 'false' }},
+    selectedColor: '',
+    selectedSize: '',
     qty: 1,
-    priceCents: {{ $product['priceCents'] }}
+    adding: false,
+
+    init() {
+      // Default to the first variant actually in stock, so the page can never
+      // open on a combination that cannot be bought.
+      const first = this.variants.find(v => v.inStock) || this.variants[0];
+      if (first) { this.selectedColor = first.color || ''; this.selectedSize = first.size || ''; }
+    },
+
+    get colors() { return [...new Set(this.variants.filter(v => v.inStock).map(v => v.color).filter(Boolean))]; },
+    get sizes()  { return [...new Set(this.variants.filter(v => v.inStock && (!this.selectedColor || v.color === this.selectedColor)).map(v => v.size).filter(Boolean))]; },
+
+    get selectedVariant() {
+      return this.variants.find(v => (v.color || '') === this.selectedColor && (v.size || '') === this.selectedSize) || null;
+    },
+
+    get priceCents() { return this.selectedVariant ? this.selectedVariant.priceCents : 0; },
+
+    get canAdd() { return this.purchasable && !!this.selectedVariant && this.selectedVariant.inStock; },
+
+    async addToBag() {
+      if (!this.canAdd || this.adding) return;
+      this.adding = true;
+      const ok = await $store.app.addVariantToCart(this.selectedVariant.id, this.qty);
+      this.adding = false;
+      if (ok) {
+        this.qty = 1;
+        $store.app.openBag();
+      }
+    }
   }"
 >
   <div class="section-container">
@@ -53,8 +84,16 @@
         </div>
 
         <div class="detail-stock-pill">
-          <span style="color: var(--status-success-text);">&#9679;</span> 
-          <span>Verified In Stock &bull; Ready to Fulfill</span>
+          @if($product['purchasable'])
+            <template x-if="canAdd">
+              <div><span style="color: var(--status-success-text);">&#9679;</span> <span>In Stock &bull; Ready to Fulfill</span></div>
+            </template>
+            <template x-if="!canAdd">
+              <div><span style="color: var(--status-warning-text);">&#9679;</span> <span>Currently unavailable in this option</span></div>
+            </template>
+          @else
+            <div><span style="color: var(--text-muted);">&#9679;</span> <span>Not yet available for purchase &bull; owner has not published inventory</span></div>
+          @endif
         </div>
 
         <!-- Color Options -->
@@ -64,14 +103,15 @@
             <strong x-text="selectedColor"></strong>
           </div>
           <div class="options-row">
-            @foreach($product['colors'] as $color)
-              <button 
-                type="button" 
-                class="picker-btn" 
-                :class="{ 'selected': selectedColor === '{{ $color }}' }" 
-                @click="selectedColor = '{{ $color }}'"
-              >{{ $color }}</button>
-            @endforeach
+            <template x-for="color in colors" :key="color">
+              <button
+                type="button"
+                class="picker-btn"
+                :class="{ 'selected': selectedColor === color }"
+                @click="selectedColor = color; if (!sizes.includes(selectedSize)) selectedSize = sizes[0] || '';"
+                x-text="color"
+              ></button>
+            </template>
           </div>
         </div>
 
@@ -82,14 +122,15 @@
             <strong x-text="selectedSize"></strong>
           </div>
           <div class="options-row">
-            @foreach($product['sizes'] as $size)
-              <button 
-                type="button" 
-                class="picker-btn" 
-                :class="{ 'selected': selectedSize === '{{ $size }}' }" 
-                @click="selectedSize = '{{ $size }}'"
-              >{{ $size }}</button>
-            @endforeach
+            <template x-for="size in sizes" :key="size">
+              <button
+                type="button"
+                class="picker-btn"
+                :class="{ 'selected': selectedSize === size }"
+                @click="selectedSize = size"
+                x-text="size"
+              ></button>
+            </template>
           </div>
         </div>
 
@@ -101,39 +142,41 @@
           <div class="cart-qty-ctrl" style="width: 140px; justify-content: space-between;">
             <button type="button" @click="if (qty > 1) qty--" aria-label="Decrease quantity">&minus;</button>
             <span x-text="qty"></span>
-            <button type="button" @click="qty++" aria-label="Increase quantity">&plus;</button>
+            <button type="button" @click="if (qty < 10) qty++" aria-label="Increase quantity">&plus;</button>
           </div>
         </div>
 
         <!-- Add to Bag CTA -->
         <div style="display: flex; gap: 16px; margin-bottom: 36px; flex-wrap: wrap;">
-          <button 
-            type="button" 
-            class="btn-primary" 
+          <button
+            type="button"
+            class="btn-primary"
             style="flex: 1; min-width: 240px; justify-content: center; text-align: center;"
-            @click="$store.app.addToCart({
-              id: '{{ $product['id'] }}',
-              title: '{{ $product['title'] }}',
-              variant: selectedColor + ' / ' + selectedSize,
-              priceCents: priceCents,
-              qty: qty,
-              type: 'physical'
-            })"
+            x-bind:disabled="!canAdd || adding"
+            x-bind:aria-disabled="(!canAdd || adding).toString()"
+            @click="addToBag()"
           >
-            Add to Bag &bull; <span x-text="'$' + ((priceCents * qty) / 100).toFixed(2)"></span>
+            <span x-show="canAdd">
+              Add to Bag &bull; <span x-text="'$' + ((priceCents * qty) / 100).toFixed(2)"></span>
+            </span>
+            <span x-show="!canAdd">
+              {{ $product['purchasable'] ? 'Select an Available Option' : 'Not Yet Available' }}
+            </span>
           </button>
           <a href="{{ url('/cart') }}" class="btn-secondary" style="justify-content: center;">View Bag</a>
         </div>
 
         <!-- Craft & Materials Box -->
-        <div class="detail-specs-box">
-          <h2 style="font-family: var(--font-display); font-size: 1.15rem; color: var(--text-primary); margin-bottom: 12px;">Materials &amp; Sourcing Details</h2>
-          <ul>
-            @foreach($product['specs'] as $spec)
-              <li>{{ $spec }}</li>
-            @endforeach
-          </ul>
-        </div>
+        @if(! empty($product['specs']))
+          <div class="detail-specs-box">
+            <h2 style="font-family: var(--font-display); font-size: 1.15rem; color: var(--text-primary); margin-bottom: 12px;">Materials &amp; Sourcing Details</h2>
+            <ul>
+              @foreach($product['specs'] as $spec)
+                <li>{{ $spec }}</li>
+              @endforeach
+            </ul>
+          </div>
+        @endif
 
       </div>
     </div>
