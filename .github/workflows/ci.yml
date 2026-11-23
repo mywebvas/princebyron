@@ -423,7 +423,11 @@ jobs:
         run: |
           set +e
           cp phpunit.mysql.xml phpunit.xml
-          php artisan test > /tmp/test.log 2>&1
+          # --log-junit writes the result to disk independently of the console
+          # printer. On this runner the console output is being replaced by
+          # GitHub annotation-validation errors, so the XML is the only readable
+          # record of which tests failed and why.
+          vendor/bin/phpunit --log-junit /tmp/junit.xml > /tmp/test.log 2>&1
           status=$?
           cat /tmp/test.log
 
@@ -465,12 +469,13 @@ jobs:
         run: |
           set -euo pipefail
           sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log > "$GITHUB_WORKSPACE/mysql-failure.log" || true
+          { sed -e 's/\x1b\[[0-9;]*m//g' /tmp/junit.xml; } > "$GITHUB_WORKSPACE/mysql-junit.xml" 2>/dev/null || true
           cd "$GITHUB_WORKSPACE"
           git config user.name 'ci-diagnostics'
           git config user.email 'ci-diagnostics@invalid'
           git fetch origin "${GITHUB_REF_NAME}"
           git checkout "${GITHUB_REF_NAME}"
-          git add -f mysql-failure.log
+          git add -f mysql-failure.log mysql-junit.xml
           git commit -m 'ci: mysql failure log (temporary diagnostic)' || true
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
