@@ -326,6 +326,11 @@ jobs:
   tests-mysql:
     name: Tests (MySQL/MariaDB — shared-host parity)
     runs-on: ubuntu-latest
+    # TEMPORARY: write access so the failure log can be pushed back to the branch
+    # (neither runner logs nor artifacts are reachable from outside). Revert to
+    # the workflow-level `contents: read` once the suite is green.
+    permissions:
+      contents: write
     # WHY THIS JOB EXISTS
     # -------------------
     # The installer has offered a MySQL/MariaDB option since Sprint 0 while four
