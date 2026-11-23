@@ -153,6 +153,17 @@
     </div>
 
     <!-- 4. Playlists by Moment -->
+    {{-- These cards name specific tracks. Render them only when those tracks
+         are actually published, otherwise a visitor is pointed at songs that
+         no longer exist. --}}
+    @php
+      $publishedTitles = collect($songs)->pluck('title')->all();
+      $playlistsAvailable = count(array_intersect(
+          ['Purify Me', 'Follow Me', 'I Always Win', 'Free', 'Toduyun'],
+          $publishedTitles
+      )) >= 2;
+    @endphp
+    @if($playlistsAvailable)
     <div style="margin-top: 64px;">
       <span class="section-eyebrow">Listen by Moment</span>
       <h2 class="section-title">Curated Ministry Playlists</h2>
@@ -193,6 +204,7 @@
         </button>
       </div>
     </div>
+    @endif
 
   </div>
 </section>

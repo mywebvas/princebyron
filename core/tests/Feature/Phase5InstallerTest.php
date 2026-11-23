@@ -662,6 +662,7 @@ ENV;
         }
 
         $response = $this->runInstaller(['action' => 'execute'], [
+            'db_driver'          => 'pgsql',
             'db_host'            => '127.0.0.1',
             'db_port'            => '59999', // Closed port triggers connection failure
             'db_name'            => 'princebyron',
@@ -673,7 +674,8 @@ ENV;
             'admin_pass_confirm' => 'ValidPass123!',
         ]);
 
-        // Client output receives only safe generic message
+        // Client output receives only a safe generic message naming the engine
+        // the operator actually selected.
         $this->assertStringContainsString('Database Connection Failed: Unable to connect to PostgreSQL with provided credentials.', $response['output']);
         $this->assertStringNotContainsString('SQLSTATE', $response['output'], 'Driver-level SQLSTATE must not be leaked to browser');
         $this->assertStringNotContainsString('secret_pass_not_for_client', $response['output']);

@@ -325,9 +325,25 @@ class StorefrontWiringTest extends TestCase
     {
         Song::query()->update(['is_published' => false]);
 
+        $response = $this->get('/music')->assertStatus(200);
+
+        // The curated playlists name specific tracks, so they must be withheld
+        // entirely when those tracks are not for sale.
+        $response->assertDontSee('Curated Ministry Playlists');
+
+        // And no purchasable control may be rendered for a delisted track.
+        // `addSongToCart` is the only handler that can put a track in the bag,
+        // so its absence is the precise test; the disabled placeholder that
+        // replaces it is expected and asserted positively.
+        $response->assertDontSee('addSongToCart');
+    }
+
+    public function test_music_page_shows_published_tracks_again(): void
+    {
         $this->get('/music')
             ->assertStatus(200)
-            ->assertDontSee('Purify Me');
+            ->assertSee('Purify Me')
+            ->assertSee('Curated Ministry Playlists');
     }
 
     // =========================================================================

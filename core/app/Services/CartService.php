@@ -31,6 +31,15 @@ class CartService
         $key = "{$type}_{$id}";
 
         if ($type === 'song') {
+            // Songs were previously accepted without any existence check, so an
+            // invented id was stored in the session and reported as a success
+            // while the summary silently dropped it. Validate here so the API
+            // can answer honestly.
+            $song = Song::find($id);
+            if (! $song || ! $song->is_published) {
+                throw new \InvalidArgumentException('This track is not available for purchase.');
+            }
+
             // Digital music single copy only
             $cart[$key] = [
                 'type'     => 'song',
