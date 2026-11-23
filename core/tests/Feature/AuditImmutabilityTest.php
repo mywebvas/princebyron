@@ -61,13 +61,25 @@ class AuditImmutabilityTest extends TestCase
     {
         $id = $this->insertAuditRow();
 
+        // DRIVER-SPECIFIC BEHAVIOUR, discovered the hard way.
+        //
+        // On PostgreSQL a failed statement poisons the whole transaction: every
+        // later command in it returns "current transaction is aborted" (25P02)
+        // until a rollback. MySQL/MariaDB and SQLite abort only the statement.
+        // So the verification read has to happen in its own transaction, or this
+        // test proves nothing on the primary driver and fails for a reason that
+        // has nothing to do with the audit trail.
         try {
-            DB::table('audit_events')->where('id', $id)->update(['action' => 'tampered']);
+            DB::transaction(fn () => DB::table('audit_events')->where('id', $id)->update(['action' => 'tampered']));
         } catch (\Throwable) {
-            // expected
+            // expected: the trigger refused it
         }
 
-        $this->assertSame('ci.probe', DB::table('audit_events')->where('id', $id)->value('action'));
+        $this->assertSame(
+            'ci.probe',
+            DB::table('audit_events')->where('id', $id)->value('action'),
+            'The row must be unchanged after a refused tamper attempt'
+        );
     }
 
     public function test_inserting_is_still_allowed(): void
