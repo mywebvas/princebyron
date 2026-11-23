@@ -427,14 +427,6 @@ jobs:
             sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -40
             echo "================================================"
 
-            # Strip the hyphens and colons GitHub refuses, keeping the words.
-            # Lossy, but it is the only form that reliably reaches the Checks
-            # API from a runner whose raw log is not downloadable.
-            clean=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
-              | grep -E 'FAILED|Failed asserting|Exception|SQLSTATE|Tests:' \
-              | head -6 | tr -d -- '-' | tr ':' '.' | tr '%' 'p' \
-              | tr '\n' ' ' | cut -c1-1200)
-            echo "::error title='MySQL suite failed'::${clean}"
           else
             totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
               | grep -E '^[[:space:]]*(Tests:|Duration:)' \
@@ -456,6 +448,26 @@ jobs:
           set -euo pipefail
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+
+      - name: Publish the MySQL test log into the branch (temporary)
+        # TEMPORARY DIAGNOSTIC. Neither the runner log archive nor the artifact
+        # is reachable from outside (both redirect to blob.core.windows.net), and
+        # GitHub rejects annotation bodies containing '--'. Committing the log is
+        # the only channel that survives all three. Removed with the MySQL job's
+        # green run.
+        if: failure()
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log > "$GITHUB_WORKSPACE/mysql-failure.log" || true
+          cd "$GITHUB_WORKSPACE"
+          git config user.name 'ci-diagnostics'
+          git config user.email 'ci-diagnostics@invalid'
+          git fetch origin "${GITHUB_REF_NAME}"
+          git checkout "${GITHUB_REF_NAME}"
+          git add -f mysql-failure.log
+          git commit -m 'ci: mysql failure log (temporary diagnostic)' || true
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Upload test log
         # TEMPORARY DIAGNOSTIC — removed once the MySQL suite is green.
