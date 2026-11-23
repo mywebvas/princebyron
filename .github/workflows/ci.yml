@@ -413,21 +413,15 @@ jobs:
           cat /tmp/test.log
 
           if [ $status -ne 0 ]; then
-            # GitHub publishes at most ~10 annotations per step and keeps the
-            # LAST ones, so a 36-line annotation dump silently lost every detail
-            # line. Everything is resolved to at most 7 annotations here.
-            detail=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
-              | grep -nE 'SQLSTATE|FAILED|Failed asserting|Exception|Error:|no such|Unknown|incompatible|Tests:' \
-              | head -6)
             echo "================ FAILURE DETAIL ================"
-            printf '%s\n' "$detail"
+            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -40
             echo "================================================"
-            printf '%s\n' "$detail" | while IFS= read -r line; do
-              [ -z "$line" ] && continue
-              esc=$(printf '%s' "$line" | sed 's/%/%25/g; s/\r//g')
-              echo "::error title='MySQL/MariaDB'::$esc"
-            done
-            echo "::error title='MySQL/MariaDB'::exit code $status"
+            # ONE annotation carrying the raw tail. GitHub keeps only the last
+            # ~10 annotations per step, and the failure here produces no line
+            # matching the usual patterns — it exits before any test runs — so
+            # filtering by pattern emitted nothing at all.
+            raw=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -25 | tr '\n' '~' | sed 's/%/%25/g' | cut -c1-9000)
+            echo "::error title='MySQL/MariaDB raw tail'::${raw}"
           else
             totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
               | grep -E '^[[:space:]]*(Tests:|Duration:)' \
