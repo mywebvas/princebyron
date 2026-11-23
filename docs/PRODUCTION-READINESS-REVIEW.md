@@ -484,7 +484,7 @@ workflow now retries the composer install with backoff, republishes composer's
 error tail as an annotation, and publishes suite totals as a notice on green
 runs — which is how the README figure is verifiable at all.
 
-Verified: **128 tests / 670 assertions** passing on SQLite and PostgreSQL, full
+Verified: **128 tests / 673 assertions** passing on SQLite and PostgreSQL, full
 migration replay from an empty database, Blade compilation, PHP syntax over
 every tracked file, packaging rules and the asset budget. Every job green.
 

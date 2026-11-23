@@ -226,6 +226,14 @@ Additionally, `property_exists($this, 'type')` is false for an Eloquent attribut
 of the audit redaction redacted nothing and archived ciphertext. The test caught
 it before it shipped; the fix reads the attribute through the model.
 
+A third, quieter mistake is worth recording because it is the most dangerous kind:
+`mutateFormDataBeforeCreate()` is a protected method on the **page**, not a static
+method on the resource, so the version placed on `SettingResource` was never
+called — and its test invoked it directly, so it passed while the create path was
+unguarded. In a feature about secrets being written in plaintext, a guard that
+merely looks like a guard is worse than no guard, because it converts "untested"
+into "falsely tested". Both are now fixed and the test drives the real page.
+
 **Infrastructure learned here:** CI's step logs are not retrievable from the
 development sandbox, so a failing step was indistinguishable from a broken commit.
 The workflow now republishes composer failures as annotations, retries the

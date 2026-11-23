@@ -27,7 +27,7 @@ correct in production, only that it is verified in the repository.
 | Composer manifest/lock sync | `node tools/check-lock.mjs` | CI-enforced |
 | Release completeness (vendor, Filament assets) | `node tools/check-release.mjs --strict` | **Reporter** — states what the upload still needs |
 | PHP syntax, every tracked `.php` | `php -l` over `git ls-files '*.php'` | CI-enforced |
-| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 128 tests, 670 assertions |
+| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 128 tests, 673 assertions |
 | Test suite (PostgreSQL, primary) | `phpunit.pgsql.xml` installed as `phpunit.xml` | CI-enforced — same suite |
 | Migration replay from empty DB | `php artisan migrate:fresh --force` | CI-enforced |
 | Seeder idempotency | seeders run twice | CI-enforced |
