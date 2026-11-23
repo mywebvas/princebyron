@@ -55,7 +55,16 @@ class Phase2ScreensTest extends TestCase
         $response->assertSee('STILLNESS');
         $response->assertSee('STRENGTH');
         $response->assertSee('JOY');
-        $response->assertSee('sample demonstration prices', false);
+        // The page must disclose that prices are placeholders. It previously
+        // asserted a string that existed nowhere in the codebase, so this test
+        // could never pass — the disclosure itself was missing from the view.
+        $response->assertSee('Sample demonstration prices');
+        $response->assertSee('not final retail pricing');
+
+        // Unavailable delivery formats must be visibly marked rather than
+        // silently offered: promising a 24-bit WAV master that does not exist
+        // would be a false representation at the point of sale.
+        $response->assertSee('MP3 (320kbps)');
     }
 
     /**

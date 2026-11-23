@@ -252,11 +252,51 @@ PHP;
         $this->assertSame(200, $response['status']);
         $this->assertStringContainsString('Environmental Preflight Verification', $response['output']);
         $this->assertStringContainsString('PHP Version', $response['output']);
-        $this->assertStringContainsString('PostgreSQL PDO Driver (pdo_pgsql)', $response['output']);
         $this->assertStringContainsString('OpenSSL Cryptography', $response['output']);
         $this->assertStringContainsString('Multibyte String (mbstring)', $response['output']);
         $this->assertStringContainsString('Directory Writable: core/storage/', $response['output']);
+
+        // The platform targets MySQL/MariaDB so it installs on ordinary shared
+        // cPanel plans; requiring pdo_pgsql alone would reject those hosts.
+        // Either driver must satisfy preflight, so the label names both.
+        $this->assertStringContainsString('Database Driver (PDO MySQL or PDO PostgreSQL)', $response['output']);
+
         $this->assertStringContainsString('Initialize & Install Platform', $response['output']);
+    }
+
+    /**
+     * 3b. A failed preflight check must never render as "Pass".
+     *
+     * Regression: the template previously printed the literal word "Pass"
+     * inside the badge element regardless of outcome, so a host missing a
+     * required extension was told the check passed while the install button
+     * stayed disabled — contradictory, unactionable information at exactly the
+     * moment an owner needs certainty.
+     */
+    public function test_failed_preflight_check_renders_fail_and_remedy_not_pass(): void
+    {
+        // Force a guaranteed-failing condition by raising the effective PHP
+        // floor beyond any real runtime. COMPOSER_PLATFORM_PHP is the same
+        // override Composer honours, so the installer's gate stays faithful to
+        // how dependencies are actually resolved. The child process inherits
+        // this environment, so it must be restored immediately afterwards.
+        putenv('COMPOSER_PLATFORM_PHP=99.0.0');
+
+        try {
+            $response = $this->runInstaller(['action' => 'requirements']);
+        } finally {
+            putenv('COMPOSER_PLATFORM_PHP');
+        }
+
+        $this->assertSame(200, $response['status']);
+
+        // A higher floor must be reported as a failure, with a remedy the owner
+        // can action in cPanel, and the install action must be blocked.
+        $this->assertStringContainsString('PHP Version >= 8.5.0', $response['output']);
+        $this->assertStringContainsString('MultiPHP Manager', $response['output']);
+        $this->assertStringContainsString('Resolve Preflight Issues Above to Continue', $response['output']);
+        $this->assertStringNotContainsString('Initialize &amp; Install Platform', $response['output']);
+        $this->assertStringNotContainsString('Initialize & Install Platform', $response['output']);
     }
 
     /**

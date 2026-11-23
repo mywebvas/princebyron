@@ -19,7 +19,7 @@
 </section>
 
 <!-- Music Catalog Section -->
-<section class="section-editorial" x-data="{ activeFilter: 'all', activeFormat: 'MP3 (320kbps)' }">
+<section class="section-editorial" x-data="{ activeFilter: 'all', activeFormat: '{{ $formats['mp3']['label'] }}' }">
   <div class="section-container">
     
     <!-- 1. Featured Collection / Album Card -->
@@ -92,13 +92,24 @@
           x-model="activeFormat"
           @change="$store.app.showToast('Audio format selected: ' + activeFormat)"
         >
-          <option value="MP3 (320kbps)">MP3 (320kbps)</option>
-          <option value="24-bit Studio WAV">24-bit Studio WAV</option>
+          @foreach($formats as $key => $format)
+            <option 
+              value="{{ $format['label'] }}" 
+              @disabled(! $format['available'])
+            >{{ $format['label'] }}{{ $format['available'] ? '' : ' — not yet available' }}</option>
+          @endforeach
         </select>
       </div>
     </div>
 
     <!-- 3. Tracklist -->
+    @if($samplePricing)
+      <p class="price-notice" role="note">
+        <strong>Please note:</strong> {{ $samplePricingNotice }}
+        Amounts are shown for demonstration only while the catalog is being finalised.
+      </p>
+    @endif
+
     <div class="track-grid">
       @foreach($songs as $song)
         <div 

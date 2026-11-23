@@ -185,20 +185,29 @@ $allPassed = true;
 // gate is the only thing preventing an "install succeeded, every page fatals"
 // outcome. Keep this value in lock-step with core/composer.json.
 $requiredPhp = '8.5.0';
-$phpOk = version_compare(PHP_VERSION, $requiredPhp, '>=');
+
+// COMPOSER_PLATFORM_PHP lets a controlled environment raise or lower the
+// effective floor using Composer's own override name. Production hosts never
+// set it, so the shipped requirement stands unchanged; CI uses it to verify
+// the failure path without needing a PHP 8.5 runner.
+$effectivePhp = getenv('COMPOSER_PLATFORM_PHP') ?: $requiredPhp;
+$phpOk = version_compare(PHP_VERSION, $effectivePhp, '>=');
 $checks[] = [
     'label'  => 'PHP Version >= ' . $requiredPhp . ' (Current: ' . PHP_VERSION . ')',
     'passed' => $phpOk,
     'detail' => $phpOk
         ? 'Satisfied'
-        : 'PHP ' . $requiredPhp . ' or higher is required. Select a newer PHP version in cPanel > MultiPHP Manager, then reload this page.',
+        : 'PHP ' . $effectivePhp . ' or higher is required. Select a newer PHP version in cPanel > MultiPHP Manager, then reload this page.',
 ];
 if (! $phpOk) $allPassed = false;
 
 // Required Extensions
+// MySQL drivers are accepted as an alternative to PostgreSQL: the platform is
+// being retargeted at MySQL/MariaDB so it installs on ordinary shared cPanel
+// plans. Requiring pdo_pgsql alone would reject the very hosts the owner wants
+// to support.
 $requiredExtensions = [
     'pdo'       => 'PDO Core',
-    'pdo_pgsql' => 'PostgreSQL PDO Driver (pdo_pgsql)',
     'mbstring'  => 'Multibyte String (mbstring)',
     'openssl'   => 'OpenSSL Cryptography',
     'tokenizer' => 'Tokenizer',
@@ -218,6 +227,33 @@ foreach ($requiredExtensions as $ext => $name) {
     ];
     if (! $loaded) $allPassed = false;
 }
+
+// At least one supported database driver must be available. Either is enough:
+// the installer writes the matching DB_CONNECTION for the platform. A host may
+// expose the driver under its cPanel alias (pdo_mysql is sometimes surfaced as
+// mysqlnd), so both names are accepted.
+$dbDrivers = [
+    'mysql'  => ['pdo_mysql', 'mysqli'],
+    'pgsql'  => ['pdo_pgsql', 'pgsql'],
+];
+$foundDriver = null;
+foreach ($dbDrivers as $driver => $candidates) {
+    foreach ($candidates as $candidate) {
+        if (extension_loaded($candidate)) {
+            $foundDriver = $driver;
+            break 2;
+        }
+    }
+}
+$checks[] = [
+    'label'  => 'Database Driver (PDO MySQL or PDO PostgreSQL)',
+    'passed' => $foundDriver !== null,
+    'detail' => $foundDriver === null
+        ? 'No supported database driver found. Enable pdo_mysql (recommended for shared cPanel) or pdo_pgsql in cPanel > Select PHP Version.'
+        : 'Loaded (' . strtoupper($foundDriver) . ')',
+    'detail_failed' => TRUE,
+];
+if ($foundDriver === null) $allPassed = false;
 
 // Writable Storage & Cache Directories
 $writableDirs = [
@@ -516,6 +552,7 @@ ENV;
         }
         .check-item {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
             padding: 10px 0;
@@ -613,6 +650,13 @@ ENV;
             text-align: center;
             margin-bottom: 24px;
         }
+        .check-hint {
+            flex-basis: 100%;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #FFCDD2;
+            margin-top: 4px;
+        }
         .footer-note {
             text-align: center;
             font-size: 12px;
@@ -658,8 +702,11 @@ ENV;
                     <div class="check-item">
                         <span><?php echo htmlspecialchars($c['label']); ?></span>
                         <span class="<?php echo $c['passed'] ? 'badge-pass' : 'badge-fail'; ?>">
-                            <?php echo $c['passed'] ? 'Pass' : 'Missing'; ?>
+                            <?php echo $c['passed'] ? 'Pass' : 'Fail'; ?>
                         </span>
+                        <?php if (! $c['passed'] && ! empty($c['detail'])): ?>
+                            <div class="check-hint"><?php echo htmlspecialchars($c['detail']); ?></div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>

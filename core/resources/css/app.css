@@ -3214,3 +3214,27 @@
       }
     }
   
+
+
+/* ---------------------------------------------------------------------------
+   Commercial disclosure — sample pricing
+   Shown wherever a visitor sees money while the catalog is not finalised.
+   Uses the warning tokens so it reads as information, not an error, and keeps
+   AA contrast on the dark editorial surface.
+   --------------------------------------------------------------------------- */
+.price-notice {
+    margin: 0 0 20px;
+    padding: 12px 16px;
+    border: 1px solid var(--border-gold-subtle, rgba(223, 167, 89, 0.20));
+    border-left: 3px solid var(--color-gold, #DFA759);
+    border-radius: var(--radius-sm, 4px);
+    background: rgba(223, 167, 89, 0.08);
+    color: var(--text-inverse, #FDFBF7);
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.price-notice strong {
+    color: var(--color-gold, #DFA759);
+    font-weight: 700;
+}

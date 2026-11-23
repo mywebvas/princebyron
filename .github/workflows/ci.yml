@@ -202,10 +202,15 @@ jobs:
           php artisan config:clear
 
       - name: 'Tests: PostgreSQL suite'
+        # `artisan test` injects its own --configuration flag; passing another
+        # produces "Option --configuration cannot be used more than once" and
+        # silently runs the wrong config. Selecting PostgreSQL by putting the
+        # config in phpunit.xml's place is the supported route.
         working-directory: ${{ env.APP_DIR }}
         run: |
           set +e
-          php artisan test --configuration=phpunit.pgsql.xml > /tmp/test.log 2>&1
+          cp phpunit.pgsql.xml phpunit.xml
+          php artisan test > /tmp/test.log 2>&1
           status=$?
           cat /tmp/test.log
 

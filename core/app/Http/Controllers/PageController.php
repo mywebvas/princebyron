@@ -206,6 +206,13 @@ class PageController extends Controller
         return view('pages.music', [
             'title' => 'The Complete Music Experience — Prince Byron',
             'songs' => $this->getSongs(),
+
+            // Commercial policy comes from config/commerce.php rather than
+            // being hardcoded in the template, so the storefront can be wired
+            // to the database later without rewriting the view.
+            'formats' => config('commerce.formats'),
+            'samplePricing' => config('commerce.sample_pricing'),
+            'samplePricingNotice' => config('commerce.sample_pricing_notice'),
         ]);
     }
 
