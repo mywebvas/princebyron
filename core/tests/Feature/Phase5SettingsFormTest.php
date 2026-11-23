@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Settings\Pages\CreateSetting;
 use App\Filament\Resources\Settings\Pages\EditSetting;
-use App\Filament\Resources\Settings\SettingResource;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -109,23 +109,30 @@ class Phase5SettingsFormTest extends TestCase
 
     public function test_creating_an_encrypted_setting_through_the_form_encrypts_it(): void
     {
-        // Guard the create path separately: mutateFormDataBeforeCreate protects
-        // it, and a model-only test would not prove the form reaches that path.
-        $data = [
-            'group'  => 'payment',
-            'key'    => 'payment.second_secret',
-            'label'  => 'Second secret',
-            'type'   => Setting::TYPE_ENCRYPTED,
-            'value'  => 'created-through-form',
-        ];
+        // Drives the real Create page. The first version of this test called a
+        // static helper on the resource that Filament never invokes — it passed
+        // while the create path was actually unguarded, which is exactly the
+        // false assurance this suite is supposed to prevent.
+        Livewire::actingAs($this->owner())
+            ->test(CreateSetting::class)
+            ->fillForm([
+                'group' => 'payment',
+                'key'   => 'payment.second_secret',
+                'label' => 'Second secret',
+                'type'  => Setting::TYPE_ENCRYPTED,
+                'value' => 'created-through-form',
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
 
-        $prepared = SettingResource::mutateFormDataBeforeCreate($data);
+        $setting = Setting::where('key', 'payment.second_secret')->firstOrFail();
 
-        $this->assertNotSame('created-through-form', $prepared['value']);
-
-        $setting = Setting::create($prepared);
-
-        $this->assertSame('created-through-form', $setting->fresh()->typed_value);
+        $this->assertSame('created-through-form', $setting->typed_value, 'The secret must be recoverable');
+        $this->assertNotSame(
+            'created-through-form',
+            $setting->getRawOriginal('value'),
+            'The plaintext must never be stored'
+        );
     }
 
     public function test_an_encrypted_secret_is_masked_in_the_settings_table(): void

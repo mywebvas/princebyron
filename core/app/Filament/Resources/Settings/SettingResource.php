@@ -127,19 +127,6 @@ class SettingResource extends Resource
             ]);
     }
 
-    /**
-     * Ensure the value is encrypted before the model ever sees it, including
-     * on create (where there is no existing record to compare against).
-     */
-    public static function mutateFormDataBeforeCreate(array $data): array
-    {
-        if (($data['type'] ?? null) === Setting::TYPE_ENCRYPTED && filled($data['value'] ?? null)) {
-            $data['value'] = \Illuminate\Support\Facades\Crypt::encryptString((string) $data['value']);
-        }
-
-        return $data;
-    }
-
     public static function table(Table $table): Table
     {
         return $table
