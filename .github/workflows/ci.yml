@@ -57,6 +57,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Install PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -64,6 +68,13 @@ jobs:
           extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, sqlite3, pdo_sqlite, pgsql, pdo_pgsql
           coverage: none
           ini-values: memory_limit=1G
+
+      - name: Composer lock-file sync (no PHP required)
+        # `composer install` aborts if composer.json was edited without
+        # re-locking, which would make the release machine unable to produce
+        # vendor/ at all. Caught a real Sprint 0 mistake; keep it first so it
+        # fails in seconds.
+        run: node tools/check-lock.mjs
 
       - name: PHP syntax check (every tracked PHP file)
         # Scope is deliberately the whole repository: dev scripts and the
@@ -79,9 +90,25 @@ jobs:
           done
           exit $fail
 
-      - name: Validate composer.json
+      - name: Validate composer.json (advisory)
+        # Advisory only: `composer validate` changes its warning set between
+        # Composer releases and would otherwise fail CI for cosmetic reasons.
+        # Correctness is enforced by tools/check-lock.mjs and by the fact that
+        # the next step is a strict `composer install` from the lock file.
+        continue-on-error: true
         working-directory: ${{ env.APP_DIR }}
         run: composer validate --no-check-publish
+
+      - name: Prepare .env before dependency install
+        # composer's post-autoload-dump script runs `php artisan
+        # package:discover` and `filament:upgrade`, which boot the app and need
+        # a .env to exist. Creating it first avoids a class of install-time
+        # failures that would otherwise look like a dependency problem.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
 
       - name: Install Composer dependencies from lock
         # Uses `install` (never `update`): fails if composer.json was edited
@@ -145,6 +172,18 @@ jobs:
           coverage: none
           ini-values: memory_limit=1G
 
+      - name: Composer lock-file sync (no PHP required)
+        run: node tools/check-lock.mjs
+
+      - name: Prepare .env before dependency install
+        # composer's post-autoload-dump script boots the app
+        # (`artisan package:discover`, `filament:upgrade`), which needs a .env.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
       - name: Install Composer dependencies from lock
         working-directory: ${{ env.APP_DIR }}
         run: composer install --no-interaction --prefer-dist --no-progress
@@ -153,9 +192,7 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: |
           set -euo pipefail
-          cp .env.example .env
           php artisan key:generate --force
-          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
           php artisan config:clear
 
       - name: Run test suite on PostgreSQL
@@ -195,6 +232,18 @@ jobs:
           coverage: none
           ini-values: memory_limit=1G
 
+      - name: Composer lock-file sync (no PHP required)
+        run: node tools/check-lock.mjs
+
+      - name: Prepare .env before dependency install
+        # composer's post-autoload-dump script boots the app
+        # (`artisan package:discover`, `filament:upgrade`), which needs a .env.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
       - name: Install Composer dependencies from lock
         working-directory: ${{ env.APP_DIR }}
         run: composer install --no-interaction --prefer-dist --no-progress
@@ -203,9 +252,7 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: |
           set -euo pipefail
-          cp .env.example .env
           php artisan key:generate --force
-          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
           php artisan config:clear
 
       - name: Run test suite (default phpunit.xml → in-memory SQLite)
