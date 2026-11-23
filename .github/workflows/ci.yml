@@ -423,11 +423,13 @@ jobs:
         run: |
           set +e
           cp phpunit.mysql.xml phpunit.xml
-          # --log-junit writes the result to disk independently of the console
-          # printer. On this runner the console output is being replaced by
-          # GitHub annotation-validation errors, so the XML is the only readable
-          # record of which tests failed and why.
-          vendor/bin/phpunit --log-junit /tmp/junit.xml > /tmp/test.log 2>&1
+          # --no-progress is deliberate. PHPUnit 12 emits a GitHub annotation per
+          # failing test, and the annotation body it builds from `--` in the diff
+          # is rejected by GitHub's validator; PHPUnit then prints
+          # "Comment must not contain '--'" INSTEAD of the failure details, so the
+          # log contained 19 copies of that message and nothing else. The plain
+          # text printer plus JUnit XML gives the real output.
+          vendor/bin/phpunit --no-progress --log-junit /tmp/junit.xml > /tmp/test.log 2>&1
           status=$?
           cat /tmp/test.log
 
