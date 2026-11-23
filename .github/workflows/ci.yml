@@ -424,6 +424,12 @@ jobs:
       # any log text at all.
       - name: 'Focus: AuditImmutabilityTest (trigger behaviour)'
         working-directory: ${{ env.APP_DIR }}
+        env:
+          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
+          # GITHUB_ACTIONS is set. Its annotation body carries diff text
+          # containing '--', GitHub rejects it, and the rejection message
+          # replaces the actual failure output in the log.
+          GITHUB_ACTIONS: ''
         run: |
           set -euo pipefail
           cp phpunit.mysql.xml phpunit.xml
@@ -431,18 +437,36 @@ jobs:
 
       - name: 'Focus: DatabasePortabilityTest (schema portability)'
         working-directory: ${{ env.APP_DIR }}
+        env:
+          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
+          # GITHUB_ACTIONS is set. Its annotation body carries diff text
+          # containing '--', GitHub rejects it, and the rejection message
+          # replaces the actual failure output in the log.
+          GITHUB_ACTIONS: ''
         run: |
           set -euo pipefail
           vendor/bin/phpunit --no-progress tests/Feature/DatabasePortabilityTest.php
 
       - name: 'Focus: CustomerAnonymisationTest (anonymiser)'
         working-directory: ${{ env.APP_DIR }}
+        env:
+          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
+          # GITHUB_ACTIONS is set. Its annotation body carries diff text
+          # containing '--', GitHub rejects it, and the rejection message
+          # replaces the actual failure output in the log.
+          GITHUB_ACTIONS: ''
         run: |
           set -euo pipefail
           vendor/bin/phpunit --no-progress tests/Feature/CustomerAnonymisationTest.php
 
       - name: 'Tests: MySQL/MariaDB suite'
         working-directory: ${{ env.APP_DIR }}
+        env:
+          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
+          # GITHUB_ACTIONS is set. Its annotation body carries diff text
+          # containing '--', GitHub rejects it, and the rejection message
+          # replaces the actual failure output in the log.
+          GITHUB_ACTIONS: ''
         run: |
           set +e
           cp phpunit.mysql.xml phpunit.xml
