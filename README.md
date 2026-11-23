@@ -7,7 +7,7 @@ This is the production project workspace for **princebyron.com**. The `/prototyp
 > **Read this before quoting any status claim.** A full senior review of the codebase was completed on 2026-11-23: see [`docs/PRODUCTION-READINESS-REVIEW.md`](docs/PRODUCTION-READINESS-REVIEW.md). It separates three things that previous status summaries blended together:
 >
 > 1. **Implemented and reachable** — the commerce, payment-verification, entitlement, audit and installer layers are built and test-covered.
-> 2. **Implemented but not wired to the public UI** — the public cart, checkout and catalog currently run on client-side demo data rather than the server layer (review findings P0-1 to P0-3).
+> 2. **Wired to the server as of Sprint 1** — the public catalog reads the database, the cart is server-authoritative, and checkout creates a real order. What is still not live: online payment capture (no gateway is enabled, so no money is taken) and the build products a release needs (`vendor/`, Filament assets).
 > 3. **Not verified** — anything that depends on the real host, real SMTP, real provider credentials, screen readers, or field Core Web Vitals.
 >
 > Automated verification is now enforced by CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) rather than asserted in prose. The release rules in `docs/ARCHITECTURE.md` are executable via `node tools/check-package.mjs` and `node tools/check-assets.mjs`.
@@ -25,8 +25,9 @@ correct in production, only that it is verified in the repository.
 | Check | Command | State |
 |---|---|---|
 | Composer manifest/lock sync | `node tools/check-lock.mjs` | CI-enforced |
+| Release completeness (vendor, Filament assets) | `node tools/check-release.mjs --strict` | **Reporter** — states what the upload still needs |
 | PHP syntax, every tracked `.php` | `php -l` over `git ls-files '*.php'` | CI-enforced |
-| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 73 tests, 504 assertions |
+| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 97 tests, 576 assertions |
 | Test suite (PostgreSQL, primary) | `phpunit.pgsql.xml` installed as `phpunit.xml` | CI-enforced — same suite |
 | Migration replay from empty DB | `php artisan migrate:fresh --force` | CI-enforced |
 | Seeder idempotency | seeders run twice | CI-enforced |
@@ -113,7 +114,10 @@ The Prince Byron application has completed Phases 1 through 5 and is currently p
 ### Remaining review limitations & owner decisions
 
 - **Payment Mode — precise wording, please use it:** *Webhook verification* for Stripe and PayPal is implemented and tested (signature verification, replay/idempotency, amount and currency matching, refund revocation; PayPal uses official asymmetric RSA verification). **Payment creation is not implemented**: checkout returns mock sandbox artifacts, no Stripe/PayPal SDK is installed, and no request is made to either provider. Do not describe payments as "integrated"; describe them as "verified callback handling complete, provider checkout not started" (review finding P1-12).
-- **Public storefront wiring:** the public cart, checkout and catalog currently use client-side demo data (seed cart, simulated order reference, hardcoded prices) instead of the server-side services. Placing an order in a browser today does not create a database record (review findings P0-1 to P0-3). The server layer itself is exercised by the test suite via `/api/*`.
+- ~~Public storefront wiring~~ — **closed in Sprint 1.** The catalog is read from the database via `App\Services\CatalogService`, the cart is a cache of a server summary (`/api/cart*`), and checkout creates a persisted order with a server-generated reference. Unpublishing a product removes it from the site and its URL 404s; an un-seeded install shows clearly-labelled sample items that cannot be purchased.
+- **Online payment capture is still not enabled.** Stripe and PayPal run in sandbox verification mode: the webhook handlers verify signatures and grant entitlements, but order creation does not call a live gateway. The checkout page now says so plainly rather than implying a card charge, and no card data is collected.
+- **Bank transfer ships without automatic entitlements** (review P1-4). An order sits in `awaiting_bank_verification` until the owner confirms funds; nothing is released beforehand.
+- **A deployable archive needs two build steps on a machine with PHP, Composer and Node:** `composer install --no-dev` and `php artisan filament:assets`. Run `node tools/check-release.mjs --strict` to confirm both before zipping — it fails the build if either is missing, which is what stops the "unstyled admin panel" outcome (review P0-5).
 - **Bank Transfer:** available in the admin panel as an owner verification action; orders stay `awaiting_bank_verification` until the owner records an independently verified receipt. Note that this path currently does not grant digital entitlements (review finding P1-4).
 - **Email:** Routed to local Mailpit (`127.0.0.1:1025`/`8025`); no live external emails are sent. The installer template also writes Mailpit settings, so booking notifications are silently dropped on a real host until SMTP is configured (review finding P0-7).
 - **Shipping Rates:** The owner has not finalized physical shipping zones or carrier rates. Live checkout requires configured destinations in `/admin/shipping-rates`.

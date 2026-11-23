@@ -417,6 +417,32 @@ re-run parity, Blade compilation, PHP syntax across every tracked file, lock
 sync, packaging rules and the asset budget. Pint is advisory until the
 codebase is normalised in its own commit.
 
+**2026-11-23 · Sprint 1 delivered — the storefront is wired to the server.**
+
+| Finding | Status | Evidence |
+|---|---|---|
+| **P0-1** client-only pre-seeded cart | **Closed** | `resources/js/app.js` is a cache of `/api/cart*`; a new visitor's bag starts empty; every price shown comes from a server summary |
+| **P0-2** simulated checkout | **Closed** | `checkout.blade.php` posts to `/api/checkout/process`; the reference is persisted server-side. Tests assert the order row exists |
+| **P0-3** hardcoded catalog | **Closed** | `App\Services\CatalogService`; unpublishing a product removes it, unknown slugs 404, prices follow `product_variants` |
+| **P0-4** `/images`+`/audio` 404 | **Closed** | Guarded rewrites in root `.htaccess`; `favicon.ico` replaced (was 0 bytes) |
+| **P0-5** Filament assets gitignored | **Mitigated** | Rewrites added + `tools/check-release.mjs` blocks an archive without them. The build itself still needs a PHP+Node machine — reported as INCOMPLETE, not claimed as done |
+| **P0-7** installer writes Mailpit | **Closed** | Real mail step with an honest "record to log" option; test asserts Mailpit literals are gone |
+| **P1-1** demo credentials rendered | **Closed** | Banner and pre-filled credentials removed; test asserts the page contains neither |
+| **P1-4** bank transfer bypasses entitlements | **Open** | Unchanged by design; needs an owner decision on manual release |
+| **NEW** `CartService` did not validate song ids | **Closed** | An invented id returned `success: true` while the summary dropped it. Now 422 |
+| **NEW** music page advertised delisted tracks | **Closed** | Curated playlists are gated on those tracks being published |
+
+Two defects were also found in the *test suite itself*, which matters because it
+had been trusted: `tests/TestCase.php` never booted the application (Laravel 11+
+requires the skeleton to supply `createApplication()`), so anything touching the
+container or database failed while static-markup tests passed; and four
+assertions described a storefront that no longer existed. Both are fixed, which
+is why the suite now means something.
+
+Verified: **97 tests / 576 assertions** passing on SQLite and PostgreSQL, full
+migration replay from an empty database, Blade compilation, PHP syntax over
+every tracked file, packaging rules and the asset budget. Every job green.
+
 ---
 
 *Review originally written 2026-11-23; §13 appended as findings were closed. Application feature code was not modified by the review itself. Sprint 0 did modify code — the installer, the storefront disclosure and the test harness — and each such change is listed above with the defect it closes.*

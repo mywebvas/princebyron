@@ -123,6 +123,21 @@ The first CI runs **failed**, which is the point: a green baseline that has neve
 - [ ] Add a mail configuration step to the installer and stop writing Mailpit settings into production (P0-7).
 - [ ] Remove the publicly rendered demo credentials and pre-filled password from the login view (P1-1).
 
+### Sprint 1 — Outcome: the storefront is real (2026-11-23)
+
+Every item below is enforced by a test that fails if the wiring regresses.
+
+- [x] **Catalog reads the database (P0-3).** New `App\Services\CatalogService` sources published products and songs from Eloquent; prices come from `product_variants`, options are derived from real variant colour/size rows, and stock reflects actual quantities. Unknown slugs `abort(404)` instead of rendering the first product, and unpublished products are unreachable. An un-seeded install falls back to `config/commerce_catalog.php` — labelled sample items that are explicitly non-purchasable, so nothing in that state can become an order.
+- [x] **Cart is server-authoritative (P0-1).** The Alpine store is a cache of a server summary; every mutation goes through `/api/cart*` and re-renders from the response. The bag hydrates on page load and recovers from an expired session. The seeded two-item demo bag is gone.
+- [x] **Checkout creates a real order (P0-2).** Posts to `/api/checkout/process`; renders the persisted reference, status and bank instructions. `Math.random()` is gone. Two field values that guaranteed a 422 were also fixed (ISO-2 country codes, `bank_transfer` rather than `wire`), along with a fake $5/$12 delivery choice no `ShippingRate` backed and a printed test card number.
+- [x] **Static assets are routed (P0-4).** Guarded rewrites for `/images`, `/audio` and `/favicon.ico` to `core/public`, plus `/css|js|fonts/filament/*` for the admin panel. The 0-byte committed `favicon.ico` was replaced with a real icon.
+- [x] **Release completeness is checkable (P0-5).** `tools/check-release.mjs` states exactly what the upload still needs and refuses to call an archive ready without `vendor/` and Filament's assets. It reports **INCOMPLETE** today, which is the honest answer.
+- [x] **Installer writes real mail settings and a driver choice (P0-7).** Mailpit is gone; the form asks for SMTP details or an explicit "record to log", and a MySQL/MariaDB or PostgreSQL toggle is written to `DB_CONNECTION`. The success screen finally lists the two steps left before opening.
+- [x] **Login page no longer publishes a password (P1-1).** Demo banner, pre-filled email and pre-filled password removed. The seeded account still works.
+- [x] **Bug found by the new tests:** `CartService::addItem()` never validated song ids, so an invented id was reported as a successful add while the summary silently dropped it.
+
+**Still not live after Sprint 1:** online payment capture (no gateway enabled — the UI now says so), automatic entitlements for bank transfers (P1-4), and the two build products above.
+
 ### Sprint 2 — Money and records integrity
 
 - [ ] Encrypted settings actually encrypted when saved from the admin form (P1-3).
