@@ -418,47 +418,6 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
-      # The runner's console output for this job is unreliable (see the note on
-      # the suite step), so the three test classes added with the MySQL work each
-      # get their own NAMED step. A red step name localises the failure without
-      # any log text at all.
-      - name: 'Focus: AuditImmutabilityTest (trigger behaviour)'
-        working-directory: ${{ env.APP_DIR }}
-        env:
-          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
-          # GITHUB_ACTIONS is set. Its annotation body carries diff text
-          # containing '--', GitHub rejects it, and the rejection message
-          # replaces the actual failure output in the log.
-          GITHUB_ACTIONS: ''
-        run: |
-          set -euo pipefail
-          cp phpunit.mysql.xml phpunit.xml
-          vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php
-
-      - name: 'Focus: DatabasePortabilityTest (schema portability)'
-        working-directory: ${{ env.APP_DIR }}
-        env:
-          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
-          # GITHUB_ACTIONS is set. Its annotation body carries diff text
-          # containing '--', GitHub rejects it, and the rejection message
-          # replaces the actual failure output in the log.
-          GITHUB_ACTIONS: ''
-        run: |
-          set -euo pipefail
-          vendor/bin/phpunit --no-progress tests/Feature/DatabasePortabilityTest.php
-
-      - name: 'Focus: CustomerAnonymisationTest (anonymiser)'
-        working-directory: ${{ env.APP_DIR }}
-        env:
-          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
-          # GITHUB_ACTIONS is set. Its annotation body carries diff text
-          # containing '--', GitHub rejects it, and the rejection message
-          # replaces the actual failure output in the log.
-          GITHUB_ACTIONS: ''
-        run: |
-          set -euo pipefail
-          vendor/bin/phpunit --no-progress tests/Feature/CustomerAnonymisationTest.php
-
       - name: 'Tests: MySQL/MariaDB suite'
         working-directory: ${{ env.APP_DIR }}
         env:
@@ -493,6 +452,47 @@ jobs:
           fi
           exit $status
 
+      # The runner's console output for this job is unreliable (see the note on
+      # the suite step), so the three test classes added with the MySQL work each
+      # get their own NAMED step. A red step name localises the failure without
+      # any log text at all.
+      - name: 'Focus: AuditImmutabilityTest (trigger behaviour)'
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
+          # GITHUB_ACTIONS is set. Its annotation body carries diff text
+          # containing '--', GitHub rejects it, and the rejection message
+          # replaces the actual failure output in the log.
+          GITHUB_ACTIONS: ''
+        run: |
+          set -euo pipefail
+          cp phpunit.mysql.xml phpunit.xml
+          vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php 2>&1 | tee /tmp/focus.log
+
+      - name: 'Focus: DatabasePortabilityTest (schema portability)'
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
+          # GITHUB_ACTIONS is set. Its annotation body carries diff text
+          # containing '--', GitHub rejects it, and the rejection message
+          # replaces the actual failure output in the log.
+          GITHUB_ACTIONS: ''
+        run: |
+          set -euo pipefail
+          vendor/bin/phpunit --no-progress tests/Feature/DatabasePortabilityTest.php 2>&1 | tee -a /tmp/focus.log
+
+      - name: 'Focus: CustomerAnonymisationTest (anonymiser)'
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
+          # GITHUB_ACTIONS is set. Its annotation body carries diff text
+          # containing '--', GitHub rejects it, and the rejection message
+          # replaces the actual failure output in the log.
+          GITHUB_ACTIONS: ''
+        run: |
+          set -euo pipefail
+          vendor/bin/phpunit --no-progress tests/Feature/CustomerAnonymisationTest.php 2>&1 | tee -a /tmp/focus.log
+
       - name: Verify full migration replay from an empty database
         working-directory: ${{ env.APP_DIR }}
         run: |
@@ -517,7 +517,8 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: |
           set -euo pipefail
-          sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log > "$GITHUB_WORKSPACE/mysql-failure.log" || true
+          { sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log 2>/dev/null || true; } > "$GITHUB_WORKSPACE/mysql-failure.log"
+          { sed -e 's/\x1b\[[0-9;]*m//g' /tmp/focus.log 2>/dev/null || true; } >> "$GITHUB_WORKSPACE/mysql-failure.log"
           { sed -e 's/\x1b\[[0-9;]*m//g' /tmp/junit.xml; } > "$GITHUB_WORKSPACE/mysql-junit.xml" 2>/dev/null || true
           cd "$GITHUB_WORKSPACE"
           git config user.name 'ci-diagnostics'
