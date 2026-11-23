@@ -426,7 +426,15 @@ jobs:
             echo "================ FAILURE DETAIL ================"
             sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -40
             echo "================================================"
-          else
+
+            # Strip the hyphens and colons GitHub refuses, keeping the words.
+            # Lossy, but it is the only form that reliably reaches the Checks
+            # API from a runner whose raw log is not downloadable.
+            clean=$(sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E 'FAILED|Failed asserting|Exception|SQLSTATE|Tests:' \
+              | head -6 | tr -d -- '-' | tr ':' '.' | tr '%' 'p' \
+              | tr '\n' ' ' | cut -c1-1200)
+            echo "::error title='MySQL suite failed'::${clean}"
           else
             totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
               | grep -E '^[[:space:]]*(Tests:|Duration:)' \
@@ -448,6 +456,7 @@ jobs:
           set -euo pipefail
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+
       - name: Upload test log
         # TEMPORARY DIAGNOSTIC — removed once the MySQL suite is green.
         if: always()
