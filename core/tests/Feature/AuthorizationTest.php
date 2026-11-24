@@ -238,13 +238,15 @@ class AuthorizationTest extends TestCase
             'customer_name'  => 'Victim',
         ]);
 
-        // An entitlement with an invalid format must be refused by the controller,
-        // not interpolated into a storage path.
+        // An entitlement with an invalid format must be refused by the
+        // controller, not interpolated into a storage path. The column is
+        // varchar(10), so the test value must fit while still failing the
+        // allowlist (mp3/wav only).
         $entitlement = DownloadEntitlement::create([
             'user_id'    => $user->id,
             'order_id'   => $order->id,
             'song_id'    => $song->id,
-            'format'     => '../../../etc/passwd',
+            'format'     => 'badformat',
             'is_active'  => true,
             'expires_at' => now()->addDays(7),
         ]);
