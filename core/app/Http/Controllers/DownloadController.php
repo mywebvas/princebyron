@@ -35,6 +35,9 @@ class DownloadController extends Controller
 
         // 4. Check private storage for actual audio master file
         $format = $entitlement->format ?? 'mp3';
+        if (! in_array($format, ['mp3', 'wav'], true)) {
+            abort(403, 'Invalid download format.');
+        }
         $slug = $entitlement->song->slug;
         $privateAudioPath = storage_path("app/private/audio/{$slug}.{$format}");
 

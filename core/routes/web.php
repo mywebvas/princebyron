@@ -45,8 +45,8 @@ Route::post('/register', [CustomerAuthController::class, 'register'])->middlewar
 Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
 
 // Customer Account & Fan Vault
-Route::get('/account', [CustomerAccountController::class, 'dashboard'])->name('account');
-Route::get('/account/orders/{reference}', [CustomerAccountController::class, 'orderDetail'])->middleware('auth')->name('account.order');
+Route::get('/account', [CustomerAccountController::class, 'dashboard'])->middleware('throttle:order')->name('account');
+Route::get('/account/orders/{reference}', [CustomerAccountController::class, 'orderDetail'])->middleware(['auth', 'throttle:order'])->name('account.order');
 
 // Server-Authoritative Cart Endpoints
 // Throttled per P1-8: reads are generous, mutations tighter, because each

@@ -31,6 +31,12 @@ class Payment extends Model
         'provider_metadata',
     ];
 
+    protected $hidden = [
+        'signature_verified',
+        'provider_metadata',
+        'provider_event_id',
+    ];
+
     protected function casts(): array
     {
         return [

@@ -30,6 +30,15 @@ class Song extends Model
         'cover_storage_path',
     ];
 
+    // Internal storage paths and soft-delete timestamps are never exposed
+    // through JSON APIs.
+    protected $hidden = [
+        'preview_storage_path',
+        'download_storage_path_mp3',
+        'download_storage_path_wav',
+        'deleted_at',
+    ];
+
     protected function casts(): array
     {
         return [
