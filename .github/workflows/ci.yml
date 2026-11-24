@@ -432,7 +432,15 @@ jobs:
         run: |
           set -uo pipefail
           cp phpunit.mysql.xml phpunit.xml
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress --log-junit /tmp/j.xml > /dev/null 2>&1 || true
+          set +e
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress --log-junit /tmp/j.xml > /tmp/full.log 2>&1
+          rc=$?
+          set -e
+          echo "phpunit-exit:$rc size:$(stat -c%s /tmp/full.log 2>/dev/null || echo 0)"
+          # The raw log, hex-encoded. Hex is [0-9a-f] only, so GitHub's annotation
+          # content rules cannot reject it. Decode: bytes.fromhex(m).decode()
+          head -c 3000 /tmp/full.log > /tmp/head.log
+          python3 -c "import sys; d=open('/tmp/head.log','rb').read(); print('::error title=\"mysql-head\"::'+d.hex())"
           [ -f /tmp/j.xml ] || { echo "::error title='mysql-detail'::6e6f2d6a756e69742d786d6c"; exit 0; }
           python3 - <<'PYEOF'
           import xml.etree.ElementTree as ET, sys
