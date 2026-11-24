@@ -45,6 +45,21 @@ class Order extends Model
         'notes',
     ];
 
+    // PII and internal fields are never exposed through JSON APIs. They remain
+    // accessible as model attributes for Blade views and internal logic.
+    protected $hidden = [
+        'user_id',
+        'customer_email',
+        'shipping_name',
+        'shipping_address_line1',
+        'shipping_address_line2',
+        'shipping_city',
+        'shipping_state',
+        'shipping_postal_code',
+        'shipping_country',
+        'notes',
+    ];
+
     protected function casts(): array
     {
         return [

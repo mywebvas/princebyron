@@ -30,7 +30,7 @@ class CustomerAccountController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'user'         => $user,
+                'user'         => $this->safeUser($user),
                 'orders'       => $orders,
                 'entitlements' => $entitlements,
             ]);
@@ -80,5 +80,23 @@ class CustomerAccountController extends Controller
             'entitlements'  => $entitlements,
             'selectedOrder' => $order,
         ]);
+    }
+
+    /**
+     * Return only the fields safe to expose to the client.
+     * Never return the full model: role, is_active, email_verified_at etc.
+     * are internal state the client does not need.
+     */
+    protected function safeUser(?\App\Models\User $user): ?array
+    {
+        if (! $user) {
+            return null;
+        }
+
+        return [
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+        ];
     }
 }

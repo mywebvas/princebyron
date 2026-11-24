@@ -37,22 +37,22 @@ class CustomerAuthController extends Controller
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'user'    => Auth::user(),
-                ]);
-            }
-
-            return redirect()->intended(route('account'));
-        }
-
         if ($request->wantsJson()) {
             return response()->json([
-                'success' => false,
-                'message' => 'The provided credentials do not match our records or the account is deactivated.',
-            ], 422);
+                'success' => true,
+                'user'    => $this->safeUser(Auth::user()),
+            ]);
         }
+
+        return redirect()->intended(route('account'));
+    }
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'The provided credentials do not match our records or the account is deactivated.',
+        ], 422);
+    }
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records or the account is deactivated.',
@@ -93,11 +93,29 @@ class CustomerAuthController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'user'    => $user,
+                'user'    => $this->safeUser($user),
             ], 201);
         }
 
         return redirect()->route('account');
+    }
+
+    /**
+     * Return only the fields safe to expose to the client.
+     * Never return the full model: role, is_active, email_verified_at etc.
+     * are internal state the client does not need.
+     */
+    protected function safeUser(?\App\Models\User $user): ?array
+    {
+        if (! $user) {
+            return null;
+        }
+
+        return [
+            'id'    => $user->id,
+            'name'  => $user->name,
+            'email' => $user->email,
+        ];
     }
 
     public function logout(Request $request)

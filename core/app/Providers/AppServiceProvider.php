@@ -83,6 +83,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth', function (Request $request) {
             return Limit::perMinute(5)->by($this->throttleKey($request));
         });
+
+        // Order detail lookup: authenticated only, but rate-limited to prevent
+        // rapid enumeration of order references even with the ownership check.
+        RateLimiter::for('order', function (Request $request) {
+            return Limit::perMinute(30)->by($this->throttleKey($request));
+        });
     }
 
     /**

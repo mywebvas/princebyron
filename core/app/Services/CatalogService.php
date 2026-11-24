@@ -88,9 +88,20 @@ class CatalogService
     /** A single published product by slug, or null when it does not exist. */
     public function product(string $slug): ?array
     {
-        $all = $this->products();
+        $product = Product::query()
+            ->where('is_published', true)
+            ->where('slug', $slug)
+            ->with([
+                'variants' => fn ($q) => $q->where('is_active', true)->orderBy('id'),
+                'images' => fn ($q) => $q->orderByDesc('is_primary')->orderBy('sort_order'),
+            ])
+            ->first();
 
-        return $all[$slug] ?? null;
+        if (! $product) {
+            return null;
+        }
+
+        return $this->presentProduct($product);
     }
 
     // -------------------------------------------------------------------------

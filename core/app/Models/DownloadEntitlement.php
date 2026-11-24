@@ -21,6 +21,12 @@ class DownloadEntitlement extends Model
         'last_downloaded_at',
     ];
 
+    // Internal foreign-key references are never exposed through JSON APIs.
+    protected $hidden = [
+        'user_id',
+        'order_id',
+    ];
+
     protected function casts(): array
     {
         return [

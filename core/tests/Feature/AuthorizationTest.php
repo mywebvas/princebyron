@@ -180,4 +180,79 @@ class AuthorizationTest extends TestCase
         ]);
         $this->assertFalse(Gate::forUser($userA)->allows('download', $validEntitlement));
     }
+
+    public function test_auth_json_response_exposes_only_safe_user_fields(): void
+    {
+        $user = User::create([
+            'name'              => 'Victim',
+            'email'             => 'victim@example.com',
+            'password'          => 'secret',
+            'role'              => User::ROLE_CUSTOMER,
+            'is_active'         => true,
+            'email_verified_at' => now(),
+            'last_login_at'     => now(),
+        ]);
+
+        $response = $this->actingAs($user)->getJson('/account');
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure([
+            'user' => ['id', 'name', 'email'],
+        ]);
+
+        // Internal state must never appear in the JSON payload.
+        $response->assertJsonMissing([
+            'role',
+            'is_active',
+            'email_verified_at',
+            'last_login_at',
+            'password',
+            'remember_token',
+        ]);
+    }
+
+    public function test_download_controller_rejects_invalid_format(): void
+    {
+        $user = User::create([
+            'name'     => 'Victim',
+            'email'    => 'victim@example.com',
+            'password' => 'secret',
+            'role'     => User::ROLE_CUSTOMER,
+        ]);
+
+        $song = Song::create([
+            'title'        => 'Purify Me',
+            'slug'         => 'purify-me',
+            'price_cents'  => 199,
+            'is_published' => true,
+        ]);
+
+        $order = Order::create([
+            'reference'      => 'PB-ORD-FMT',
+            'user_id'        => $user->id,
+            'status'         => Order::STATUS_PAID,
+            'currency'       => 'USD',
+            'subtotal_cents' => 199,
+            'total_cents'    => 199,
+            'customer_email' => 'victim@example.com',
+            'customer_name'  => 'Victim',
+        ]);
+
+        // An entitlement with an invalid format must be refused by the
+        // controller, not interpolated into a storage path. The column is
+        // varchar(10), so the test value must fit while still failing the
+        // allowlist (mp3/wav only).
+        $entitlement = DownloadEntitlement::create([
+            'user_id'    => $user->id,
+            'order_id'   => $order->id,
+            'song_id'    => $song->id,
+            'format'     => 'badformat',
+            'is_active'  => true,
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        $response = $this->actingAs($user)->get("/downloads/{$entitlement->id}");
+
+        $response->assertStatus(403);
+    }
 }
