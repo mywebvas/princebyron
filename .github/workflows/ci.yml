@@ -412,6 +412,22 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
+      - name: Report which test files fail on MariaDB
+        # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
+        if: always()
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set +e
+          cp phpunit.mysql.xml phpunit.xml
+          : > /tmp/red.txt
+          for f in tests/Unit/*.php tests/Feature/*.php; do
+            [ -f "$f" ] && env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output "$f" > /tmp/one.log 2>&1
+            echo "$? $f" >> /tmp/red.txt
+          done
+          while read -r rc f; do
+            [ "$rc" != "0" ] && echo "::error title=red::$f"
+          done < /tmp/red.txt
+
       - name: 'Tests: MySQL/MariaDB suite'
         # `env -u GITHUB_ACTIONS` and `--no-progress` guard against PHPUnit's
         # GitHub Actions reporter, which publishes one annotation per failing test
