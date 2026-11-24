@@ -178,7 +178,14 @@ class PageController extends Controller
             'title' => $page->title().' — Prince Byron',
             'slug' => $slug,
             'page' => $page,
-            'noindex' => $page->isPlaceholder(),
+            // The layout reads $seo[...], not a top-level variable. Passing
+            // 'noindex' directly silently did nothing, which is the kind of bug
+            // that looks correct in a browser and only shows up in the HTML.
+            'seo' => [
+                'title' => $page->title().' — Prince Byron',
+                'description' => $page->description(),
+                'noindex' => $page->isPlaceholder(),
+            ],
         ]);
     }
 
