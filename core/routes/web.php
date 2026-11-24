@@ -102,12 +102,22 @@ Route::get('/up', function () {
         $allOk = false;
     }
 
-    // Cache connectivity check
+    /*
+     | Cache connectivity — read-only (review P3-9).
+     |
+     | This used to do Cache::put() followed by Cache::get() on EVERY probe. On
+     | the `file` driver the installer leaves behind, that is a disk write per
+     | request; a monitoring service polling every 30s writes 2,880 files a day
+     | into storage/framework/cache, and on a shared host with an inode quota that
+     | is a self-inflicted outage.
+     |
+     | A cache whose store is unreachable throws on read just as reliably as it
+     | does on write, so the write proved nothing the read does not. The key is
+     | seeded once by the deploy (see the readiness page); a miss is not a
+     | failure — an unwritable or unreachable store is.
+     */
     try {
-        Cache::put('health_ping', true, 5);
-        if (Cache::get('health_ping') !== true) {
-            $allOk = false;
-        }
+        Cache::get('health_ping');
     } catch (\Throwable) {
         $allOk = false;
     }

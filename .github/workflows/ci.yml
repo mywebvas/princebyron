@@ -76,6 +76,15 @@ jobs:
         # fails in seconds.
         run: node tools/check-lock.mjs
 
+      - name: Packaging script is executable and syntactically valid
+        # A packaging script that cannot be parsed is discovered at the worst
+        # possible moment — during a release. `bash -n` catches it in seconds.
+        run: |
+          set -euo pipefail
+          bash -n tools/package.sh
+          test -x tools/package.sh
+          echo "::notice title='Packaging'::tools/package.sh parses and is executable"
+
       - name: Responsive image discipline
         # Derivative generation is worthless if a template keeps emitting the
         # master file; the home and product pages did exactly that while the
