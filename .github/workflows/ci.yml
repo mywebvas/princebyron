@@ -417,36 +417,51 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
-      - name: 'Probe P1 the database refuses to update an audit event'
+      - name: Report which tests fail on MariaDB
+        # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
+        #
+        # WHY THIS SHAPE. Runner logs and uploaded artifacts are both unreachable
+        # from the environment that maintains this repository, and GitHub rejects
+        # annotation bodies containing '--' — which PHPUnit 12 injects into every
+        # automatic annotation, so the rejection replaces the real output.
+        #
+        # A hex-encoded body cannot trip any of those rules: it is [0-9a-f] only.
+        # Decode locally with:  bytes.fromhex(msg).decode()
         if: always()
         working-directory: ${{ env.APP_DIR }}
         run: |
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
-            --filter 'test_the_database_refuses_to_update_an_audit_event'
-      - name: 'Probe P2 the database refuses to delete an audit event'
-        if: always()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
-            --filter 'test_the_database_refuses_to_delete_an_audit_event'
-      - name: 'Probe P3 the row survives a refused tamper attempt'
-        if: always()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
-            --filter 'test_the_row_survives_a_refused_tamper_attempt'
-      - name: 'Probe P4 inserting is still allowed'
-        if: always()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
-            --filter 'test_inserting_is_still_allowed'
-      - name: 'Probe P5 a trigger exists on this driver'
-        if: always()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
-            --filter 'test_a_trigger_exists_on_this_driver'
+          set -uo pipefail
+          cp phpunit.mysql.xml phpunit.xml
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress --log-junit /tmp/j.xml > /dev/null 2>&1 || true
+          [ -f /tmp/j.xml ] || { echo "::error title='mysql-detail'::6e6f2d6a756e69742d786d6c"; exit 0; }
+          python3 - <<'PYEOF'
+          import xml.etree.ElementTree as ET, sys
+
+          lines = []
+          try:
+              root = ET.parse('/tmp/j.xml').getroot()
+          except Exception as exc:
+              print("::error title='mysql-detail'::%s" % exc.__class__.__name__.encode().hex())
+              sys.exit(0)
+
+          total = failed = 0
+          for case in root.iter('testcase'):
+              total += 1
+              problems = list(case.findall('failure')) + list(case.findall('error'))
+              if not problems:
+                  continue
+              failed += 1
+              msg = (problems[0].get('message') or '')[:200].replace('\n', ' ')
+              lines.append("%s :: %s :: %s" % (
+                  case.get('class', '').split('\\')[-1], case.get('name', ''), msg))
+
+          lines.insert(0, "total=%d failed=%d" % (total, failed))
+          payload = '\n'.join(lines).encode()
+          # 1200 hex chars per annotation: well under the 64k limit.
+          for i in range(0, len(payload), 1200):
+              print("::error title='mysql-detail-%d'::%s" % (i // 1200, payload[i:i+1200].hex()))
+          PYEOF
+
       - name: 'Tests: MySQL/MariaDB suite'
         # --no-progress: PHPUnit 12 auto-enables a GitHub Actions reporter, and the
         # annotation it builds from diff text contains '--', which GitHub rejects.
