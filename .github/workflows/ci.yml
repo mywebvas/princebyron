@@ -326,11 +326,6 @@ jobs:
   tests-mysql:
     name: Tests (MySQL/MariaDB — shared-host parity)
     runs-on: ubuntu-latest
-    # TEMPORARY: the diagnostic step below force-pushes its output to the
-    # dedicated refs/heads/ci-logs. Revert to the workflow-level `contents: read`
-    # once this job is green.
-    permissions:
-      contents: write
     # WHY THIS JOB EXISTS
     # -------------------
     # The installer has offered a MySQL/MariaDB option since Sprint 0 while four
@@ -417,52 +412,12 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
-      - name: Report which test files fail on MariaDB
-        # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
-        #
-        # PHPUnit/Collision publish a GitHub annotation per failing test; the body
-        # contains '--' from diff output, GitHub rejects it, and the rejection text
-        # is printed in place of the results. Every attempt to read real output
-        # from this runner has returned 19 copies of that message instead.
-        #
-        # The job summary is a separate channel with no content rules.
-        if: always()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          # The runner's shell runs with -e: a failing phpunit invocation would
-          # abort this step at the first red file and publish nothing. Every
-          # earlier version of this diagnostic died exactly that way.
-          set +e
-          cp phpunit.mysql.xml phpunit.xml
-          : > /tmp/red.txt
-          for f in tests/Unit/*.php tests/Feature/*.php; do
-            if [ -f "$f" ]; then
-              env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output "$f" > /tmp/one.log 2>&1
-              rc=$?
-              echo "$rc $f" >> /tmp/red.txt
-            fi
-          done
-          {
-            echo "### MariaDB per-file results"
-            echo '```'
-            cat /tmp/red.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          # Annotation titles are visible through the Checks API and a path has no
-          # '--', so each red file is named in a title. Step names cannot be
-          # changed at runtime, so this is the only list channel that works.
-          while read -r rc f; do
-            if [ "$rc" != "0" ]; then
-              echo "::error title=red::$f"
-            fi
-          done < /tmp/red.txt
-          echo "green: $(grep -c '^0 ' /tmp/red.txt) red: $(grep -vc '^0 ' /tmp/red.txt)"
-
       - name: 'Tests: MySQL/MariaDB suite'
-        # --no-progress: PHPUnit 12 auto-enables a GitHub Actions reporter, and the
-        # annotation it builds from diff text contains '--', which GitHub rejects.
-        # PHPUnit then prints the rejection instead of the result, so the failure
-        # detail never reaches the log.
+        # `env -u GITHUB_ACTIONS` and `--no-progress` guard against PHPUnit's
+        # GitHub Actions reporter, which publishes one annotation per failing test
+        # and — if GitHub rejects the body — prints the rejection instead of the
+        # results. With collision in the dependency set that reporter is not
+        # active, so these are belt and braces.
         working-directory: ${{ env.APP_DIR }}
         run: |
           set +e
