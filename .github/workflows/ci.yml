@@ -304,6 +304,23 @@ jobs:
           fi
           exit $status
 
+      - name: 'MariaDB probe validity'
+        # TEMPORARY. Earlier per-file probes may have failed because of their own
+        # flags rather than because of the tests. This reports the exit code of
+        # each invocation on a file whose only test is `assertTrue(true)`.
+        if: always()
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set +e
+          cp phpunit.mysql.xml phpunit.xml
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output tests/Unit/ExampleTest.php > /tmp/a.log 2>&1
+          a=$?
+          vendor/bin/phpunit --no-progress tests/Unit/ExampleTest.php > /tmp/b.log 2>&1
+          b=$?
+          php artisan test --filter=test_that_true_is_true > /tmp/c.log 2>&1
+          c=$?
+          echo "::error title=probe::no-output=$a no-progress=$b artisan=$c"
+
       - name: 'MariaDB first failure'
         if: always()
         run: |
