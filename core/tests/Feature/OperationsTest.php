@@ -216,6 +216,10 @@ class OperationsTest extends TestCase
             'currency' => 'USD',
             'subtotal_cents' => 1000,
             'total_cents' => 1000,
+            // NOT NULL on the schema: an order always carries the contact address
+            // it was placed with, even for an account holder.
+            'customer_name' => $user->name,
+            'customer_email' => $user->email,
         ]);
 
         $song = \App\Models\Song::create([
