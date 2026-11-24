@@ -429,6 +429,10 @@ jobs:
         if: always()
         working-directory: ${{ env.APP_DIR }}
         run: |
+          # The runner's shell runs with -e: a failing phpunit invocation would
+          # abort this step at the first red file and publish nothing. Every
+          # earlier version of this diagnostic died exactly that way.
+          set +e
           cp phpunit.mysql.xml phpunit.xml
           : > /tmp/red.txt
           for f in tests/Unit/*.php tests/Feature/*.php; do
