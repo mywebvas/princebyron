@@ -254,6 +254,12 @@ All items below are closed and CI-enforced (run 45408009229: 6/6 jobs, 170 tests
 - [x] Author the 26 Blade classes that have no CSS rule, including the bag drawer and toast (P2-1). `tools/check-classes.mjs` now guards this permanently: 225 classes across 12 views, 0 missing.
 - [x] Responsive image derivatives and `srcset` (JPEG + WebP at four widths, intrinsic dimensions via `<x-img>`) and self-hosted display/text fonts (P2-6, P2-7). AVIF is **not** produced — no encoder is available in the build environment, and the fallback chain is complete without it.
 - [x] Branded 404/403/419/429/500/503 views (P2-3), SEO/social metadata and sitemap (P2-4), real favicon set and web manifest (P2-5).
+
+  **Audit correction (post-review).** Three of the items above were reported done and were not, so they are now pinned by tests instead of by memory:
+  - P2-6 was a third done: only the store page used `<x-img>`. The home page's product cards and the product page's gallery and related rail still served master JPEGs to phones. `tools/check-images.mjs` now fails the build on a raw `<img>` in any page template.
+  - The web manifest advertised `apple-touch-icon.png` at 180×180, a size no launcher asks for — Apple reads the `<link>` and ignores the manifest. Replaced with a `maskable` 512px entry.
+  - `errors.css` was parked in `public/build/`, which **Vite empties on every build** — verified with the project's own config, not assumed. The release step would have deleted the stylesheet and every branded error page would have deployed unstyled. Moved to `public/errors.css`.
+  `AssetIntegrityTest` now covers all three: icons present and non-empty, manifest valid with every listed icon resolving, the stylesheet outside the build directory, and a non-empty derivative set.
 - [x] Truth and price corrections: unapproved $12 collection, WAV claims, invented specifications, price drift (P2-8, P2-9).
 - [x] Accessibility set: `aria-current`, `aria-invalid`, live regions, error association, dialog focus traps (P2-11). **Screen-reader testing across JAWS/NVDA/VoiceOver stays unverified until a human performs it** — no automated check substitutes for that.
 
@@ -268,9 +274,23 @@ Still open from this sprint's neighbourhood, deliberately:
 
 ### Sprint 4 — Packaging and operations
 
+**What it needs to begin: nothing from the user.** Three of the six items are pure
+code and can start immediately. The other three need a machine with PHP 8.5,
+Composer and a database, and this environment has no PHP runtime at all — so they
+are authored here and *executed* on the release machine, or they stay untrue.
+
 - [ ] `tools/package.sh` producing a versioned archive with `vendor/` and Filament assets, plus an extraction test (P3-1).
-- [ ] Backup/restore procedure with a rehearsed restore (P3-6); scheduler entries (P3-7); daily log rotation in the installer template (P3-5); lighter health endpoint (P3-9).
-- [ ] Documented `install/` removal and release-rollback steps (P3-8).
+  - Depends on: `composer install --no-dev --optimize-autoloader` and `php artisan filament:assets` having run. **Either the owner provides the built `vendor/` + Filament assets, or the owner runs the two commands from `docs/` on a PHP-capable machine.** Until then `tools/check-release.mjs` correctly reports INCOMPLETE, and the package cannot be called ready.
+- [ ] Backup/restore procedure with a **rehearsed** restore (P3-6) — a restore that has never been executed is a plan, not a capability.
+  - Depends on: a database of the target engine (MySQL/MariaDB preferred) to rehearse against.
+- [ ] Scheduler entries (P3-7); daily log rotation in the installer template (P3-5); lighter health endpoint (P3-9). No dependencies — code only.
+- [ ] Documented `install/` removal and release-rollback steps (P3-8). No dependencies — documentation only.
+
+**What Sprint 4 cannot fix, and should not pretend to:** the package is only
+"plug-n-play" if it ships `vendor/` and the Filament assets. Everything else in
+this roadmap is source code; those two are build products. The honest end state is
+a release archive that contains them, produced once on a networked machine, with a
+checksum and an extraction test proving it works without Composer or Node.
 
 ### Sprint 5 — Hosting proof (requires the owner)
 
