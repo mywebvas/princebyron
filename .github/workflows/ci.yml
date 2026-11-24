@@ -448,7 +448,15 @@ jobs:
             cat /tmp/red.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          echo done
+          # Annotation titles are visible through the Checks API and a path has no
+          # '--', so each red file is named in a title. Step names cannot be
+          # changed at runtime, so this is the only list channel that works.
+          while read -r rc f; do
+            if [ "$rc" != "0" ]; then
+              echo "::error title=red::$f"
+            fi
+          done < /tmp/red.txt
+          echo "green: $(grep -c '^0 ' /tmp/red.txt) red: $(grep -vc '^0 ' /tmp/red.txt)"
 
       - name: 'Tests: MySQL/MariaDB suite'
         # --no-progress: PHPUnit 12 auto-enables a GitHub Actions reporter, and the
