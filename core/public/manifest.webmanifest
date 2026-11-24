@@ -1,5 +1,5 @@
 {
-  "name": "Prince Byron — Official Gospel Music, Ministry & Store",
+  "name": "Prince Byron \u2014 Official Gospel Music, Ministry & Store",
   "short_name": "Prince Byron",
   "description": "Gospel music, ministry bookings, apparel and instant downloads.",
   "start_url": "/",
@@ -8,8 +8,23 @@
   "background_color": "#F7F3EC",
   "theme_color": "#14100C",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

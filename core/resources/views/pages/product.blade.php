@@ -57,13 +57,18 @@
       <!-- Left: High-Res Visual Gallery -->
       <div class="detail-gallery">
         <div class="detail-main-frame">
-          <img 
-            src="{{ asset($product['image']) }}" 
-            alt="{{ $product['title'] }}" 
+          {{-- The gallery frame is the LCP element on this page, so it is eager
+               and high priority. Intrinsic dimensions come from the component,
+               which reads them from the file rather than trusting a hard-coded
+               600x600 that no longer matches the assets. --}}
+          <x-img
+            :src="$product['image']"
+            :alt="$product['title']"
             class="product-detail-photo"
-            width="600"
-            height="600"
-          >
+            sizes="(max-width: 900px) 92vw, 560px"
+            loading="eager"
+            fetchpriority="high"
+          />
         </div>
 
         <div class="detail-thumbs">
@@ -190,7 +195,12 @@
         @foreach($relatedProducts as $rel)
           <article class="product-card">
             <div class="product-image-wrap">
-              <img src="{{ asset($rel['image']) }}" alt="{{ $rel['title'] }}" class="product-card-photo" loading="lazy">
+              <x-img
+                :src="$rel['image']"
+                :alt="$rel['title']"
+                class="product-card-photo"
+                sizes="(max-width: 620px) 92vw, (max-width: 1024px) 46vw, 360px"
+              />
             </div>
             <div class="product-content">
               <h3 class="product-title" style="font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; margin-bottom: 6px;">{{ $rel['title'] }}</h3>

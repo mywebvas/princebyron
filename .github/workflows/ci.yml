@@ -76,6 +76,12 @@ jobs:
         # fails in seconds.
         run: node tools/check-lock.mjs
 
+      - name: Responsive image discipline
+        # Derivative generation is worthless if a template keeps emitting the
+        # master file; the home and product pages did exactly that while the
+        # store page was already converted.
+        run: node tools/check-images.mjs
+
       - name: PHPUnit configuration well-formedness
         # A malformed phpunit*.xml makes every test error while reporting nothing
         # useful. XML forbids '--' inside a comment, which a dashed rule in a doc

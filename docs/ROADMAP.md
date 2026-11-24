@@ -264,7 +264,7 @@ Two residual risks raised against Sprint 2 and closed inside Sprint 3:
 
 Still open from this sprint's neighbourhood, deliberately:
 
-- [ ] P2-16: 579 inline `style=` attributes. Out of the $750 scope; the CSP does not permit `unsafe-inline`, so these are also a correctness problem, not only a tidiness one.
+- [ ] P2-16: 579 inline `style=` attributes. Out of the $750 scope. **Correction to an earlier note in this file:** the storefront CSP *does* allow `style-src 'unsafe-inline'`, so these attributes are not currently blocked and nothing is broken. They are still a real problem for two other reasons: they defeat the design tokens (every one of them is a colour or spacing decision made outside the system, which is how "premium consistency" drifts per page), and they are what prevents `unsafe-inline` from ever being removed from `style-src` — so the policy cannot be tightened until they are gone.
 
 ### Sprint 4 — Packaging and operations
 
