@@ -18,14 +18,26 @@ class DatabaseSeederTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        // 1. Users
-        $owner = User::where('email', 'owner@princebyron.local')->first();
-        $this->assertNotNull($owner);
-        $this->assertTrue($owner->isOwner());
+        // 1. NO ACCOUNTS.
+        //
+        // DatabaseSeeder is what the installer and `db:seed --force` run on a
+        // live host. A seeder cannot know the owner's password, so any account
+        // it creates necessarily has a password that is in the repository —
+        // which means anyone who can read the source can sign in as the owner.
+        // The installer creates the owner with the password the owner typed.
+        //
+        // This assertion is the guard: re-adding UsersSeeder to DatabaseSeeder
+        // fails the suite rather than quietly shipping a known owner password.
+        $this->assertSame(
+            0,
+            User::count(),
+            'DatabaseSeeder must not create accounts — the installer owns that, with the owner\'s password.'
+        );
 
-        $fan = User::where('email', 'fan@princebyron.local')->first();
-        $this->assertNotNull($fan);
-        $this->assertTrue($fan->isCustomer());
+        // The demo seeders must still exist and still be runnable by name, so
+        // a developer can log in locally; they are simply not on the production path.
+        $this->assertTrue(class_exists(\Database\Seeders\UsersSeeder::class));
+        $this->assertTrue(class_exists(\Database\Seeders\ReviewSampleDataSeeder::class));
 
         // 2. The 5 approved songs
         $expectedSongs = ['Free', 'Purify Me', 'I Always Win', 'Toduyun', 'Follow Me'];

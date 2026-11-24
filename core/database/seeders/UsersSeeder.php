@@ -10,8 +10,16 @@ class UsersSeeder extends Seeder
 {
     public function run(): void
     {
-        // Owner account — LOCAL DEV ONLY.
-        // Change password immediately after first login; never use this in production.
+        // LOCAL DEV ONLY — this file is not called by DatabaseSeeder.
+        //
+        // It exists so a developer can log in immediately. It is not safe on a
+        // host that serves customers: the password below is in the repository,
+        // so anyone who can read the source can sign in as the owner. The
+        // installer creates the real owner account with a password the owner
+        // chooses; there is no production path through this file.
+        //
+        // firstOrCreate (not updateOrCreate) on purpose: running it twice, or
+        // after the owner has changed their password, must not reset it.
         User::firstOrCreate(
             ['email' => 'owner@princebyron.local'],
             [

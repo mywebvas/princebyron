@@ -504,9 +504,20 @@ ENV;
                                 // Run guarded database migrations
                                 \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
 
-                                // Run initial settings seeder
+                                // Seed the catalogue and content the site needs to
+                                // function: songs, products, the booking sample, the
+                                // content sections (which include the four legal
+                                // policy rows the footer and checkout link to) and
+                                // settings. DatabaseSeeder deliberately creates NO
+                                // accounts — the owner account is created below, with
+                                // the password typed into this form.
+                                //
+                                // SettingsSeeder alone was the first implementation and
+                                // it produced a site that installed "successfully" and
+                                // was empty: no songs, no products, no content, and a
+                                // footer linking to policy pages that did not exist.
                                 \Illuminate\Support\Facades\Artisan::call('db:seed', [
-                                    '--class' => 'Database\\Seeders\\SettingsSeeder',
+                                    '--class' => 'Database\\Seeders\\DatabaseSeeder',
                                     '--force' => true,
                                 ]);
 

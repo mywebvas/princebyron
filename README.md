@@ -179,6 +179,15 @@ Target a generic cPanel shared host first. The package must not require Composer
 
 The previously agreed **$750 production scope remains fixed and separate**. The production features listed in this project's roadmap are not silently treated as included in that agreement. Confirm the written deliverables and separately approve any expanded scope, pricing, or production release.
 
+## Installing it
+
+Start with [`docs/CPANEL-INSTALL.md`](docs/CPANEL-INSTALL.md) — it covers the one real
+gate (the release must be **built** on a PHP machine first; the repository does not
+contain `vendor/` or the Filament assets), the server requirements, the document-root
+change, cron, and the first-run checks. [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) has
+the longer operational detail, and [`docs/PHASE-6-DECISIONS.md`](docs/PHASE-6-DECISIONS.md)
+lists the decisions still outstanding before a public launch.
+
 ## Prototype and AI handoff
 
 Read `/docs/ANTIGRAVITY-HANDOFF.md` first when starting production work in Antigravity. Then read `AGENTS.md`, `PRD.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, and `docs/ROADMAP.md`. Read `/prototype/README.md` and `/prototype/docs/PROTOTYPE-SPEC.md` for approved content facts and demo boundaries. Treat `/prototype` and `/design-review` as reference material, not code or design templates. Follow the phase sequence and never activate real payments, customer authentication, email, protected downloads, DNS, or deployment without the required credentials and explicit release approval.
