@@ -420,54 +420,46 @@ jobs:
       - name: Report which tests fail on MariaDB
         # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
         #
-        # WHY THIS SHAPE. Runner logs and uploaded artifacts are both unreachable
-        # from the environment that maintains this repository, and GitHub rejects
-        # annotation bodies containing '--' — which PHPUnit 12 injects into every
-        # automatic annotation, so the rejection replaces the real output.
+        # WHY --no-output. PHPUnit 12 publishes one GitHub annotation per failing
+        # test. The body it builds contains '--', GitHub rejects it, and PHPUnit
+        # prints the rejection text IN PLACE OF the results — which is why the log
+        # contained 19 copies of "Comment must not contain '--'" and no test names
+        # at all. --no-output suppresses the reporter entirely; JUnit XML still
+        # lands on disk.
         #
-        # A hex-encoded body cannot trip any of those rules: it is [0-9a-f] only.
-        # Decode locally with:  bytes.fromhex(msg).decode()
+        # The parsed result is emitted as hex ([0-9a-f] only), so GitHub's
+        # annotation content rules cannot reject it either. Decode with:
+        #   bytes.fromhex(message).decode()
         if: always()
         working-directory: ${{ env.APP_DIR }}
         run: |
           set -uo pipefail
           cp phpunit.mysql.xml phpunit.xml
-          set +e
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress --log-junit /tmp/j.xml > /tmp/full.log 2>&1
-          rc=$?
-          set -e
-          echo "phpunit-exit:$rc size:$(stat -c%s /tmp/full.log 2>/dev/null || echo 0)"
-          # The raw log, hex-encoded. Hex is [0-9a-f] only, so GitHub's annotation
-          # content rules cannot reject it. Decode: bytes.fromhex(m).decode()
-          head -c 3000 /tmp/full.log > /tmp/head.log
-          python3 -c "import sys; d=open('/tmp/head.log','rb').read(); print('::error title=\"mysql-head\"::'+d.hex())"
-          [ -f /tmp/j.xml ] || { echo "::error title='mysql-detail'::6e6f2d6a756e69742d786d6c"; exit 0; }
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output --log-junit /tmp/j.xml || true
           python3 - <<'PYEOF'
-          import xml.etree.ElementTree as ET, sys
+          import xml.etree.ElementTree as ET
 
-          lines = []
           try:
               root = ET.parse('/tmp/j.xml').getroot()
           except Exception as exc:
-              print("::error title='mysql-detail'::%s" % exc.__class__.__name__.encode().hex())
-              sys.exit(0)
+              print("::error title='mysql-detail'::" + ("no-junit:" + exc.__class__.__name__).encode().hex())
+              raise SystemExit(0)
 
-          total = failed = 0
+          out, total, failed = [], 0, 0
           for case in root.iter('testcase'):
               total += 1
               problems = list(case.findall('failure')) + list(case.findall('error'))
               if not problems:
                   continue
               failed += 1
-              msg = (problems[0].get('message') or '')[:200].replace('\n', ' ')
-              lines.append("%s :: %s :: %s" % (
-                  case.get('class', '').split('\\')[-1], case.get('name', ''), msg))
+              name = case.get('name', '')
+              msg = (problems[0].get('message') or '')[:300].replace(chr(10), ' ')
+              out.append(name + " || " + msg)
 
-          lines.insert(0, "total=%d failed=%d" % (total, failed))
-          payload = '\n'.join(lines).encode()
-          # 1200 hex chars per annotation: well under the 64k limit.
-          for i in range(0, len(payload), 1200):
-              print("::error title='mysql-detail-%d'::%s" % (i // 1200, payload[i:i+1200].hex()))
+          out.insert(0, "total=%d failed=%d" % (total, failed))
+          payload = chr(10).join(out).encode()
+          for i in range(0, len(payload), 1500):
+              print("::error title='mysql-detail-%02d'::%s" % (i // 1500, payload[i:i+1500].hex()))
           PYEOF
 
       - name: 'Tests: MySQL/MariaDB suite'
