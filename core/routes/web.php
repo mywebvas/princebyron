@@ -35,6 +35,8 @@ Route::get('/cart', [PageController::class, 'cart'])->name('cart');
 Route::get('/checkout', [PageController::class, 'checkout'])->name('checkout');
 Route::get('/booking', [PageController::class, 'booking'])->name('booking');
 
+
+
 // Customer Authentication
 Route::get('/login', [CustomerAuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [CustomerAuthController::class, 'login'])->middleware('throttle:auth');
@@ -149,6 +151,27 @@ Route::get('/sitemap.xml', function (\App\Services\CatalogService $catalog) {
         ['loc' => url('/booking'), 'changefreq' => 'monthly', 'priority' => '0.6'],
     ];
 
+    /*
+     | Legal pages, but only once the owner has written them.
+     |
+     | A template is served `noindex`, so listing it here would contradict the
+     | page's own robots directive and waste crawl budget on text that must not
+     | be published as this store's policy. Written policies are included.
+     */
+    foreach (\App\Support\LegalPage::slugs() as $legalSlug) {
+        $page = \App\Support\LegalPage::find($legalSlug);
+
+        if ($page === null || $page->isPlaceholder()) {
+            continue;
+        }
+
+        $urls[] = [
+            'loc' => url('/'.$legalSlug),
+            'changefreq' => 'yearly',
+            'priority' => '0.3',
+        ];
+    }
+
     foreach ($catalog->songs() as $song) {
         // Only published, purchasable tracks; the catalogue already filters
         // unpublished rows, so this is about the sample fallback items.
@@ -190,3 +213,20 @@ Route::get('/sitemap.xml', function (\App\Services\CatalogService $catalog) {
 
     return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
 })->name('sitemap');
+
+/*
+|--------------------------------------------------------------------------
+| Legal pages (Phase 6)
+|--------------------------------------------------------------------------
+| A store that takes money must publish refund, privacy, terms and shipping
+| pages. The slugs are constrained to exactly the four defined in
+| App\Support\LegalPage, so this wildcard cannot shadow a real route, and it is
+| registered last as a second guarantee.
+|
+| Each renders the owner's own content when it exists, or an explicitly marked
+| template when it does not. A page the owner disables returns 404 rather than
+| showing an empty shell.
+*/
+Route::get('/{legalSlug}', [PageController::class, 'legal'])
+    ->whereIn('legalSlug', \App\Support\LegalPage::slugs())
+    ->name('legal.page');

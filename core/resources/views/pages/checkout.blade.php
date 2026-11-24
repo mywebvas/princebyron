@@ -361,6 +361,19 @@
               &#128274; 256-bit TLS encrypted transaction &bull; Card data is never stored on the server &bull; Authoritative server-side pricing.
             </div>
 
+            {{-- Consent (Phase 6). Placing an order forms a contract, so the
+                 terms must be reachable at the moment of agreement — a footer
+                 link two screens away is not the same thing. Stated as an
+                 affirmative step by continuing, which is what the button does. --}}
+            <p class="checkout-consent">
+              By placing this order you agree to the
+              <a href="{{ url('/terms') }}" target="_blank" rel="noopener">Terms of Sale</a>
+              and the
+              <a href="{{ url('/refund-policy') }}" target="_blank" rel="noopener">Refund &amp; Returns Policy</a>,
+              and to the delivery arrangements described in
+              <a href="{{ url('/shipping') }}" target="_blank" rel="noopener">Shipping &amp; Delivery</a>.
+            </p>
+
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <button type="button" class="btn-secondary" @click="step = 2">&larr; Back to Delivery</button>
               <button type="submit" class="btn-primary" style="padding: 16px 32px;">

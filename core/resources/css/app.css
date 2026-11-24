@@ -3558,6 +3558,104 @@
       border-top: 1px solid var(--border-subtle);
     }
 
+    .checkout-consent {
+      margin-bottom: 16px;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+    .checkout-consent a {
+      color: var(--color-terracotta, #9E472A);
+      text-decoration: underline;
+    }
+
+    .footer-legal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      margin-block: 10px;
+      font-size: 0.85rem;
+    }
+    .footer-legal a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+    .footer-legal a:hover,
+    .footer-legal a:focus-visible {
+      color: var(--color-gold, #DFA759);
+      text-decoration: underline;
+    }
+
+    /* ----------------------------------------------------------------------
+       Legal pages (Phase 6)
+       ----------------------------------------------------------------------
+       A store that takes money must publish refund, privacy, terms and
+       shipping pages. The template banner is deliberately loud: a placeholder
+       that reads like a finished policy is a customer relying on text nobody
+       has reviewed. */
+    .legal-doc {
+      max-width: 760px;
+      padding-block: 64px 96px;
+    }
+    .legal-notice {
+      margin-bottom: 40px;
+      padding: 20px 24px;
+      border-left: 4px solid var(--color-terracotta, #9E472A);
+      background: color-mix(in srgb, var(--color-terracotta, #9E472A) 8%, transparent);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--text-primary);
+    }
+    .legal-notice strong {
+      display: block;
+      margin-bottom: 6px;
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+    }
+    .legal-notice--soft {
+      border-left-color: var(--color-gold, #DFA759);
+      background: color-mix(in srgb, var(--color-gold, #DFA759) 10%, transparent);
+    }
+    .legal-body p {
+      margin-bottom: 1.25em;
+      line-height: 1.8;
+      color: var(--text-primary);
+    }
+    .legal-body p:last-child {
+      margin-bottom: 0;
+    }
+    .legal-reviewed {
+      margin-top: 40px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .legal-contact {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-light);
+      color: var(--text-muted);
+    }
+    .legal-contact a {
+      color: var(--color-terracotta, #9E472A);
+      text-decoration: underline;
+    }
+    .legal-others {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 24px;
+      margin-top: 32px;
+      font-size: 0.9rem;
+    }
+    .legal-others a {
+      color: var(--text-muted);
+      text-decoration: underline;
+    }
+    .legal-others a:hover {
+      color: var(--color-terracotta, #9E472A);
+    }
+
     /* Mobile & Tablet Responsive Breakpoints */
     @media (max-width: 1024px) {
       .saas-sidebar {

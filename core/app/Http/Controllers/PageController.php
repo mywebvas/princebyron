@@ -154,6 +154,34 @@ class PageController extends Controller
         ]);
     }
 
+    /**
+     * Legal pages (Phase 6).
+     *
+     * WHY THESE EXIST AS OWNER-EDITABLE CONTENT AND NOT AS HARD-CODED BLADE
+     * ---------------------------------------------------------------------
+     * A store that takes money must publish refund, privacy, shipping and terms
+     * pages. Card processors require them, and several jurisdictions require a
+     * cancellation notice for digital goods. None of that text can be invented
+     * here: it depends on the owner's jurisdiction, entity and processor terms.
+     *
+     * So each page renders owner-written content when it exists and an explicitly
+     * marked template when it does not. A page that silently reads like real
+     * policy would be worse than no page at all.
+     */
+    public function legal(string $slug)
+    {
+        $page = \App\Support\LegalPage::find($slug);
+
+        abort_if($page === null, 404);
+
+        return view('pages.legal', [
+            'title' => $page->title().' — Prince Byron',
+            'slug' => $slug,
+            'page' => $page,
+            'noindex' => $page->isPlaceholder(),
+        ]);
+    }
+
     public function account()
     {
         return view('pages.account', [

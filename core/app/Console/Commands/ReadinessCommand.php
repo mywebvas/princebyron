@@ -46,6 +46,7 @@ class ReadinessCommand extends Command
         $this->checkLogging();
         $this->checkAuditTrigger();
         $this->checkUrl();
+        $this->checkLegalPages();
 
         return $this->report();
     }
@@ -209,6 +210,50 @@ class ReadinessCommand extends Command
             is_string($url) && str_starts_with($url, 'https://'),
             'Serve the site over HTTPS and update APP_URL. Checkout and session cookies depend on it.'
         );
+    }
+
+    /**
+     * Legal pages (Phase 6).
+     *
+     * A store taking money without a published refund and privacy policy is not
+     * production-ready, regardless of how well the code runs. Card processors
+     * check for these during review and several jurisdictions require a stated
+     * cancellation right for digital goods.
+     *
+     * Reported as FAILURES, not warnings: this is the one readiness item that is
+     * a commercial and legal blocker rather than a technical one.
+     */
+    private function checkLegalPages(): void
+    {
+        try {
+            $outstanding = [];
+
+            foreach (\App\Support\LegalPage::requiredKeys() as $key) {
+                $section = \App\Models\ContentSection::where('section_key', $key)->first();
+
+                if ($section === null || trim((string) $section->body) === '') {
+                    $label = str_replace('legal_', '', $key);
+                    $outstanding[] = $label;
+                }
+            }
+
+            $this->check(
+                'Refund, privacy, terms and shipping policies are written',
+                $outstanding === [],
+                $outstanding === []
+                    ? 'All policies are written.'
+                    : 'Still showing template text: '.implode(', ', $outstanding)
+                      .'. Write these in the admin panel under Content Sections before taking payments.'
+            );
+        } catch (\Throwable) {
+            // The table may not exist yet on a half-installed site; do not let a
+            // readiness check crash over the thing it is meant to report.
+            $this->check(
+                'Refund, privacy, terms and shipping policies are written',
+                false,
+                'Could not read the content sections table. Run `php artisan migrate --force` first.'
+            );
+        }
     }
 
     private function report(): int

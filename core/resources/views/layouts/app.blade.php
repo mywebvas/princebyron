@@ -190,6 +190,18 @@
 
       <div class="footer-bottom">
         <div>&copy; {{ date('Y') }} Prince Byron &bull; princebyron.com &bull; All Rights Reserved.</div>
+
+        {{-- Policies (Phase 6). A store that takes money must link these from
+             every page; card processors check for it during review. The pages
+             always exist — each renders owner content or a marked template — so
+             these links are never dead. --}}
+        <nav class="footer-legal" aria-label="Store policies">
+          <a href="{{ url('/refund-policy') }}">Refund &amp; Returns</a>
+          <a href="{{ url('/privacy') }}">Privacy</a>
+          <a href="{{ url('/terms') }}">Terms of Sale</a>
+          <a href="{{ url('/shipping') }}">Shipping &amp; Delivery</a>
+        </nav>
+
         <div>Faith-led worship music, ministry invitations, and author-verified apparel.</div>
       </div>
     </footer>
