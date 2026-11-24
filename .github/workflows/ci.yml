@@ -422,27 +422,29 @@ jobs:
         #
         # PHPUnit/Collision publish a GitHub annotation per failing test; the body
         # contains '--' from diff output, GitHub rejects it, and the rejection text
-        # is printed in place of the results. Every attempt to capture real output
-        # from this runner has produced 19 copies of that message instead.
+        # is printed in place of the results. Every attempt to read real output
+        # from this runner has returned 19 copies of that message instead.
         #
-        # So: run one file at a time and put the FILE PATH in the annotation
-        # title. A path contains no '--' and no '::', so nothing can be rejected.
+        # The job summary is a separate channel with no content rules.
         if: always()
         working-directory: ${{ env.APP_DIR }}
         run: |
-          set -uo pipefail
           cp phpunit.mysql.xml phpunit.xml
-          fail=0
+          : > /tmp/red.txt
           for f in tests/Unit/*.php tests/Feature/*.php; do
-            [ -f "$f" ] || continue
-            env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output "$f" > /dev/null 2>&1
-            rc=$?
-            if [ $rc -ne 0 ]; then
-              fail=$((fail + 1))
-              echo "::error title='mysql-red-file'::$f"
+            if [ -f "$f" ]; then
+              env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output "$f" > /tmp/one.log 2>&1
+              rc=$?
+              echo "$rc $f" >> /tmp/red.txt
             fi
           done
-          echo "files failing on MariaDB: $fail"
+          {
+            echo "### MariaDB per-file results"
+            echo '```'
+            cat /tmp/red.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo done
 
       - name: 'Tests: MySQL/MariaDB suite'
         # --no-progress: PHPUnit 12 auto-enables a GitHub Actions reporter, and the
