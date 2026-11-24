@@ -1,0 +1,652 @@
+name: CI
+
+# Baseline verification for the Prince Byron platform.
+#
+# Why this exists
+# ---------------
+# README/ROADMAP previously claimed "71 tests passed" with no mechanism to
+# re-check it: a regression could ship silently and every later fix would be
+# unverifiable. This workflow makes the test suite, the syntax check, the
+# frontend build and the release-packaging rules reproducible on every push.
+#
+# Repository layout note
+# ----------------------
+# The Laravel application lives in `core/` behind a root loader (cPanel
+# deployment shape), so Composer/Artisan/npm steps run there while
+# repository-wide checks run at the root.
+#
+# Job matrix
+# ----------
+#   static          Composer manifest + PHP syntax + Blade compile + Pint
+#   tests-postgres  PRIMARY test job (production parity)
+#   tests-sqlite    Fast regression pass (in-memory)
+#   assets          Vite build must succeed and stay within budget
+#   package         Release-archive rules must hold (no secrets, no dev files)
+#
+# PHP version
+# -----------
+# core/composer.json requires "php": "^8.5" and install/index.php refuses to
+# install on anything older (see test_installer_php_floor_matches_composer_constraint).
+# `shivammathur/setup-php` resolves the newest available PHP for a bare
+# major.minor request and fails loudly instead of silently downgrading, so this
+# pipeline cannot go green on a runtime the installer would reject.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: '8.5'
+  APP_DIR: core
+  COMPOSER_NO_INTERACTION: '1'
+  COMPOSER_PROCESS_TIMEOUT: '900'
+
+jobs:
+  static:
+    name: Static checks (syntax, Blade compile, style)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, sqlite3, pdo_sqlite, pgsql, pdo_pgsql
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: Composer lock-file sync (no PHP required)
+        # `composer install` aborts if composer.json was edited without
+        # re-locking, which would make the release machine unable to produce
+        # vendor/ at all. Caught a real Sprint 0 mistake; keep it first so it
+        # fails in seconds.
+        run: node tools/check-lock.mjs
+
+      - name: Packaging script is executable and syntactically valid
+        # A packaging script that cannot be parsed is discovered at the worst
+        # possible moment — during a release. `bash -n` catches it in seconds.
+        run: |
+          set -euo pipefail
+          bash -n tools/package.sh
+          test -x tools/package.sh
+          echo "::notice title='Packaging'::tools/package.sh parses and is executable"
+
+      - name: Responsive image discipline
+        # Derivative generation is worthless if a template keeps emitting the
+        # master file; the home and product pages did exactly that while the
+        # store page was already converted.
+        run: node tools/check-images.mjs
+
+      - name: PHPUnit configuration well-formedness
+        # A malformed phpunit*.xml makes every test error while reporting nothing
+        # useful. XML forbids '--' inside a comment, which a dashed rule in a doc
+        # comment violates. Cheap, needs no Composer, catches the whole class.
+        run: node tools/check-phpunit-xml.mjs
+
+      - name: PHP syntax check (every tracked PHP file)
+        # Scope is deliberately the whole repository: dev scripts and the
+        # installer are checked too, so a broken file can never reach the
+        # release archive unnoticed.
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.php')
+          echo "Checking ${#files[@]} PHP files"
+          fail=0
+          for f in "${files[@]}"; do
+            if ! out=$(php -l "$f" 2>&1); then echo "FAIL: $f"; echo "$out"; fail=1; fi
+          done
+          exit $fail
+
+      - name: Validate composer.json (advisory)
+        # Advisory only: `composer validate` changes its warning set between
+        # Composer releases and would otherwise fail CI for cosmetic reasons.
+        # Correctness is enforced by tools/check-lock.mjs and by the fact that
+        # the next step is a strict `composer install` from the lock file.
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: composer validate --no-check-publish
+
+      - name: Prepare .env before dependency install
+        # composer's post-autoload-dump script runs `php artisan
+        # package:discover` and `filament:upgrade`, which boot the app and need
+        # a .env to exist. Creating it first avoids a class of install-time
+        # failures that would otherwise look like a dependency problem.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+      - name: Install Composer dependencies from lock
+        # Uses `install` (never `update`): fails if composer.json was edited
+        # without re-locking, which would make the shipped vendor/ tree
+        # disagree with its own manifest.
+        #
+        # The retry is not cosmetic. When this step fails, the failure is a
+        # network or registry problem on the runner, not a defect in the
+        # repository — and without a retry the whole pipeline goes red for a
+        # reason the author cannot see from the annotations (step logs are not
+        # always retrievable). Two attempts with a short backoff absorbs the
+        # transient case; a real lock or manifest problem fails both times and
+        # still fails the build.
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          # Composer fetches many distribution archives from api.github.com
+          # without an authenticated request by default, which is rate-limited
+          # per IP — and hosted runners share IPs. Passing the token raises the
+          # ceiling so a shared-runner rate limit does not read as a code defect.
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            sleep $((attempt * 10))
+          done
+          # Surface the actual reason. A failure here is invisible otherwise:
+          # the step log is often not retrievable, and "exit code 1" tells the
+          # author nothing about whether the cause is the repository or the
+          # registry.
+          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
+          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
+          exit 1
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          php artisan key:generate --force
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+          php artisan config:clear
+
+      - name: Compile all Blade templates
+        # Catches malformed Blade/PHP inside templates, which `php -l` cannot.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan view:cache
+          echo "All Blade templates compiled."
+
+      - name: Check code style (Pint — advisory)
+        # Advisory, not a gate. The existing tree predates any Pint
+        # normalisation, so making this blocking would fail on ~50 untouched
+        # files and force a large cosmetic diff into a verification-only
+        # change. Normalising the codebase is its own reviewable commit; flip
+        # this to a hard gate in the same commit that does it.
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: vendor/bin/pint --test
+
+  tests-postgres:
+    name: Tests (PostgreSQL — primary)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: princebyron_test
+          POSTGRES_USER: princebyron
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U princebyron -d princebyron_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_DATABASE: princebyron_test
+      DB_USERNAME: princebyron
+      DB_PASSWORD: secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, pgsql, pdo_pgsql
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: Composer lock-file sync (no PHP required)
+        run: node tools/check-lock.mjs
+
+      - name: Prepare .env before dependency install
+        # composer's post-autoload-dump script boots the app
+        # (`artisan package:discover`, `filament:upgrade`), which needs a .env.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+      - name: Install Composer dependencies from lock
+        # Retried on network/registry failure: when this step fails the cause is
+        # the runner, not the repository, and step logs are not always
+        # retrievable. A genuine lock/manifest problem fails every attempt.
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          # Composer fetches many distribution archives from api.github.com
+          # without an authenticated request by default, which is rate-limited
+          # per IP — and hosted runners share IPs. Passing the token raises the
+          # ceiling so a shared-runner rate limit does not read as a code defect.
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            sleep $((attempt * 10))
+          done
+          # Surface the actual reason. A failure here is invisible otherwise:
+          # the step log is often not retrievable, and "exit code 1" tells the
+          # author nothing about whether the cause is the repository or the
+          # registry.
+          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
+          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
+          exit 1
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan key:generate --force
+          php artisan config:clear
+
+      - name: 'Tests: PostgreSQL suite'
+        # `artisan test` injects its own --configuration flag; passing another
+        # produces "Option --configuration cannot be used more than once" and
+        # silently runs the wrong config. Selecting PostgreSQL by putting the
+        # config in phpunit.xml's place is the supported route.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set +e
+          cp phpunit.pgsql.xml phpunit.xml
+          php artisan test > /tmp/test.log 2>&1
+          status=$?
+          cat /tmp/test.log
+
+          if [ $status -ne 0 ]; then
+            # Print the actual cause first: for every failed test, the
+            # assertion message ("Failed asserting that ... contains X") is
+            # the single most useful line and it does not start with FAIL.
+            # Without this, only a truncated snippet of the offending source
+            # is visible, which is not enough to act on.
+            echo "================ FAILURE DETAIL ================"
+            grep -nE 'FAILED|Failed asserting|Expected response status|does not contain|must be of type|Call to|Exception:|SQLSTATE\(|Tests: ' /tmp/test.log \
+              | head -80 || true
+            echo "---- failed test method context ----"
+            awk '/^ *FAILED /{f=1} f&&NR<99999{print; c++} c>60{exit}' /tmp/test.log || true
+            echo "================================================"
+
+            # Surface the same lines in the Checks API / PR files view so a
+            # failure is diagnosable without downloading raw job logs.
+            grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
+              | grep -vE '^\s*$' | head -20 | while IFS= read -r line; do
+                esc=$(printf '%s' "$line" | sed -e 's/%/%25/g' -e 's/--/-/g' -e 's/::/:\:/g' -e 's/\r//g')
+                echo "::error title='Tests (PostgreSQL)'::$esc"
+              done
+            echo "::error title='Tests (PostgreSQL)'::exit code $status — see step log for full output"
+          else
+            # Publish the real totals on a green run. README states a suite size,
+            # and without this the only way to check it is a local PHP install
+            # that the sandbox may not have — which is how documentation drifts
+            # away from reality.
+            # The totals line is wrapped in ANSI colour ("\e[90mTests:\e[39m"),
+            # so strip escapes first — otherwise 'Tests:' is never at the start
+            # of the line and this reports nothing, which is how the first
+            # version of this step silently produced no number at all.
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (PostgreSQL)'::${totals:-suite passed (no totals line found)}"
+          fi
+          exit $status
+
+      - name: Verify full migration replay from an empty database
+        # The cPanel installer runs `migrate --force` against a fresh database.
+        # Prove the whole chain (including the PL/pgSQL audit trigger) works
+        # from zero, not only on top of an already-migrated schema.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan migrate:fresh --force
+          php artisan migrate:status
+
+      - name: Seed a clean database (installer parity)
+        # The installer runs SettingsSeeder after migrating. Verify seeders are
+        # idempotent and do not require the local review fixtures.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+
+  tests-mysql:
+    name: Tests (MySQL/MariaDB — shared-host parity)
+    runs-on: ubuntu-latest
+    # WHY THIS JOB EXISTS
+    # -------------------
+    # The installer has offered a MySQL/MariaDB option since Sprint 0 while four
+    # migrations used `jsonb` and the audit-immutability trigger was PostgreSQL +
+    # SQLite only. On MariaDB — the database most of this project's cPanel target
+    # hosts actually provide — the schema would half-create and the audit trail
+    # would have had no database-level protection at all. A capability CI does
+    # not exercise is a claim, not a feature.
+    #
+    # MariaDB, not MySQL: it is what shared cPanel accounts ship, and its trigger
+    # and SIGNAL behaviour is the one that matters here.
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_DATABASE: princebyron_test
+          MARIADB_USER: princebyron
+          MARIADB_PASSWORD: secret
+          MARIADB_ROOT_PASSWORD: rootsecret
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: princebyron_test
+      DB_USERNAME: princebyron
+      DB_PASSWORD: secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, pdo_mysql
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: Composer lock-file sync (no PHP required)
+        run: node tools/check-lock.mjs
+
+      - name: Prepare .env before dependency install
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+      - name: Install Composer dependencies from lock
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying"
+            sleep $((attempt * 10))
+          done
+          echo "::error title='Composer install'::composer install failed 3 times"
+          exit 1
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan key:generate --force
+          php artisan config:clear
+
+      - name: Prove the schema builds on MariaDB (DDL gate)
+        # A separate step on purpose: if the job goes red HERE the problem is a
+        # migration or DDL; if it goes red in the step below it is application
+        # behaviour. Diagnosis by step name needs no log text.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan migrate:fresh --force
+          php artisan migrate:status
+
+      - name: 'Tests: MySQL/MariaDB suite'
+        # `artisan test` rather than vendor/bin/phpunit directly: it is the
+        # invocation the SQLite and PostgreSQL jobs use, and it configures the
+        # console printer itself instead of inheriting whatever a bare PHPUnit
+        # run picks up on a GitHub runner.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set +e
+          cp phpunit.mysql.xml phpunit.xml
+          php artisan test > /tmp/test.log 2>&1
+          status=$?
+          cat /tmp/test.log
+
+          # The failure detail also goes to the job summary: annotations on a
+          # GitHub runner are size- and content-limited, and the raw log archive
+          # is not reachable from every environment.
+          if [ $status -ne 0 ]; then
+            {
+              echo "### MariaDB suite exit $status"
+              echo '```'
+              sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | grep -E 'FAILED|Failed|SQLSTATE|Exception|Tests:' | head -40
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (MySQL/MariaDB)'::${totals:-suite passed}"
+          fi
+          exit $status
+
+      - name: Verify full migration replay from an empty database
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan migrate:fresh --force
+          php artisan migrate:status
+
+      - name: Seed a clean database (installer parity)
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+          php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
+
+  tests-sqlite:
+    name: Tests (SQLite — fast regression pass)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, json, curl, openssl, tokenizer, fileinfo, intl, zip, bcmath, sqlite3, pdo_sqlite
+          coverage: none
+          ini-values: memory_limit=1G
+
+      - name: Composer lock-file sync (no PHP required)
+        run: node tools/check-lock.mjs
+
+      - name: Prepare .env before dependency install
+        # composer's post-autoload-dump script boots the app
+        # (`artisan package:discover`, `filament:upgrade`), which needs a .env.
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+
+      - name: Install Composer dependencies from lock
+        # Retried on network/registry failure: when this step fails the cause is
+        # the runner, not the repository, and step logs are not always
+        # retrievable. A genuine lock/manifest problem fails every attempt.
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          # Composer fetches many distribution archives from api.github.com
+          # without an authenticated request by default, which is rate-limited
+          # per IP — and hosted runners share IPs. Passing the token raises the
+          # ceiling so a shared-runner rate limit does not read as a code defect.
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ github.token }}"}}'
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
+              exit 0
+            fi
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            sleep $((attempt * 10))
+          done
+          # Surface the actual reason. A failure here is invisible otherwise:
+          # the step log is often not retrievable, and "exit code 1" tells the
+          # author nothing about whether the cause is the repository or the
+          # registry.
+          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
+          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
+          exit 1
+
+      - name: Prepare application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -euo pipefail
+          php artisan key:generate --force
+          php artisan config:clear
+
+      - name: 'Tests: SQLite suite'
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set +e
+          php artisan test > /tmp/test.log 2>&1
+          status=$?
+          cat /tmp/test.log
+
+          if [ $status -ne 0 ]; then
+            # Print the actual cause first: for every failed test, the
+            # assertion message ("Failed asserting that ... contains X") is
+            # the single most useful line and it does not start with FAIL.
+            # Without this, only a truncated snippet of the offending source
+            # is visible, which is not enough to act on.
+            echo "================ FAILURE DETAIL ================"
+            grep -nE 'FAILED|Failed asserting|Expected response status|does not contain|must be of type|Call to|Exception:|SQLSTATE\(|Tests: ' /tmp/test.log \
+              | head -80 || true
+            echo "---- failed test method context ----"
+            awk '/^ *FAILED /{f=1} f&&NR<99999{print; c++} c>60{exit}' /tmp/test.log || true
+            echo "================================================"
+
+            # Surface the same lines in the Checks API / PR files view so a
+            # failure is diagnosable without downloading raw job logs.
+            grep -E '(FAIL|Failed|ERROR|SQLSTATE|Exception|Tests:)' /tmp/test.log \
+              | grep -vE '^\s*$' | head -20 | while IFS= read -r line; do
+                esc=$(printf '%s' "$line" | sed -e 's/%/%25/g' -e 's/--/-/g' -e 's/::/:\:/g' -e 's/\r//g')
+                echo "::error title='Tests (SQLite)'::$esc"
+              done
+            echo "::error title='Tests (SQLite)'::exit code $status — see step log for full output"
+          else
+            # The totals line is wrapped in ANSI colour ("\e[90mTests:\e[39m"),
+            # so strip escapes first — otherwise 'Tests:' is never at the start
+            # of the line and this reports nothing, which is how the first
+            # version of this step silently produced no number at all.
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (SQLite)'::${totals:-suite passed (no totals line found)}"
+          fi
+          exit $status
+
+  assets:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: core/package-lock.json
+
+      - name: Install Node dependencies from lock
+        working-directory: ${{ env.APP_DIR }}
+        run: npm ci --no-audit --no-fund
+
+      - name: Build production assets
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run build
+
+      - name: Assert build output and payload budget
+        run: node tools/check-assets.mjs
+
+      - name: Assert every Blade class has a CSS rule
+        # P2-1: 27 classes were used in templates with no rule anywhere — the
+        # bag drawer badge, the toast, the product gallery, the bio band, the
+        # booking stepper. Nothing errored; the components were simply invisible,
+        # and that survived several rounds of human review because a missing rule
+        # looks like a design decision. This runs after the build so Tailwind
+        # utilities can be recognised from compiled output.
+        run: node tools/check-classes.mjs
+
+      - name: Upload built assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-build
+          path: core/public/build
+          if-no-files-found: error
+
+  package:
+    name: Release packaging rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify release-archive manifest
+        # No install step on purpose: packaging correctness must be provable
+        # from the repository alone, exactly as the host receives it.
+        run: node tools/check-package.mjs
+
+      - name: Release completeness (what the archive needs)
+        # Reports which build products the upload still needs. Not a gate in CI:
+        # vendor/ and Filament assets are produced on the release machine, so
+        # their absence here is expected. In --strict mode this becomes the
+        # final check before zipping.
+        run: node tools/check-release.mjs || true
+
+      - name: Validate workflow files
+        # A malformed workflow does not fail loudly — GitHub accepts the push
+        # and publishes a run with zero jobs, which looks like a test failure.
+        # This check needs a real YAML parser, so it lives here rather than in
+        # the dependency-free manifest step.
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-audit --no-fund js-yaml
+          node tools/check-workflows.mjs

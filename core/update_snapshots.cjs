@@ -19,8 +19,12 @@ async function main() {
     try {
       const res = await fetch(r.url);
       const html = await res.text();
-      fs.writeFileSync(`core/public/snapshots/${r.name}.html`, html);
-      console.log(`Updated core/public/snapshots/${r.name}.html`);
+      // Review fixtures live OUTSIDE the web root so completed account/order
+      // screens are never served from the public document root (finding P1-2).
+      const outDir = `../docs/review-snapshots`;
+      fs.mkdirSync(outDir, { recursive: true });
+      fs.writeFileSync(`${outDir}/${r.name}.html`, html);
+      console.log(`Updated ${outDir}/${r.name}.html`);
     } catch (e) {
       console.error(`Failed ${r.name}:`, e.message);
     }

@@ -19,6 +19,13 @@
 <section class="section-editorial" style="background: var(--color-linen);" x-data="{ activeCategory: 'all' }">
   <div class="section-container">
     
+    @if($samplePricing)
+      <p class="price-notice" style="color: var(--text-primary); border-left-color: var(--color-amber); background: rgba(200, 136, 59, 0.07);" role="note">
+        <strong>Please note:</strong> {{ $samplePricingNotice }}
+        Amounts are shown for demonstration only while the catalog is being finalised.
+      </p>
+    @endif
+
     <!-- Filter Bar -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 36px; flex-wrap: wrap; gap: 16px;">
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -68,7 +75,14 @@
         >
           <div class="product-badge">{{ $product['category'] }}</div>
           <div class="product-image-wrap">
-            <img src="{{ asset($product['image']) }}" alt="{{ $product['title'] }}" class="product-card-photo" loading="lazy">
+            {{-- product['image'] is a path under public/ (e.g. images/products/pb-tee.jpg).
+                 The component discovers the derivatives so this markup cannot go stale. --}}
+            <x-img
+              :src="$product['image']"
+              :alt="$product['title']"
+              class="product-card-photo"
+              sizes="(max-width: 620px) 92vw, (max-width: 1024px) 46vw, 360px"
+            />
           </div>
           <div class="product-content">
             <h3 class="product-title" style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">{{ $product['title'] }}</h3>
@@ -85,7 +99,12 @@
     <!-- Sourcing & Shipping Notice -->
     <div style="margin-top: 56px; padding: 24px; background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); text-align: center;">
       <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
-        <strong>Ethical Craft &amp; Sourcing:</strong> Every piece is produced with certified sustainable practices and pre-shrunk for enduring comfort. Delivery options and regional shipping rates are calculated authoritatively at checkout.
+        {{-- P2-8: this paragraph previously claimed "certified sustainable
+             practices", specific fabric weights, a paper mill and SKUs — none of
+             which the owner supplied, and one of which ("certified") is a claim
+             that can attract a regulator. Replaced with what is actually true:
+             the item is made to order and the price is calculated server-side. --}}
+        <strong>Made to Order:</strong> Every piece is produced per order, so please allow for production time before dispatch. Delivery options and regional shipping rates are calculated at checkout from your address.
       </p>
     </div>
 

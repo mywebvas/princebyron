@@ -3,10 +3,9 @@
 namespace App\Services\Payment;
 
 use App\Models\AuditEvent;
-use App\Models\DownloadEntitlement;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Song;
+use App\Services\GrantEntitlementsForOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -150,26 +149,10 @@ class StripeSandboxService
                         'user_agent'     => 'Stripe-Webhook/1.0',
                     ]);
 
-                    // Grant digital download entitlements for any music line items
-                    if ($order->user_id) {
-                        foreach ($order->items as $item) {
-                            if ($item->itemable_type === Song::class) {
-                                DownloadEntitlement::firstOrCreate(
-                                    [
-                                        'user_id'  => $order->user_id,
-                                        'order_id' => $order->id,
-                                        'song_id'  => $item->itemable_id,
-                                        'format'   => DownloadEntitlement::FORMAT_MP3,
-                                    ],
-                                    [
-                                        'is_active'      => true,
-                                        'expires_at'     => null,
-                                        'download_count' => 0,
-                                    ]
-                                );
-                            }
-                        }
-                    }
+                    // Grant digital download entitlements for any music line
+                    // items. Shared with the bank-transfer verification path so
+                    // every route to "paid" grants access identically (P1-4).
+                    app(GrantEntitlementsForOrder::class)->grant($order);
 
                     return ['status' => 'success', 'code' => 200, 'message' => 'Payment succeeded, order marked paid'];
 
@@ -192,7 +175,7 @@ class StripeSandboxService
                     ]);
 
                     // Revoke digital entitlements upon refund
-                    DownloadEntitlement::where('order_id', $order->id)->update(['is_active' => false]);
+                    app(GrantEntitlementsForOrder::class)->revoke($order);
 
                     AuditEvent::create([
                         'actor_id'       => null,

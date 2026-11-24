@@ -78,59 +78,199 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
-    // Cart Management
-    cart: [
-      { id: 'tee', title: 'Prince Byron Signature Tee', variant: 'Sand / L', priceCents: 3200, qty: 1, type: 'physical' },
-      { id: 'purify-me', title: 'Purify Me (Single Master)', variant: '24-bit Studio WAV', priceCents: 199, qty: 1, type: 'digital' }
-    ],
+    // ======================================================================
+    // Cart — server-authoritative
+    // ======================================================================
+    //
+    // Everything about price, stock and availability is decided by the server
+    // (CartService/CheckoutService). The browser holds no prices of its own: it
+    // sends an item id and receives a fresh summary containing the priced
+    // lines. Previously this store held a hardcoded two-item demo bag with
+    // fabricated prices (review P0-1), which meant a visitor could "buy"
+    // merchandise at prices the server never agreed to.
+    //
+    // Shape of `cart` after a refresh:
+    //   { items: [], item_count, subtotal_cents, has_physical, currency }
+
+    cart: { items: [], item_count: 0, subtotal_cents: 0, has_physical: false, currency: 'USD' },
+    cartLoading: false,
+    cartError: '',
+
+    get cartItems() {
+      return this.cart.items || [];
+    },
 
     get cartCount() {
-      return this.cart.reduce((sum, item) => sum + item.qty, 0);
+      return this.cart.item_count || 0;
     },
 
     get cartSubtotalCents() {
-      return this.cart.reduce((sum, item) => sum + (item.priceCents * item.qty), 0);
+      return this.cart.subtotal_cents || 0;
     },
 
     get cartSubtotalFormatted() {
       return '$' + (this.cartSubtotalCents / 100).toFixed(2);
     },
 
-    addToCart(item) {
-      const existing = this.cart.find(i => i.id === item.id && i.variant === item.variant);
-      if (existing) {
-        existing.qty += (item.qty || 1);
-      } else {
-        this.cart.push({
-          id: item.id,
-          title: item.title,
-          variant: item.variant || 'Standard',
-          priceCents: item.priceCents,
-          qty: item.qty || 1,
-          type: item.type || 'physical'
-        });
+    get cartIsEmpty() {
+      return this.cartCount === 0;
+    },
+
+    /** CSRF token from the layout meta tag. */
+    csrfToken() {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    },
+
+    /** Single wrapper for all cart/checkout calls: JSON in, JSON out. */
+    async apiFetch(method, url, body = null) {
+      const options = {
+        method,
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': this.csrfToken()
+        },
+        credentials: 'same-origin'
+      };
+      if (body !== null) {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
       }
-      this.showToast(item.title + ' added to your shopping bag.');
-      this.openBag();
-    },
 
-    updateQty(index, delta) {
-      if (!this.cart[index]) return;
-      this.cart[index].qty += delta;
-      if (this.cart[index].qty <= 0) {
-        this.cart.splice(index, 1);
-        this.showToast('Item removed from shopping bag.');
+      const response = await fetch(url, options);
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch (e) {
+        payload = {};
       }
+
+      if (!response.ok) {
+        // 419 = expired session/CSRF; recover by reloading once rather than
+        // leaving the visitor with a permanently failing basket.
+        if (response.status === 419) {
+          window.location.reload();
+          return { success: false, message: 'Your session expired. Reloading…' };
+        }
+        const message = payload.message
+          || (payload.errors ? Object.values(payload.errors).flat()[0] : null)
+          || 'Something went wrong. Please try again.';
+        return { success: false, message, status: response.status, payload };
+      }
+
+      return { success: true, payload };
     },
 
-    removeItem(index) {
-      if (!this.cart[index]) return;
-      const removed = this.cart.splice(index, 1);
-      this.showToast(removed[0].title + ' removed from shopping bag.');
+    /** Apply a server cart summary to local state. */
+    applyCart(summary) {
+      if (!summary) return;
+      this.cart = {
+        items: summary.items || [],
+        item_count: summary.item_count || 0,
+        subtotal_cents: summary.subtotal_cents || 0,
+        has_physical: !!summary.has_physical,
+        currency: summary.currency || 'USD'
+      };
     },
 
-    clearCart() {
-      this.cart = [];
+    /** Load the current session cart. Called on every page load. */
+    async loadCart() {
+      this.cartLoading = true;
+      const result = await this.apiFetch('GET', '/api/cart');
+      this.cartLoading = false;
+      if (result.success) this.applyCart(result.payload);
+    },
+
+    /**
+     * Add a merchandise variant by its database id.
+     * Returns true on success so the caller can decide whether to open the bag.
+     */
+    async addVariantToCart(variantId, quantity = 1) {
+      const result = await this.apiFetch('POST', '/api/cart/items', {
+        type: 'variant',
+        id: variantId,
+        quantity: quantity
+      });
+
+      if (!result.success) {
+        this.showToast(result.message);
+        return false;
+      }
+
+      this.applyCart(result.payload.cart);
+      this.showToast('Added to your shopping bag.');
+      return true;
+    },
+
+    /** Add a digital song by its database id. */
+    async addSongToCart(songId) {
+      const result = await this.apiFetch('POST', '/api/cart/items', {
+        type: 'song',
+        id: songId,
+        quantity: 1
+      });
+
+      if (!result.success) {
+        this.showToast(result.message);
+        return false;
+      }
+
+      this.applyCart(result.payload.cart);
+      this.showToast('Added to your shopping bag.');
+      return true;
+    },
+
+    /** Change quantity of a cart line. */
+    async setItemQuantity(item, quantity) {
+      const result = await this.apiFetch('PATCH', '/api/cart/items', {
+        type: item.type,
+        id: item.id,
+        quantity: quantity
+      });
+
+      if (!result.success) {
+        this.showToast(result.message);
+        return false;
+      }
+
+      this.applyCart(result.payload.cart);
+      return true;
+    },
+
+    /** Decrease quantity by one, removing the line at zero. */
+    async decrementItem(item) {
+      return this.setItemQuantity(item, Math.max(0, (item.quantity || 1) - 1));
+    },
+
+    /** Increase quantity by one. */
+    async incrementItem(item) {
+      return this.setItemQuantity(item, Math.min(10, (item.quantity || 1) + 1));
+    },
+
+    /** Remove a cart line. */
+    async removeItem(item) {
+      const result = await this.apiFetch('DELETE', '/api/cart/items', {
+        type: item.type,
+        id: item.id
+      });
+
+      if (!result.success) {
+        this.showToast(result.message);
+        return false;
+      }
+
+      this.applyCart(result.payload.cart);
+      this.showToast(item.title + ' removed from your shopping bag.');
+      return true;
+    },
+
+    /** Empty the bag. */
+    async clearCart() {
+      const result = await this.apiFetch('DELETE', '/api/cart');
+      if (result.success) {
+        this.applyCart(result.payload.cart);
+      }
+      return result.success;
     },
 
     // Audio Player Bar & Real Web Audio Playback
@@ -340,3 +480,11 @@ function trapFocusInDialog(container, e) {
 
 window.Alpine = Alpine;
 Alpine.start();
+
+// Hydrate the bag from the server on every page load. The browser never holds
+// a cart that the server does not know about, so a stale tab cannot show a
+// price the server would disagree with at checkout.
+document.addEventListener('alpine:initialized', () => {
+  const store = window.Alpine?.store('app');
+  if (store) store.loadCart();
+});

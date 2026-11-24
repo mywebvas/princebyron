@@ -68,6 +68,35 @@ class ContentSectionsSeeder extends Seeder
             ],
         ];
 
+        /*
+         | Legal pages (Phase 6).
+         |
+         | These are seeded as ROWS WITH AN EMPTY BODY, not with invented text.
+         | App\Support\LegalPage renders a clearly-marked template and serves the
+         | page `noindex` until the owner fills the body in, and `pb:readiness`
+         | reports them as blockers. Seeding invented policy would be the single
+         | most dangerous thing this file could do: a customer could rely on it.
+         |
+         | is_visible => true so the footer links resolve immediately; deleting or
+         | hiding the row returns a 404 rather than an empty shell.
+         */
+        foreach (\App\Support\LegalPage::PAGES as $slug => $definition) {
+            $sections[] = [
+                'section_key' => $definition['key'],
+                'page'        => 'legal',
+                'eyebrow'     => 'Policies & Terms',
+                'title'       => $definition['title'],
+                'body'        => '',
+                'button_text' => null,
+                'button_url'  => null,
+                'image_path'  => null,
+                'brand_color' => ContentSection::COLOR_PRIMARY_DARK,
+                'is_visible'  => true,
+                'sort_order'  => 0,
+                'metadata'    => ['legally_reviewed' => false],
+            ];
+        }
+
         foreach ($sections as $section) {
             ContentSection::updateOrCreate(
                 ['section_key' => $section['section_key']],

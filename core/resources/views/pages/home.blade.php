@@ -41,13 +41,17 @@
 
       <div class="hero-visual">
         <div class="hero-portrait-frame">
-          <img 
-            src="{{ asset('images/prince-byron-hero.jpeg') }}" 
-            width="560" 
-            height="660" 
-            alt="Prince Byron sitting thoughtfully in an earthy, warm studio portrait" 
+          {{-- P2-6: this was a 276 KB JPEG served to every screen size, including
+               a 390 px phone. Now the browser picks a 480/960/1600 px WebP; the
+               hero is the LCP element, so it is eager + high priority and the
+               intrinsic dimensions reserve its box before the bytes land (CLS). --}}
+          <x-img
+            src="images/prince-byron-hero.jpeg"
+            alt="Prince Byron sitting thoughtfully in an earthy, warm studio portrait"
+            sizes="(max-width: 700px) 92vw, (max-width: 1180px) 46vw, 560px"
+            loading="eager"
             fetchpriority="high"
-          >
+          />
         </div>
       </div>
     </div>
@@ -59,13 +63,12 @@
   <div class="bio-inner">
     <div class="bio-grid">
       <div class="bio-portrait-frame">
-        <img 
-          src="{{ asset('images/prince-byron-portrait.jpeg') }}" 
-          width="520" 
-          height="620" 
-          alt="Prince Byron standing in natural studio lighting" 
-          loading="lazy"
-        >
+        {{-- 927 KB as a single file before Sprint 3. --}}
+        <x-img
+          src="images/prince-byron-portrait.jpeg"
+          alt="Prince Byron standing in natural studio lighting"
+          sizes="(max-width: 900px) 92vw, 520px"
+        />
       </div>
       <div class="bio-narrative">
         <span class="bio-eyebrow">Our Story &amp; Calling</span>
@@ -128,13 +131,19 @@
                 download
               >Receive Free Track &darr;</a>
             @else
-              <button 
-                type="button" 
-                class="btn-add-track" 
-                @click="$store.app.addToCart({ id: 'song-{{ $song['index'] }}', title: '{{ $song['title'] }} (Digital Track)', variant: '24-bit WAV', priceCents: {{ $song['priceCents'] }}, type: 'digital' })"
-              >
-                Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
-              </button>
+              @if(! empty($song['dbId']))
+                <button
+                  type="button"
+                  class="btn-add-track"
+                  @click="$store.app.addSongToCart({{ $song['dbId'] }}).then(ok => { if (ok) $store.app.openBag(); })"
+                >
+                  Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
+                </button>
+              @else
+                <button type="button" class="btn-add-track" disabled aria-disabled="true" title="This track has not been published for sale yet.">
+                  Not yet available
+                </button>
+              @endif
             @endif
           </div>
         </div>
@@ -159,7 +168,15 @@
         <article class="product-card">
           <div class="product-badge">{{ $product['category'] }}</div>
           <div class="product-image-wrap">
-            <img src="{{ asset($product['image']) }}" alt="{{ $product['title'] }}" class="product-card-photo" loading="lazy">
+            {{-- Same component as the store page: the derivatives that already
+                 exist on disk are what keeps a 1 MB hoodie photo from being sent
+                 to a 390 px phone. --}}
+            <x-img
+              :src="$product['image']"
+              :alt="$product['title']"
+              class="product-card-photo"
+              sizes="(max-width: 620px) 92vw, (max-width: 1024px) 46vw, 360px"
+            />
           </div>
           <div class="product-content">
             <h3 class="product-title" style="font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">{{ $product['title'] }}</h3>

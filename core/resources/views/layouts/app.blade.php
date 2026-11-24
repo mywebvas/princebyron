@@ -4,11 +4,31 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="{{ config('tokens.primitives.obsidian') }}">
-  <meta name="description" content="Prince Byron — Official Gospel Music, Ministry & Store. High-craft worship releases, apparel, ministry bookings, and customer downloads.">
   <meta name="csrf-token" content="{{ csrf_token() }}">
 
-  <title>{{ $title ?? 'Prince Byron — Official Gospel Music, Ministry & Store' }}</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='{{ urlencode(config('tokens.primitives.gold')) }}'>PB</text></svg>">
+  {{-- P2-4: title, description, canonical, Open Graph, Twitter card and JSON-LD
+       in one place. Previously the head carried a single hardcoded description
+       and nothing else — no og:*, no canonical, no structured data — so every
+       share looked generic and a search engine had nothing to link the artist's
+       profiles to. Per-page values arrive via @section or the view's $seo array. --}}
+  <x-seo
+    :title="$seo['title'] ?? $title ?? null"
+    :description="$seo['description'] ?? null"
+    :image="$seo['image'] ?? null"
+    :type="$seo['type'] ?? 'website'"
+    :noindex="$seo['noindex'] ?? false"
+    :schema="$seo['schema'] ?? null"
+  />
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+
+  {{-- P2-7: preload only the display face. It is used above the fold for the
+       hero headline, so it is on the critical path; the body face is not
+       preloaded because `font-display: swap` already keeps text readable while
+       it loads, and a second preload would compete with the LCP image. --}}
+  <link rel="preload" href="/fonts/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -50,7 +70,7 @@
 
         <nav class="mobile-nav-links" aria-label="Mobile Navigation Links">
           <a href="{{ url('/') }}" class="mobile-nav-link {{ request()->is('/') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Home</a>
-          <a href="{{ url('/about') }}" class="mobile-nav-link {{ request()->is('about') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Our Story &amp; Vision</a>
+          <a href="{{ url('/about') }}" class="mobile-nav-link {{ request()->is('about') ? 'active' : '' }}" @if(request()->is('about')) aria-current="page" @endif @click="$store.app.closeMobileNav()">Our Story &amp; Vision</a>
           <a href="{{ url('/music') }}" class="mobile-nav-link {{ request()->is('music*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Music Releases</a>
           <a href="{{ url('/store') }}" class="mobile-nav-link {{ request()->is('store*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Official Store</a>
           <a href="{{ url('/booking') }}" class="mobile-nav-link {{ request()->is('booking') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Ministry Booking &amp; RFQ</a>
@@ -85,12 +105,12 @@
 
         <!-- Desktop Navigation -->
         <nav class="site-nav" aria-label="Main Navigation">
-          <a href="{{ url('/') }}" class="nav-link {{ request()->is('/') ? 'active' : '' }}">Home</a>
-          <a href="{{ url('/about') }}" class="nav-link {{ request()->is('about') ? 'active' : '' }}">Our Story</a>
-          <a href="{{ url('/music') }}" class="nav-link {{ request()->is('music*') ? 'active' : '' }}">Music</a>
-          <a href="{{ url('/store') }}" class="nav-link {{ request()->is('store*') ? 'active' : '' }}">Store</a>
-          <a href="{{ url('/booking') }}" class="nav-link {{ request()->is('booking') ? 'active' : '' }}">Booking</a>
-          <a href="{{ url('/account') }}" class="nav-link {{ request()->is('account*') ? 'active' : '' }}">Fan Vault</a>
+          <a href="{{ url('/') }}" class="nav-link {{ request()->is('/') ? 'active' : '' }}" @if(request()->is('/')) aria-current="page" @endif>Home</a>
+          <a href="{{ url('/about') }}" class="nav-link {{ request()->is('about') ? 'active' : '' }}" @if(request()->is('about')) aria-current="page" @endif>Our Story</a>
+          <a href="{{ url('/music') }}" class="nav-link {{ request()->is('music*') ? 'active' : '' }}" @if(request()->is('music*')) aria-current="page" @endif>Music</a>
+          <a href="{{ url('/store') }}" class="nav-link {{ request()->is('store*') ? 'active' : '' }}" @if(request()->is('store*')) aria-current="page" @endif>Store</a>
+          <a href="{{ url('/booking') }}" class="nav-link {{ request()->is('booking') ? 'active' : '' }}" @if(request()->is('booking')) aria-current="page" @endif>Booking</a>
+          <a href="{{ url('/account') }}" class="nav-link {{ request()->is('account*') ? 'active' : '' }}" @if(request()->is('account*')) aria-current="page" @endif>Fan Vault</a>
         </nav>
 
         <div class="header-actions">
@@ -170,6 +190,18 @@
 
       <div class="footer-bottom">
         <div>&copy; {{ date('Y') }} Prince Byron &bull; princebyron.com &bull; All Rights Reserved.</div>
+
+        {{-- Policies (Phase 6). A store that takes money must link these from
+             every page; card processors check for it during review. The pages
+             always exist — each renders owner content or a marked template — so
+             these links are never dead. --}}
+        <nav class="footer-legal" aria-label="Store policies">
+          <a href="{{ url('/refund-policy') }}">Refund &amp; Returns</a>
+          <a href="{{ url('/privacy') }}">Privacy</a>
+          <a href="{{ url('/terms') }}">Terms of Sale</a>
+          <a href="{{ url('/shipping') }}">Shipping &amp; Delivery</a>
+        </nav>
+
         <div>Faith-led worship music, ministry invitations, and author-verified apparel.</div>
       </div>
     </footer>
@@ -200,7 +232,7 @@
         </div>
 
         <div class="drawer-body" id="drawer-items-list">
-          <template x-if="$store.app.cart.length === 0">
+          <template x-if="$store.app.cartIsEmpty">
             <div style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
               <p style="font-size: 1.15rem; margin-bottom: 8px; font-family: var(--font-display); color: var(--text-primary);">Your bag is currently empty.</p>
               <p style="font-size: 0.85rem; margin-bottom: 20px; color: var(--text-muted);">Explore our worship releases and sacred apparel to support Prince Byron's ministry.</p>
@@ -208,25 +240,28 @@
             </div>
           </template>
 
-          <template x-for="(item, index) in $store.app.cart" :key="item.id + item.variant">
+          <!-- Items come from the server summary: prices, stock and
+               availability are decided server-side on every refresh. -->
+          <template x-for="item in $store.app.cartItems" :key="item.key">
             <div class="cart-item">
               <div class="cart-item-thumb" aria-hidden="true">PB</div>
               <div class="cart-item-info">
                 <h4 x-text="item.title"></h4>
-                <div class="meta" x-text="item.variant"></div>
-                <div class="meta" style="color: var(--color-gold); font-weight: 700;" x-text="'$' + (item.priceCents / 100).toFixed(2) + ' USD'"></div>
-                <div class="cart-qty-ctrl">
-                  <button type="button" @click="$store.app.updateQty(index, -1)" aria-label="Decrease quantity">&minus;</button>
-                  <span x-text="item.qty"></span>
-                  <button type="button" @click="$store.app.updateQty(index, 1)" aria-label="Increase quantity">&plus;</button>
+                <div class="meta" x-text="item.variant_label"></div>
+                <div class="meta" style="color: var(--color-gold); font-weight: 700;" x-text="'$' + (item.unit_price_cents / 100).toFixed(2) + ' USD'"></div>
+                <div class="cart-qty-ctrl" x-show="item.type === 'variant'">
+                  <button type="button" @click="$store.app.decrementItem(item)" aria-label="Decrease quantity">&minus;</button>
+                  <span x-text="item.quantity"></span>
+                  <button type="button" @click="$store.app.incrementItem(item)" aria-label="Increase quantity">&plus;</button>
                 </div>
+                <div class="meta" x-show="item.type === 'song'">Digital single &bull; 1 copy</div>
               </div>
               <div style="text-align: right;">
-                <div style="font-weight: 700; color: var(--text-main);" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></div>
+                <div style="font-weight: 700; color: var(--text-main);" x-text="'$' + (item.line_total_cents / 100).toFixed(2)"></div>
                 <button 
                   type="button" 
                   class="btn-remove" 
-                  @click="$store.app.removeItem(index)"
+                  @click="$store.app.removeItem(item)"
                   aria-label="Remove item"
                   style="margin-top: 12px; font-size: 0.75rem; color: var(--status-error-text); background: none; border: none; cursor: pointer; text-decoration: underline;"
                 >Remove</button>

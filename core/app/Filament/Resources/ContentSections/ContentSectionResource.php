@@ -53,6 +53,10 @@ class ContentSectionResource extends Resource
                             'music'   => 'Music',
                             'store'   => 'Store',
                             'booking' => 'Booking',
+                            // Legal pages (Phase 6). Without this option the seeded
+                            // rows would be uneditable, and pb:readiness would fail
+                            // on policies the owner had no way to write.
+                            'legal'   => 'Legal / Policies',
                         ])
                         ->required(),
                 ])->columns(2),

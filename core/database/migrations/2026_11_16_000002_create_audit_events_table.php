@@ -30,9 +30,9 @@ return new class extends Migration
                 ->comment('Model class name, e.g. App\\Models\\Order');
             $table->unsignedBigInteger('auditable_id')->nullable()
                 ->comment('ID of the affected model');
-            $table->jsonb('old_values')->nullable()
+            $table->json('old_values')->nullable()
                 ->comment('State before change — redact secrets before storing');
-            $table->jsonb('new_values')->nullable()
+            $table->json('new_values')->nullable()
                 ->comment('State after change — redact secrets before storing');
             $table->string('ip_address', 45)->nullable();
             $table->string('user_agent', 500)->nullable();

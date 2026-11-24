@@ -82,7 +82,7 @@ async function capture(url, outPath, width, height, isMobile = false) {
 
 async function run() {
   const args = process.argv.slice(2);
-  const url = args[0] || 'http://127.0.0.1:8001/snapshots/order_pb2.html';
+  const url = args[0] || 'http://127.0.0.1:8001/account';
   const outPath = args[1] || 'core/test_mobile_cdp.png';
   const width = parseInt(args[2] || '375', 10);
   const height = parseInt(args[3] || '812', 10);

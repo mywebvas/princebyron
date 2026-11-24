@@ -19,7 +19,7 @@
     </p>
 
     <!-- Empty State -->
-    <div x-show="$store.app.cart.length === 0" style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 64px 24px; text-align: center; box-shadow: var(--shadow-sm);" x-cloak>
+    <div x-show="$store.app.cartIsEmpty" style="background: var(--surface-card); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 64px 24px; text-align: center; box-shadow: var(--shadow-sm);" x-cloak>
       <h2 style="font-family: var(--font-display); font-size: 1.6rem; color: var(--text-primary); margin-bottom: 12px;">Your shopping bag is currently empty</h2>
       <p style="color: var(--text-muted); max-width: 440px; margin: 0 auto 28px;">
         Explore our curated collection of worship releases and sacred apparel to fill your bag.
@@ -31,7 +31,7 @@
     </div>
 
     <!-- Filled Cart View -->
-    <div x-show="$store.app.cart.length > 0">
+    <div x-show="!$store.app.cartIsEmpty">
       <div class="cart-table-wrap">
         <table class="cart-table" aria-label="Shopping bag contents">
           <thead>
@@ -45,7 +45,7 @@
             </tr>
           </thead>
           <tbody>
-            <template x-for="(item, index) in $store.app.cart" :key="item.id + item.variant">
+            <template x-for="item in $store.app.cartItems" :key="item.key">
               <tr>
                 <td style="width: 72px;">
                   <div style="width: 56px; height: 56px; background: var(--color-charcoal); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--color-gold); font-weight: 700;">
@@ -54,26 +54,27 @@
                 </td>
                 <td>
                   <strong x-text="item.title" style="display: block; color: var(--text-primary); font-size: 0.95rem;"></strong>
-                  <span x-text="item.variant" style="font-size: 0.8rem; color: var(--text-muted);"></span>
-                  <span x-show="item.type === 'digital'" class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-border); font-size: 0.65rem; padding: 2px 6px; border-radius: var(--radius-sm); margin-left: 6px;">Digital Download</span>
+                  <span x-text="item.variant_label" style="font-size: 0.8rem; color: var(--text-muted);"></span>
+                  <span x-show="item.type === 'song'" class="badge" style="background: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-border); font-size: 0.65rem; padding: 2px 6px; border-radius: var(--radius-sm); margin-left: 6px;">Digital Download</span>
                 </td>
                 <td>
-                  <span style="font-weight: 600;" x-text="'$' + (item.priceCents / 100).toFixed(2)"></span>
+                  <span style="font-weight: 600;" x-text="'$' + (item.unit_price_cents / 100).toFixed(2)"></span>
                 </td>
                 <td>
-                  <div class="cart-qty-ctrl" style="width: 110px;">
-                    <button type="button" @click="$store.app.updateQty(index, -1)" aria-label="Decrease quantity">&minus;</button>
-                    <span x-text="item.qty"></span>
-                    <button type="button" @click="$store.app.updateQty(index, 1)" aria-label="Increase quantity">&plus;</button>
+                  <div class="cart-qty-ctrl" style="width: 110px;" x-show="item.type === 'variant'">
+                    <button type="button" @click="$store.app.decrementItem(item)" aria-label="Decrease quantity">&minus;</button>
+                    <span x-text="item.quantity"></span>
+                    <button type="button" @click="$store.app.incrementItem(item)" aria-label="Increase quantity">&plus;</button>
                   </div>
+                  <span x-show="item.type === 'song'" style="font-size: 0.8rem; color: var(--text-muted);">1</span>
                 </td>
                 <td>
-                  <strong style="color: var(--color-clay); font-size: 1.05rem;" x-text="'$' + ((item.priceCents * item.qty) / 100).toFixed(2)"></strong>
+                  <strong style="color: var(--color-clay); font-size: 1.05rem;" x-text="'$' + (item.line_total_cents / 100).toFixed(2)"></strong>
                 </td>
                 <td>
                   <button 
                     type="button" 
-                    @click="$store.app.removeItem(index)" 
+                    @click="$store.app.removeItem(item)" 
                     style="background: none; border: none; color: var(--status-error-text); cursor: pointer; font-size: 0.82rem; text-decoration: underline;"
                     aria-label="Remove item"
                   >&times; Remove</button>

@@ -104,7 +104,7 @@ return new class extends Migration
                 ->comment('Amount verified server-side from provider callback — never from browser');
             $table->boolean('signature_verified')->default(false)
                 ->comment('true only after HMAC/RSA signature verified against provider secret');
-            $table->jsonb('provider_metadata')->nullable()
+            $table->json('provider_metadata')->nullable()
                 ->comment('Non-sensitive event metadata for debugging. Redact card/PII before storing.');
             $table->timestamps();
 

@@ -1,2 +1,30 @@
+# Prince Byron — https://princebyron.com
+#
+# Everything public is crawlable; nothing private is. The disallowed paths are
+# the ones that either expose credentials, leak customer data or generate
+# duplicate URLs:
+#
+#   /admin      the owner backoffice — not a page, an application
+#   /account    a customer's orders and downloads
+#   /install    the installer must be deleted after setup; disallowed in case it
+#               is still present, since a crawler reaching it is a bad day
+#   /api/       JSON endpoints (crawl budget, no content)
+#   /downloads/ signed download URLs — must never enter an index
+#   /checkout, /cart  session-specific, value depends on the visitor
+#
+# Search engines honour this; it is not a security control. Authorisation is
+# enforced server-side on every one of these routes.
+
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /account
+Disallow: /install
+Disallow: /install/
+Disallow: /api/
+Disallow: /downloads/
+Disallow: /checkout
+Disallow: /cart
+
+Sitemap: /sitemap.xml

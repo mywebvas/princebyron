@@ -82,12 +82,262 @@ Use the checkboxes to record completed work. Do not mark a task complete without
   - Project documentation updated: `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, and `docs/ROADMAP.md`.
   - Commercial boundary preserved: Fixed $750 scope maintained; Phase 6 explicitly paused pending owner review.
 
-## Phase 6 — Later editorial work and launch operations (PAUSED)
+## Phase 5.5 — Production readiness review and verified baseline (IN PROGRESS)
 
-- [ ] Add blog and newsletter after an email provider, consent language, unsubscribe flow, retention and abuse controls are decided.
-- [ ] Add PWA only if offline access adds real customer value and can exclude private account/payment/download state.
-- [ ] Complete legal copy, sales tax, refund, privacy, shipping and music download policies with the owner's qualified advisors.
-- [ ] Obtain explicit owner approval before payment activation, DNS change or production release.
+A full senior review of the codebase was completed on 2026-11-23. The findings, evidence, prioritized backlog and decisions required are recorded in [`docs/PRODUCTION-READINESS-REVIEW.md`](PRODUCTION-READINESS-REVIEW.md). The review's central conclusion: **the server-side foundation is sound, but the public storefront is not wired to it**, so earlier "Phase 4 complete" checkmarks describe code that exists and is tested, not a flow a visitor can complete. Those checkmarks are left intact for history; this phase tracks closing the gap.
+
+### Sprint 0 — Trustworthy baseline (COMPLETE 2026-11-23)
+
+- [x] **Add CI so every status claim is reproducible.** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml): PHP syntax over every tracked PHP file, Composer manifest validation, Blade compilation, Pint style check, test suite on **PostgreSQL (primary)** and SQLite (fast pass), migration replay from an empty database, seeder idempotency, frontend build with a payload budget, and the release packaging rules. Previously the "71 tests / 492 assertions" claim had no mechanism to re-verify it (review P3-2).
+- [x] **Make the release rules executable.** [`tools/check-package.mjs`](../tools/check-package.mjs) enforces what `docs/ARCHITECTURE.md` only described: required files present, compiled assets tracked, and no secrets, `.env`, logs, runtime state, local databases, dev scripts, or web-root screenshots tracked. [`tools/check-assets.mjs`](../tools/check-assets.mjs) enforces the compiled CSS/JS budget (currently 16.5 kB and 20.3 kB gzip). Both verified to fail on injected violations.
+- [x] **Align the PHP floor (review P0-6).** The installer now enforces PHP ≥ 8.5 as a single `$requiredPhp` constant instead of the previous 8.3 gate that allowed a fatal-after-install outcome; `composer.json` already required `^8.5`. New test `test_installer_php_floor_matches_composer_constraint` fails CI if the two drift. A `config.platform` pin was attempted and **reverted** — it desynchronises `composer.lock` and breaks `composer install`; CI now guards lock sync with `tools/check-lock.mjs` (this was caught by the pipeline, which is the point of Sprint 0).
+- [x] **Enforce preflight server-side.** The installer previously only *hid* the submit button when a requirement failed; a crafted POST could still continue. It now aborts with a clear message before touching the filesystem or database.
+- [x] **Close the storage/application exposure gap.** Added `core/.htaccess` and `core/storage/.htaccess` (deny-all), so private audio, sessions, logs and `.env` stay blocked even if the root rewrite rules are bypassed or the document root is misconfigured.
+- [x] **Remove dev artifacts from the application tree (review P1-13).** Deleted the committed SQLite database (`core/princebyron`), `scratch_check_pass.php`, `scratch_update_data.php`, `scratch_test_routes.cjs`, the syntactically invalid `redis_test.php`, `public/find_overflow.js`, and capture output in `storage/`. PHP syntax check over the whole tracked tree now passes (previously 1 failure).
+- [x] **Move review screenshots out of the web root (review P1-2).** `core/public/snapshots/*.html` — including rendered account and order pages — moved to `docs/review-snapshots/`; capture scripts updated to write there. The packaging check now fails if anything reappears under `core/public/snapshots/`.
+- [x] **Re-baseline documentation to provable facts (review P3-10, P1-12).** README now states precisely that provider *webhook verification* is complete while *payment creation* is not implemented, that the public cart/checkout/catalog are demo-data driven, and that the installer writes Mailpit mail settings. No status is asserted that CI cannot demonstrate.
+
+### Sprint 0 — Outcome: earned green (2026-11-23)
+
+The first CI runs **failed**, which is the point: a green baseline that has never been red proves nothing. Those runs found five defects that would otherwise have shipped silently.
+
+- [x] **`composer.lock` was desynchronised by a `config.platform` pin** the previous commit added. `composer install` aborted, so `vendor/` could never be produced at all. Reverted; the content-hash was verified by porting Composer's own `Locker::getContentHash()` rather than guessing, and `tools/check-lock.mjs` now guards it in every PHP job.
+- [x] **The installer printed "Pass" for failing checks.** A host missing a required extension was told the check passed while the install button was disabled — contradictory information at the moment certainty matters most. It now prints "Fail" and the remedy it already computed but never displayed. Regression test added.
+- [x] **Preflight required `pdo_pgsql` only**, which would reject the very shared cPanel hosts this project targets. It now accepts MySQL/MariaDB or PostgreSQL and names the driver found; a host with neither still fails with actionable guidance.
+- [x] **Sample prices were presented as real money with no disclosure.** Both pages that show prices now disclose that amounts are placeholders (`config/commerce.php`), and the 24-bit WAV format is marked unavailable rather than promised — selling a master file that does not exist would be a false representation at the point of sale.
+- [x] **Four tests asserted strings that existed nowhere in the codebase** (`sample demonstration prices`, `In Stock`, `Ministry Appearance & Event Booking`, `Request for Quotation (RFQ)`). They could never pass, so the behaviour they nominally guarded was unprotected. All four were corrected to assert what the pages genuinely render.
+- [x] **Test-configuration defects:** `phpunit.pgsql.xml` had silently lost the Unit suite; the PostgreSQL job passed `--configuration` while `artisan test` injects its own, so it ran the wrong config; and a malformed workflow step name produced a CI run with **zero jobs**. All three fixed, and `tools/check-workflows.mjs` now validates workflow YAML before it can disable the pipeline.
+- [x] **Result: all five jobs green** — 73 tests / 504 assertions on both SQLite and PostgreSQL, migration replay from an empty database, seeder re-run parity, Blade compilation, PHP syntax across every tracked file, lock sync, packaging rules, asset budget.
+
+### Owner decisions recorded
+
+- [x] **Hosting direction (2026-11-23): shared-host compatibility via MySQL/MariaDB.** The owner chose the path that must work on any cPanel account, which requires a MySQL/MariaDB driver path rather than requiring PostgreSQL hosting. Recorded as a scoped change of work (review §7 Option B), not part of the fixed \$750 baseline until a change order is agreed.
+
+### Sprint 1 — "It actually works" (NEXT, P0 findings)
+
+- [ ] Wire the public cart to `/api/cart*` and hydrate state from the server; remove the seeded demo cart and fake product IDs (P0-1).
+- [ ] Replace the simulated checkout with a real `POST /api/checkout/process` and a server-rendered order confirmation (P0-2).
+- [ ] Drive the public catalog from Eloquent instead of `PageController` literal arrays, with `abort(404)` for unknown slugs (P0-3, P2-2).
+- [ ] Fix host asset serving so `/images/*` and `/audio/*` resolve (P0-4).
+- [ ] Ship Filament compiled assets (P0-5).
+- [ ] Add a mail configuration step to the installer and stop writing Mailpit settings into production (P0-7).
+- [ ] Remove the publicly rendered demo credentials and pre-filled password from the login view (P1-1).
+
+### Sprint 1 — Outcome: the storefront is real (2026-11-23)
+
+Every item below is enforced by a test that fails if the wiring regresses.
+
+- [x] **Catalog reads the database (P0-3).** New `App\Services\CatalogService` sources published products and songs from Eloquent; prices come from `product_variants`, options are derived from real variant colour/size rows, and stock reflects actual quantities. Unknown slugs `abort(404)` instead of rendering the first product, and unpublished products are unreachable. An un-seeded install falls back to `config/commerce_catalog.php` — labelled sample items that are explicitly non-purchasable, so nothing in that state can become an order.
+- [x] **Cart is server-authoritative (P0-1).** The Alpine store is a cache of a server summary; every mutation goes through `/api/cart*` and re-renders from the response. The bag hydrates on page load and recovers from an expired session. The seeded two-item demo bag is gone.
+- [x] **Checkout creates a real order (P0-2).** Posts to `/api/checkout/process`; renders the persisted reference, status and bank instructions. `Math.random()` is gone. Two field values that guaranteed a 422 were also fixed (ISO-2 country codes, `bank_transfer` rather than `wire`), along with a fake $5/$12 delivery choice no `ShippingRate` backed and a printed test card number.
+- [x] **Static assets are routed (P0-4).** Guarded rewrites for `/images`, `/audio` and `/favicon.ico` to `core/public`, plus `/css|js|fonts/filament/*` for the admin panel. The 0-byte committed `favicon.ico` was replaced with a real icon.
+- [x] **Release completeness is checkable (P0-5).** `tools/check-release.mjs` states exactly what the upload still needs and refuses to call an archive ready without `vendor/` and Filament's assets. It reports **INCOMPLETE** today, which is the honest answer.
+- [x] **Installer writes real mail settings and a driver choice (P0-7).** Mailpit is gone; the form asks for SMTP details or an explicit "record to log", and a MySQL/MariaDB or PostgreSQL toggle is written to `DB_CONNECTION`. The success screen finally lists the two steps left before opening.
+- [x] **Login page no longer publishes a password (P1-1).** Demo banner, pre-filled email and pre-filled password removed. The seeded account still works.
+- [x] **Bug found by the new tests:** `CartService::addItem()` never validated song ids, so an invented id was reported as a successful add while the summary silently dropped it.
+
+**Still not live after Sprint 1:** online payment capture (no gateway enabled — the UI now says so), automatic entitlements for bank transfers (P1-4), and the two build products above.
+
+### Sprint 2 — Money and records integrity
+
+- [x] Encrypted settings actually encrypted when saved from the admin form (P1-3).
+- [x] Grant digital entitlements on owner-verified bank transfer (P1-4).
+- [x] No destructive deletion of financial records (P1-5); audit trail for catalog/content/settings edits (P1-6); owner-accessible refund action (P1-7).
+- [x] Rate limiters for cart, checkout, downloads and webhooks (P1-8); trusted proxies (P1-9); application-level security headers incl. CSP/HSTS (P1-10); secure session cookie in production (P1-11).
+
+#### Sprint 2 — Outcome: money is recorded correctly and records survive (2026-11-23)
+
+Every finding in this sprint was a **silent** failure — nothing crashed, nothing
+logged an error, and the storefront looked healthy while the record underneath it
+was wrong. That is why each one is pinned by a test that asserts what a customer
+or an auditor would notice, rather than by an assertion about our own code.
+
+**P1-3 — encrypted settings (was: stored in plaintext).** The admin form bound
+the raw `value` column, so choosing "Encrypted Secret" wrote cleartext to the
+database; the model's own encryption mutator was bypassed entirely. The form now
+never renders the stored secret at all (a blank field means "keep it"), encrypts
+on submit, and refuses to lose a secret when only the label is edited. A
+`Setting::saving()` guard encrypts as well, because the form is not the only
+writer — seeders and console commands reach the model directly. The list view
+also refuses to leak, and the audit trail records `[redacted]` for the secret
+column while still recording *which* setting changed.
+
+**P1-4 — bank-transfer entitlements (was: paid, no download).** Entitlement
+granting lived inline in the Stripe webhook and was copy-pasted into the PayPal
+webhook. `Verify Bank Funds` — the only path by which a bank-transfer customer
+becomes paid — never did it, so those customers were marked Paid and could not
+download what they had bought. All three paths now call one service,
+`GrantEntitlementsForOrder`, which is idempotent, ignores merchandise lines, and
+returns `skipped_guest` instead of throwing when a guest order cannot receive
+entitlements (the owner gets a notification naming the customer instead of a
+mystery).
+
+**P1-5 — financial records survive.** `Order::delete()` now throws, and the bulk
+delete toolbar is gone. The same hole existed from the other side of the foreign
+key: `orders.user_id` is `nullOnDelete`, so deleting a customer did not fail — it
+silently orphaned their orders, made the purchase unattributable and cut the
+customer off from their downloads forever. A customer with orders now cannot be
+deleted either; the error names the supported operation (deactivate or anonymise).
+
+**P1-6 — audit coverage.** Only ten order-state call sites wrote audit events;
+price, stock, visibility, content and settings changes wrote none. An `Auditable`
+trait on products, variants, songs, settings, content sections and shipping rates
+now records created/updated/deleted with before/after values. A trait rather than
+per-resource hooks because the old coverage failed precisely by being opt-in.
+Secrets are redacted per column, so the log says "this secret was rotated, by
+whom" without storing either the plaintext or the ciphertext.
+
+**P1-7 — refunds.** The owner can now refund an order: a guarded reason, a
+negative `Payment` row, entitlements revoked (deactivated, never deleted) and an
+audit event. This needed a migration — `payments.amount_cents` was
+`unsignedInteger`, so a refund could not have been stored at all.
+
+**P1-8 … P1-11 — the security surface.** Only login, register and booking were
+throttled, so order creation, stock reservation and entitlement probing were
+unbounded; there are now named limiters for cart reads, cart mutations, checkout
+(per-IP plus a global ceiling), downloads (per user), webhooks and auth.
+Trusted proxies are configurable and empty by default (behind a CDN every
+throttle key used to collapse onto the proxy's IP, so one abuser could lock out
+every customer). Security headers are now sent by the application, not only by
+`.htaccess` — a host that ignores `.htaccess` previously served the storefront
+with no CSP and no HSTS. The CSP is strict on the storefront (the front end ships
+no inline script, so it does not need `unsafe-inline`) and relaxed only as far as
+Filament requires. The installer writes `SESSION_SECURE_COOKIE` derived from the
+site URL, plus `SESSION_ENCRYPT`, `SESSION_SAME_SITE` and a documented
+`TRUSTED_PROXIES` placeholder.
+
+**Defects this sprint's own work introduced, and how they were caught.** Two
+changes were wrong and the pipeline said so within a minute of each push, which
+is the point of enforcing CI before claiming a status:
+
+1. `config()` called from `bootstrap/app.php`'s `withMiddleware()` closure — it
+   runs while the container is still resolving the kernel, so `config` is not
+   bound and every artisan command died with "Target class [config] does not
+   exist". This broke `composer install` (post-autoload-dump runs
+   `package:discover`) and would have taken production down entirely. Proxies are
+   now read at request time by `App\Http\Middleware\TrustProxies`.
+2. Removing the `Request` import from `bootstrap/app.php` because a grep said it
+   was unused — it is used as a closure parameter type hint, and every request
+   died with a `TypeError`. **An import may only be deleted on the strength of a
+   compile, never a grep.**
+
+Additionally, `property_exists($this, 'type')` is false for an Eloquent attribute
+(attributes live in `$attributes`, not declared properties), so the first version
+of the audit redaction redacted nothing and archived ciphertext. The test caught
+it before it shipped; the fix reads the attribute through the model.
+
+A third, quieter mistake is worth recording because it is the most dangerous kind:
+`mutateFormDataBeforeCreate()` is a protected method on the **page**, not a static
+method on the resource, so the version placed on `SettingResource` was never
+called — and its test invoked it directly, so it passed while the create path was
+unguarded. In a feature about secrets being written in plaintext, a guard that
+merely looks like a guard is worse than no guard, because it converts "untested"
+into "falsely tested". Both are now fixed and the test drives the real page.
+
+**Infrastructure learned here:** CI's step logs are not retrievable from the
+development sandbox, so a failing step was indistinguishable from a broken commit.
+The workflow now republishes composer failures as annotations, retries the
+install, and publishes the suite totals as a notice on a green run — which is how
+the figure in README is verifiable at all.
+
+**Still not live after Sprint 2:** online payment capture (no gateway enabled),
+and the two build products (`vendor/`, Filament assets). Refunds are recorded
+through the platform, but the money movement itself still happens at the
+provider's dashboard — the action records and revokes, it does not call the
+Stripe or PayPal refund API.
+
+### Sprint 3 — Craft pass
+
+All items below are closed and CI-enforced (run 45408009229: 6/6 jobs, 170 tests,
+829 assertions on SQLite, PostgreSQL and MariaDB alike).
+
+- [x] Author the 26 Blade classes that have no CSS rule, including the bag drawer and toast (P2-1). `tools/check-classes.mjs` now guards this permanently: 225 classes across 12 views, 0 missing.
+- [x] Responsive image derivatives and `srcset` (JPEG + WebP at four widths, intrinsic dimensions via `<x-img>`) and self-hosted display/text fonts (P2-6, P2-7). AVIF is **not** produced — no encoder is available in the build environment, and the fallback chain is complete without it.
+- [x] Branded 404/403/419/429/500/503 views (P2-3), SEO/social metadata and sitemap (P2-4), real favicon set and web manifest (P2-5).
+
+  **Audit correction (post-review).** Three of the items above were reported done and were not, so they are now pinned by tests instead of by memory:
+  - P2-6 was a third done: only the store page used `<x-img>`. The home page's product cards and the product page's gallery and related rail still served master JPEGs to phones. `tools/check-images.mjs` now fails the build on a raw `<img>` in any page template.
+  - The web manifest advertised `apple-touch-icon.png` at 180×180, a size no launcher asks for — Apple reads the `<link>` and ignores the manifest. Replaced with a `maskable` 512px entry.
+  - `errors.css` was parked in `public/build/`, which **Vite empties on every build** — verified with the project's own config, not assumed. The release step would have deleted the stylesheet and every branded error page would have deployed unstyled. Moved to `public/errors.css`.
+  `AssetIntegrityTest` now covers all three: icons present and non-empty, manifest valid with every listed icon resolving, the stylesheet outside the build directory, and a non-empty derivative set.
+- [x] Truth and price corrections: unapproved $12 collection, WAV claims, invented specifications, price drift (P2-8, P2-9).
+- [x] Accessibility set: `aria-current`, `aria-invalid`, live regions, error association, dialog focus traps (P2-11). **Screen-reader testing across JAWS/NVDA/VoiceOver stays unverified until a human performs it** — no automated check substitutes for that.
+
+Two residual risks raised against Sprint 2 and closed inside Sprint 3:
+
+- [x] **Customer anonymisation (P1-5 remainder).** Sprint 2 refused to delete a customer who has orders and told the owner to "deactivate or anonymise" without building either. `AnonymiseCustomer` now removes name, email, phone, password and postal address from the account *and* the order, revokes entitlements, deactivates the account, and writes an audit event recording what was done and why without copying the removed values into the log. Money, line items, dates, order reference and shipping country survive as the financial record. Owner accounts are refused. Exposed as a confirming owner action on an order.
+- [x] **MySQL/MariaDB support (P0-8).** `jsonb` became `json` in four migrations; the audit-immutability trigger now has real per-driver branches (PostgreSQL, MySQL/MariaDB via `SIGNAL SQLSTATE`, SQLite); `phpunit.mysql.xml` plus a MariaDB 11 CI job runs the whole suite on the database most cPanel hosts actually provide. Previously the installer offered MySQL while the schema could not build on it.
+
+Still open from this sprint's neighbourhood, deliberately:
+
+- [ ] P2-16: 579 inline `style=` attributes. Out of the $750 scope. **Correction to an earlier note in this file:** the storefront CSP *does* allow `style-src 'unsafe-inline'`, so these attributes are not currently blocked and nothing is broken. They are still a real problem for two other reasons: they defeat the design tokens (every one of them is a colour or spacing decision made outside the system, which is how "premium consistency" drifts per page), and they are what prevents `unsafe-inline` from ever being removed from `style-src` — so the policy cannot be tightened until they are gone.
+
+### Sprint 4 — Packaging and operations
+
+**Status: five of six items closed; the sixth is genuinely blocked, not deferred.**
+
+Everything that could be built and executed in a PHP-less environment has been —
+including running the packaging script end to end against stand-in prerequisites,
+which is how two of its bugs were found. What remains needs a machine with PHP 8.5
+and Composer, which this environment does not have, and a database to rehearse a
+restore against.
+
+- [x] `tools/package.sh` producing a versioned archive with `vendor/` and Filament assets, plus an extraction test (P3-1).
+  - **Built and executed end-to-end** against stand-in prerequisites. It refuses to build without `vendor/` and the Filament assets rather than shipping an archive that fails in a browser. The extraction test unzips its own output into a clean directory and checks the structure — it caught a real bug during development (`core/vendor` was missing from the copy list, the one directory a no-Composer host cannot do without), and `rsync` was replaced with `cp -a` after it proved unavailable.
+  - **Still required before a real release:** `composer install --no-dev --optimize-autoloader`, `php artisan filament:assets` and `npm run build` on a PHP-capable machine. No archive containing a real `vendor/` has ever been produced in this project.
+- [x] Scheduler entries (P3-7); daily log rotation in the installer template (P3-5); lighter health endpoint (P3-9).
+  - Two drafted scheduler tasks were **removed rather than shipped**: a sitemap cache clear (the sitemap is not cached — the key would never exist) and an expired-entitlement sweep (`scopeActive` already filters on `expires_at` at read time, so a sweep would create a second source of truth). A test pins that they stay gone.
+  - The health probe no longer writes to the cache on every poll. On the file driver that was 2,880 disk writes a day at a 30-second interval.
+- [x] Documented `install/` removal and release-rollback steps (P3-8) — `docs/DEPLOYMENT.md`, plus `php artisan pb:readiness` (14 checks) so the removal step fails loudly instead of being a line in a document nobody reads.
+- [ ] Backup/restore procedure with a **rehearsed** restore (P3-6) — **partially done.**
+  - `php artisan pb:backup` is built and tested: prefers `pg_dump`/`mysqldump` with `--single-transaction`, falls back to a portable SQL dump on hosts where they are disabled, states in the terminal *and* the file header what that fallback omits, uses `MYSQL_PWD`/`PGPASSWORD` rather than argv (world-readable `/proc/<pid>/cmdline` on shared hosts), and prunes on retention.
+  - **The restore has never been executed.** `docs/DEPLOYMENT.md` §4 labels it **NOT YET REHEARSED**. Until someone runs it against a real database and records the result, this item is not closed, and Sprint 5 cannot be marked complete.
+
+**What Sprint 4 cannot fix, and should not pretend to:** the package is only
+"plug-n-play" if it ships `vendor/` and the Filament assets. Everything else in
+this roadmap is source code; those two are build products. The honest end state is
+a release archive that contains them, produced once on a networked machine, with a
+checksum and an extraction test proving it works without Composer or Node.
+
+### Sprint 5 — Hosting proof
+
+**Two of three items are already done, carried out ahead of schedule.**
+
+- [x] Implement and certify the MySQL/MariaDB path — **delivered in Sprint 3**, not Sprint 5.
+  - `jsonb()` → `json()` in four migrations; the audit-immutability trigger now has a real branch per driver (PostgreSQL row trigger, MySQL/MariaDB `SIGNAL SQLSTATE 45000`, SQLite `RAISE(ABORT)`); the installer's MySQL/MariaDB driver selection (with `pdo_mysql` preflight) predates this and is now truthful.
+  - "Certified" means **CI-enforced**, not eyeballed: a fourth job runs the entire suite against **MariaDB 11** — 188 tests, 915 assertions, identical totals to PostgreSQL and SQLite. MySQL 8.0 specifically is *not* in the matrix; MariaDB 11 was chosen because it is what cPanel actually ships.
+- [ ] **Fresh install on a named cPanel plan** — the one item that requires the owner.
+  - Blocks on: the owner choosing a provider and plan. Everything before this point can be verified without it; this cannot.
+  - What it must prove: install completes with no shell access; the browser installer's `pdo_mysql` preflight passes; cron runs (verified with `pb:readiness`, which reports whether the scheduler has fired); SMTP delivers a real booking notification; `pb:backup` produces a file and **the restore is executed** (the P3-6 drill); rollback by repointing the document root.
+
+**The honest sequencing:** Sprint 4's packaging output is the input to Sprint 5. A fresh-install walkthrough cannot begin until an archive with a real `vendor/` and real Filament assets exists, and that requires one build on a PHP-capable machine. That single build is the gate for everything remaining.
+
+## Phase 6 — Later editorial work and launch operations
+
+**Now waiting on the owner, not on code.** Every item that could be built without a
+decision has been; see [`PHASE-6-DECISIONS.md`](PHASE-6-DECISIONS.md) for the five
+decisions that unblock the rest.
+
+- [x] **Legal pages infrastructure.** Four policy routes (`/refund-policy`, `/privacy`,
+      `/terms`, `/shipping`), owner-editable in the admin panel, linked from every
+      footer and from the checkout at the point of sale. Templates are explicitly
+      marked and `noindex` until written; `pb:readiness` lists unwritten ones as
+      blockers.
+- [ ] Complete legal copy, sales tax, refund, privacy, shipping and music download
+      policies with the owner's qualified advisors. **Blocked on:** jurisdiction, entity
+      and contact address, digital-goods refund stance, sales-tax approach, retention
+      period. The pages are ready to receive the text.
+- [ ] Add blog and newsletter after an email provider, consent language, unsubscribe
+      flow, retention and abuse controls are decided. **Blocked on:** provider choice and
+      consent model. Building the form first would make it easy to ship without either.
+- [x] **PWA decision made, and pinned in code.** The manifest ships `display: browser`
+      on purpose — icons, name and theme colour without claiming installability there
+      is no service worker to honour. Adding `display: standalone` or a `sw.js` fails
+      `AssetIntegrityTest`. A service worker needs a caching security spec first,
+      because account, checkout, download and webhook traffic must never be cached.
+- [ ] Obtain explicit owner approval before payment activation, DNS change or
+      production release. This is a gate only the owner can open, and nothing in this
+      repository should be read as having opened it.
 
 ## Scope and evidence rules
 

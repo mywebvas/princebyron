@@ -103,9 +103,45 @@ class Order extends Model
         $this->status = $newStatus;
     }
 
-    // -------------------------------------------------------------------------
-    // Relationships
-    // -------------------------------------------------------------------------
+    /**
+     * Financial records are never destroyed (review P1-5).
+     *
+     * An order is the evidence that money moved. The admin panel previously
+     * exposed a bulk Delete action, so an owner could wipe a month of orders —
+     * and every audit reference pointing at them — with two clicks and no trace.
+     * Cancelling or refunding is the correct way to make an order inert; both
+     * preserve the record and both are audited.
+     *
+     * Enforced on the model so no future UI, console command or stray
+     * ->delete() call can bypass it.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Order $order) {
+            throw new \DomainException(
+                'Orders cannot be deleted: they are financial records. '
+                .'Cancel or refund the order instead, which preserves the audit trail.'
+            );
+        });
+    }
+
+    /** Whether the order has reached a state where money was actually taken. */
+    public function hasCapturedFunds(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_PAID,
+            self::STATUS_FULFILLMENT_PENDING,
+            self::STATUS_FULFILLED,
+        ], true);
+    }
+
+    /** Whether the order can still be refunded from its current state. */
+    public function isRefundable(): bool
+    {
+        return in_array(self::STATUS_REFUNDED, static::$transitions[$this->status] ?? [], true);
+    }
+
+
 
     public function user(): BelongsTo
     {

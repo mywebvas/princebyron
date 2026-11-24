@@ -69,6 +69,9 @@ class Phase5InstallerTest extends TestCase
      */
     protected function runRootLoader(string $uri, string $method = 'GET'): array
     {
+        // Symfony Process derives the child environment from $_SERVER/$_ENV,
+        // NOT from putenv(), so environment overrides must be passed
+        // explicitly here or they are silently ignored by the installer.
         $runner = <<<'PHP'
 register_shutdown_function(function () {
     $out = ob_get_contents();
@@ -108,8 +111,11 @@ PHP;
     /**
      * Executes the one-time installer (install/index.php) in a clean sub-process.
      */
-    protected function runInstaller(array $get = [], array $post = [], array $server = []): array
+    protected function runInstaller(array $get = [], array $post = [], array $server = [], array $env = []): array
     {
+        // Symfony Process derives the child environment from $_SERVER/$_ENV,
+        // NOT from putenv(), so environment overrides must be passed
+        // explicitly here or they are silently ignored by the installer.
         $runner = <<<'PHP'
 register_shutdown_function(function () {
     $out = ob_get_contents();
@@ -147,15 +153,19 @@ if (!empty($_POST) && !array_key_exists('csrf_token', $_POST)) {
 require $argv[4];
 PHP;
 
-        $proc = new Process([
-            PHP_BINARY,
-            '-r',
-            $runner,
-            json_encode($get),
-            json_encode($post),
-            json_encode($server),
-            $this->installerPath,
-        ]);
+        $proc = new Process(
+            [
+                PHP_BINARY,
+                '-r',
+                $runner,
+                json_encode($get),
+                json_encode($post),
+                json_encode($server),
+                $this->installerPath,
+            ],
+            null,
+            $env ?: null
+        );
 
         $proc->run();
         $rawResult = $proc->getErrorOutput();
@@ -252,11 +262,55 @@ PHP;
         $this->assertSame(200, $response['status']);
         $this->assertStringContainsString('Environmental Preflight Verification', $response['output']);
         $this->assertStringContainsString('PHP Version', $response['output']);
-        $this->assertStringContainsString('PostgreSQL PDO Driver (pdo_pgsql)', $response['output']);
         $this->assertStringContainsString('OpenSSL Cryptography', $response['output']);
         $this->assertStringContainsString('Multibyte String (mbstring)', $response['output']);
         $this->assertStringContainsString('Directory Writable: core/storage/', $response['output']);
+
+        // The platform targets MySQL/MariaDB so it installs on ordinary shared
+        // cPanel plans; requiring pdo_pgsql alone would reject those hosts.
+        // Either driver must satisfy preflight, so the label names both.
+        $this->assertStringContainsString('Database Driver (PDO MySQL or PDO PostgreSQL)', $response['output']);
+
         $this->assertStringContainsString('Initialize & Install Platform', $response['output']);
+    }
+
+    /**
+     * 3b. A failed preflight check must never render as "Pass".
+     *
+     * Regression: the template previously printed the literal word "Pass"
+     * inside the badge element regardless of outcome, so a host missing a
+     * required extension was told the check passed while the install button
+     * stayed disabled — contradictory, unactionable information at exactly the
+     * moment an owner needs certainty.
+     */
+    public function test_failed_preflight_check_renders_fail_and_remedy_not_pass(): void
+    {
+        // Force a guaranteed-failing condition by raising the effective PHP
+        // floor beyond any real runtime. COMPOSER_PLATFORM_PHP is the same
+        // override Composer honours, so the installer's gate stays faithful to
+        // how dependencies are actually resolved. It is passed as an explicit
+        // child environment because Symfony Process does not forward putenv().
+        $response = $this->runInstaller(
+            ['action' => 'requirements'],
+            [],
+            [],
+            ['COMPOSER_PLATFORM_PHP' => '99.0.0']
+        );
+
+        $this->assertSame(200, $response['status']);
+
+        // A higher floor must be reported as a failure, with a remedy the owner
+        // can action in cPanel, and the install action must be blocked.
+        $rendered = html_entity_decode($response['output'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $this->assertStringContainsString('PHP Version >= 8.5.0', $rendered);
+        $this->assertStringContainsString('MultiPHP Manager', $rendered);
+        $this->assertStringContainsString('Resolve Preflight Issues Above to Continue', $rendered);
+        $this->assertStringNotContainsString('Initialize & Install Platform', $rendered);
+
+        // The failed row must say "Fail" and show the remedy inline; it used to
+        // render the word "Pass" regardless of outcome.
+        $this->assertStringContainsString('badge-fail', $response['output']);
+        $this->assertStringContainsString('check-hint', $response['output']);
     }
 
     /**
@@ -608,6 +662,7 @@ ENV;
         }
 
         $response = $this->runInstaller(['action' => 'execute'], [
+            'db_driver'          => 'pgsql',
             'db_host'            => '127.0.0.1',
             'db_port'            => '59999', // Closed port triggers connection failure
             'db_name'            => 'princebyron',
@@ -619,8 +674,9 @@ ENV;
             'admin_pass_confirm' => 'ValidPass123!',
         ]);
 
-        // Client output receives only safe generic message
-        $this->assertStringContainsString('Database Connection Failed: Unable to connect to PostgreSQL with provided credentials.', $response['output']);
+        // Client output receives only a safe generic message naming the engine
+        // the operator actually selected.
+        $this->assertStringContainsString('Database Connection Failed: Unable to connect to PostgreSQL with the provided credentials.', $response['output']);
         $this->assertStringNotContainsString('SQLSTATE', $response['output'], 'Driver-level SQLSTATE must not be leaked to browser');
         $this->assertStringNotContainsString('secret_pass_not_for_client', $response['output']);
 
@@ -737,5 +793,114 @@ ENV;
 
         // Assert lock file still exists after release
         $this->assertFileExists($this->installLockPath);
+    }
+
+    /**
+     * 21. The installer's PHP floor must match composer.json.
+     *
+     * The release archive ships a prebuilt vendor/, so Composer performs no
+     * platform_requirements check on the host. If the installer accepts a PHP
+     * version the locked dependencies reject, installation "succeeds" and then
+     * every request fatals. This test keeps the two declarations in lock-step.
+     */
+    /**
+     * 21. The installer must never write Mailpit's development mail settings.
+     *
+     * Regression (review P0-7): it wrote MAIL_HOST=127.0.0.1 / MAIL_PORT=1025,
+     * so on a real host every order receipt and ministry enquiry notification
+     * was silently discarded. An operator would have had no idea email was
+     * broken, because nothing failed.
+     */
+    public function test_installer_never_writes_mailpit_settings(): void
+    {
+        $installer = (string) file_get_contents($this->installerPath);
+
+        $this->assertStringNotContainsString(
+            'MAIL_PORT=1025',
+            $installer,
+            'install/index.php must not hardcode the Mailpit port.'
+        );
+        $this->assertStringNotContainsString(
+            'MAIL_HOST=127.0.0.1',
+            $installer,
+            'install/index.php must not hardcode a loopback mail host.'
+        );
+        $this->assertStringNotContainsString(
+            'booking@princebyron.local',
+            $installer,
+            'install/index.php must not hardcode a placeholder sender address.'
+        );
+    }
+
+    /**
+     * 22. The installer must offer a real mail step and an explicit opt-out.
+     */
+    public function test_installer_offers_mail_configuration_and_a_database_driver_choice(): void
+    {
+        $installer = (string) file_get_contents($this->installerPath);
+
+        // Mail is configurable from the form.
+        $this->assertStringContainsString('name="mail_mailer"', $installer);
+        $this->assertStringContainsString('name="mail_host"', $installer);
+
+        // "No email yet" must be an honest, selectable choice rather than a
+        // silent failure.
+        $this->assertStringContainsString('Record to log (no email yet)', $installer);
+
+        // Both database drivers are selectable, matching the approved
+        // MySQL/MariaDB hosting direction.
+        $this->assertStringContainsString('name="db_driver"', $installer);
+        $this->assertStringContainsString('MySQL / MariaDB', $installer);
+
+        // The written .env must take the connection name from that choice.
+        $this->assertStringContainsString('DB_CONNECTION={$dbDriver}', $installer);
+    }
+
+    /**
+     * 23. The success screen must tell the owner what still has to happen.
+     */
+    public function test_installer_success_screen_lists_remaining_owner_steps(): void
+    {
+        $installer = (string) file_get_contents($this->installerPath);
+
+        $this->assertStringContainsString('Two steps left before you open the doors', $installer);
+        $this->assertStringContainsString('publish at least one product or song', $installer);
+    }
+
+    public function test_installer_php_floor_matches_composer_constraint(): void
+    {
+        $composer = json_decode((string) file_get_contents(base_path('composer.json')), true);
+        $this->assertIsArray($composer, 'composer.json must be valid JSON.');
+        $constraint = $composer['require']['php'] ?? '';
+        $this->assertMatchesRegularExpression(
+            '/\^(\d+\.\d+)/',
+            $constraint,
+            'composer.json require.php must be a caret constraint, e.g. "^8.5".'
+        );
+        preg_match('/\^(\d+\.\d+)/', $constraint, $m);
+        $composerFloor = $m[1];
+
+        $installer = (string) file_get_contents($this->installerPath);
+        $this->assertMatchesRegularExpression(
+            '/\$requiredPhp\s*=\s*\'(\d+\.\d+(?:\.\d+)?)\'/',
+            $installer,
+            'install/index.php must declare a single $requiredPhp floor.'
+        );
+        preg_match('/\$requiredPhp\s*=\s*\'(\d+\.\d+(?:\.\d+)?)\'/', $installer, $m2);
+        $installerFloor = $m2[1];
+
+        $this->assertSame(
+            $composerFloor,
+            implode('.', array_slice(explode('.', $installerFloor), 0, 2)),
+            "Installer PHP floor ({$installerFloor}) must equal composer.json floor ({$composerFloor}). "
+            .'Update install/index.php and composer.json together.'
+        );
+
+        // The rendered preflight must advertise the same number to the operator.
+        // The installer escapes its labels, so decode before comparing rather
+        // than asserting on entity-encoded markup.
+        $response = $this->runInstaller(['action' => 'requirements']);
+        $rendered = html_entity_decode($response['output'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $this->assertStringContainsString("PHP Version >= {$installerFloor}", $rendered);
     }
 }

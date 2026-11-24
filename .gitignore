@@ -69,3 +69,6 @@ release/
 # -----------------------------------------------------------------------
 core/.phpunit.result.cache
 core/.phpunit.cache/
+
+# Release archives produced by tools/package.sh
+dist/

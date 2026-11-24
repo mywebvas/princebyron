@@ -930,25 +930,6 @@
         </p>
       </div>
 
-      <!-- Local Walkthrough Demo Credentials Banner -->
-      <div style="background: var(--surface-dark-card); border: 1.5px solid var(--border-gold); border-radius: var(--radius-md); padding: 22px 24px; margin-bottom: 28px; color: var(--color-linen); box-shadow: var(--shadow-md);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-          <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--color-gold); font-weight: 700;">
-            Local Demo Access &bull; Verified Credentials
-          </span>
-          <span style="font-size: 0.72rem; background: var(--surface-gold-glow); color: var(--color-gold); padding: 3px 10px; border-radius: var(--radius-sm); font-weight: 700;">
-            LOCAL WALKTHROUGH
-          </span>
-        </div>
-        <div style="font-size: 0.9rem; line-height: 1.6; color: var(--color-linen);">
-          <strong>Customer Login:</strong> <code style="background: var(--surface-dark-glass); border: 1px solid var(--border-dark-subtle); padding: 2px 8px; border-radius: 4px; color: var(--color-gold);">fan@princebyron.local</code> (or <code>fan@example.com</code>)<br>
-          <strong>Password:</strong> <code style="background: var(--surface-dark-glass); border: 1px solid var(--border-dark-subtle); padding: 2px 8px; border-radius: 4px; color: var(--color-gold);">TemporaryFanPass2026!</code>
-        </div>
-        <div style="margin-top: 12px; font-size: 0.8rem; color: var(--color-sand-soft); border-top: 1px solid var(--border-dark-subtle); padding-top: 10px; line-height: 1.5;">
-          This demo account includes Active Digital Entitlements for <strong>Purify Me (Single Master)</strong> and <strong>Free (Lead Track)</strong>, Recent Orders including sample paid order PB-202611-001, pending bank transfer PB-202611-002, and active download entitlements for testing.
-        </div>
-      </div>
-
       @if ($errors->any())
         <div style="background: var(--status-error-bg); border: 1.5px solid var(--status-error-border); color: var(--status-error-text); padding: 14px 18px; border-radius: var(--radius-sm); margin-bottom: 24px; font-size: 0.9rem; line-height: 1.5;">
           <div style="font-weight: 700; margin-bottom: 4px;">Please review the following:</div>
@@ -990,7 +971,7 @@
               id="login-email" 
               name="email" 
               class="form-control"
-              value="{{ old('email', 'fan@princebyron.local') }}" 
+              value="{{ old('email') }}" 
               required 
               autocomplete="username"
             >
@@ -1004,7 +985,6 @@
               id="login-password" 
               name="password" 
               class="form-control"
-              value="TemporaryFanPass2026!" 
               required 
               autocomplete="current-password"
             >

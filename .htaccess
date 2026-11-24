@@ -47,6 +47,44 @@
     RewriteCond %{DOCUMENT_ROOT}/core/public/assets/%1 -f
     RewriteRule ^assets/(.*)$ core/public/assets/$1 [L]
 
+    # Images and audio are served from core/public because the document root is
+    # the repository root (cPanel upload), not core/public. Without these rules
+    # every <img> and the free-track download returned 404 — the site rendered
+    # without a single photograph (review P0-4).
+    #
+    # The -f check is deliberate: a missing file falls through to the front
+    # controller and returns a normal 404 rather than being rewritten blindly.
+    RewriteCond %{REQUEST_URI} ^/images/(.*)$
+    RewriteCond %{DOCUMENT_ROOT}/core/public/images/%1 -f
+    RewriteRule ^images/(.*)$ core/public/images/$1 [L]
+
+    RewriteCond %{REQUEST_URI} ^/audio/(.*)$
+    RewriteCond %{DOCUMENT_ROOT}/core/public/audio/%1 -f
+    RewriteRule ^audio/(.*)$ core/public/audio/$1 [L]
+
+    # Filament admin assets. `php artisan filament:assets` publishes these into
+    # core/public/{css,js,fonts}/filament at build time. They are a build
+    # product (not committed), but without these routes the admin panel at
+    # /admin loads completely unstyled on the host even when the file was
+    # correctly built (review P0-5). The -f guard keeps missing assets a clean
+    # 404 rather than a blind rewrite.
+    RewriteCond %{REQUEST_URI} ^/css/filament/(.*)$
+    RewriteCond %{DOCUMENT_ROOT}/core/public/css/filament/%1 -f
+    RewriteRule ^css/filament/(.*)$ core/public/css/filament/$1 [L]
+
+    RewriteCond %{REQUEST_URI} ^/js/filament/(.*)$
+    RewriteCond %{DOCUMENT_ROOT}/core/public/js/filament/%1 -f
+    RewriteRule ^js/filament/(.*)$ core/public/js/filament/$1 [L]
+
+    RewriteCond %{REQUEST_URI} ^/fonts/filament/(.*)$
+    RewriteCond %{DOCUMENT_ROOT}/core/public/fonts/filament/%1 -f
+    RewriteRule ^fonts/filament/(.*)$ core/public/fonts/filament/$1 [L]
+
+    # Site icon. public/favicon.ico was a committed 0-byte file; the real icon
+    # lives in core/public so this route must exist for it to be reachable.
+    RewriteCond %{DOCUMENT_ROOT}/core/public/favicon.ico -f
+    RewriteRule ^favicon\.ico$ core/public/favicon.ico [L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

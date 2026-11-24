@@ -35,7 +35,7 @@ return new class extends Migration
                 ->comment('Allowlisted brand hex code');
             $table->boolean('is_visible')->default(true);
             $table->unsignedSmallInteger('sort_order')->default(0);
-            $table->jsonb('metadata')->nullable()
+            $table->json('metadata')->nullable()
                 ->comment('Structured attributes like quote attribution, scripture ref, etc.');
             $table->timestamps();
 

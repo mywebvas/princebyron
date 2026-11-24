@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
+
 use Illuminate\Database\Eloquent\Model;
 
 class ContentSection extends Model
 {
+    use Auditable;
+
     /** Allowlisted brand palette hex colors */
     const COLOR_PRIMARY_DARK  = '#0E0B09';
     const COLOR_SURFACE_DARK  = '#181310';

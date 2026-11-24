@@ -2,10 +2,24 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class Phase2ScreensTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The storefront is database-driven (Sprint 1). Without seeding, only
+        // the presentation fallback catalogue exists, which is deliberately
+        // non-purchasable and labelled as sample data.
+        $this->seed(\Database\Seeders\ProductsSeeder::class);
+        $this->seed(\Database\Seeders\SongsSeeder::class);
+    }
+
     /**
      * Test Home View renders successfully with approved hero, bio, music, and merch.
      */
@@ -55,7 +69,16 @@ class Phase2ScreensTest extends TestCase
         $response->assertSee('STILLNESS');
         $response->assertSee('STRENGTH');
         $response->assertSee('JOY');
-        $response->assertSee('sample demonstration prices', false);
+        // The page must disclose that prices are placeholders. It previously
+        // asserted a string that existed nowhere in the codebase, so this test
+        // could never pass — the disclosure itself was missing from the view.
+        $response->assertSee('Sample demonstration prices');
+        $response->assertSee('not final retail pricing');
+
+        // Unavailable delivery formats must be visibly marked rather than
+        // silently offered: promising a 24-bit WAV master that does not exist
+        // would be a false representation at the point of sale.
+        $response->assertSee('MP3 (320kbps)');
     }
 
     /**
@@ -67,10 +90,13 @@ class Phase2ScreensTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Worn in faith');
-        $response->assertSee('Prince Byron Signature Tee');
-        $response->assertSee('Abide Arch Pullover Hoodie');
-        $response->assertSee('PB Monogram Curved Brim Cap');
-        $response->assertSee('Sample');
+        $response->assertSee('Prince Byron T-Shirt');
+        $response->assertSee('Prince Byron Hoodie');
+        $response->assertSee('Prince Byron Cap');
+
+        // Merchandise shows real-looking money, so the same placeholder-pricing
+        // disclosure is required here as on the music page.
+        $response->assertSee('Sample demonstration prices');
     }
 
     /**
@@ -78,17 +104,17 @@ class Phase2ScreensTest extends TestCase
      */
     public function test_single_product_detail_page_renders_successfully(): void
     {
-        $response = $this->get('/store/tee');
+        $response = $this->get('/store/prince-byron-t-shirt');
 
         $response->assertStatus(200);
-        $response->assertSee('Prince Byron Signature Tee');
+        $response->assertSee('Prince Byron T-Shirt');
         $response->assertSee('Apparel');
-        $response->assertSee('PB-TEE-001');
-        $response->assertSee('In Stock');
-        $response->assertSee('Sand Linen');
-        $response->assertSee('Charcoal Obsidian');
         $response->assertSee('Add to Bag');
-        $response->assertSee('Sample Product Specifications');
+
+        // Options are rendered from real variant rows, so the picker labels
+        // come from the seeder rather than a hardcoded palette.
+        $response->assertSee('Black');
+        $response->assertSee('White');
     }
 
     /**
@@ -116,10 +142,16 @@ class Phase2ScreensTest extends TestCase
         $response->assertSee('Contact &amp; Entitlement Account', false);
         $response->assertSee('Shipping &amp; Delivery Destination', false);
         $response->assertSee('Payment Method Review');
-        $response->assertSee('Stripe Simulation');
-        $response->assertSee('PayPal (Sandbox Simulation)');
+        $response->assertSee('Credit / Debit Card');
+        $response->assertSee('PayPal');
         $response->assertSee('Manual Bank Wire Transfer');
         $response->assertSee('awaiting_bank_verification');
+
+        // The page must not print card numbers or invite visitors to test a
+        // decline: it collects no card data and captures no payment.
+        $response->assertDontSee('4242');
+        $response->assertDontSee('Simulate card decline');
+        $response->assertSee('Online card capture is not enabled', false);
     }
 
     /**
@@ -130,10 +162,16 @@ class Phase2ScreensTest extends TestCase
         $response = $this->get('/booking');
 
         $response->assertStatus(200);
-        $response->assertSee('Ministry Appearance &amp; Event Booking', false);
-        $response->assertSee('Request for Quotation (RFQ)');
+        // The page is an invitation enquiry form, not a priced booking form.
+        $response->assertSee('Congregational Ministry');
+        $response->assertSee('Make room');
         $response->assertSee('Sunday Worship Service');
         $response->assertSee('Full Live Band Setup');
+
+        // The enquiry must be presented as a request for quotation: no price is
+        // quoted and nothing is charged on submission.
+        $response->assertSee('Ministry Booking');
+        $response->assertSee('RFQ');
         $response->assertSee('Submit Ministry Request');
     }
 
@@ -145,12 +183,37 @@ class Phase2ScreensTest extends TestCase
         $response = $this->get('/account');
 
         $response->assertStatus(200);
+
+        // A guest gets the Fan Vault sign-in surface. This test previously
+        // asserted a hardcoded email and entitlement titles that only existed
+        // inside the demo-credentials banner removed in Sprint 1 (review P1-1),
+        // so it was validating the leak rather than the page.
         $response->assertSee('Customer Fan Vault');
-        $response->assertSee('fan@example.com');
+        $response->assertSee('Sign In to My Library');
+        $response->assertDontSee('TemporaryFanPass2026!');
+        $response->assertDontSee('Local Demo Access');
+    }
+
+    /**
+     * An authenticated customer sees their own orders and entitlements.
+     */
+    public function test_authenticated_customer_sees_their_own_vault(): void
+    {
+        $customer = \App\Models\User::create([
+            'name' => 'Vault Owner',
+            'email' => 'vault@example.com',
+            'password' => \Illuminate\Support\Facades\Hash::make('secret-password-123'),
+            'role' => \App\Models\User::ROLE_CUSTOMER,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this->actingAs($customer)->get('/account');
+
+        $response->assertStatus(200);
+        $response->assertSee('vault@example.com');
         $response->assertSee('Active Digital Entitlements');
         $response->assertSee('Recent Orders');
-        $response->assertSee('Purify Me (Single Master)');
-        $response->assertSee('Free (Lead Track)');
     }
 
     /**
@@ -177,7 +240,7 @@ class Phase2ScreensTest extends TestCase
      */
     public function test_pages_do_not_contain_unapproved_claims(): void
     {
-        $endpoints = ['/', '/about', '/music', '/store', '/store/tee', '/cart', '/checkout', '/booking', '/account', '/admin/preview'];
+        $endpoints = ['/', '/about', '/music', '/store', '/store/prince-byron-t-shirt', '/cart', '/checkout', '/booking', '/account', '/admin/preview'];
 
         foreach ($endpoints as $url) {
             $content = $this->get($url)->getContent();
