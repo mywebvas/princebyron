@@ -326,9 +326,9 @@ jobs:
   tests-mysql:
     name: Tests (MySQL/MariaDB — shared-host parity)
     runs-on: ubuntu-latest
-    # TEMPORARY: write access so the failure log can be pushed back to the branch
-    # (neither runner logs nor artifacts are reachable from outside). Revert to
-    # the workflow-level `contents: read` once the suite is green.
+    # TEMPORARY: the diagnostic step below force-pushes its output to the
+    # dedicated refs/heads/ci-logs. Revert to the workflow-level `contents: read`
+    # once this job is green.
     permissions:
       contents: write
     # WHY THIS JOB EXISTS
@@ -394,11 +394,10 @@ jobs:
             if composer install --no-interaction --prefer-dist --no-progress 2>&1 | tee /tmp/composer.log; then
               exit 0
             fi
-            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying in $((attempt * 10))s"
+            echo "::warning title='Composer install'::attempt ${attempt} failed; retrying"
             sleep $((attempt * 10))
           done
-          esc=$(tail -25 /tmp/composer.log | sed -e 's/%/%25/g' -e 's/\r//g' | tr '\n' ' ')
-          echo "::error title='Composer install'::composer install failed 3 times — ${esc}"
+          echo "::error title='Composer install'::composer install failed 3 times"
           exit 1
 
       - name: Prepare application
@@ -409,8 +408,8 @@ jobs:
           php artisan config:clear
 
       - name: Prove the schema builds on MariaDB (DDL gate)
-        # A separate step on purpose: if the job goes red here the problem is a
-        # migration/DDL, and if it goes red in the step below it is application
+        # A separate step on purpose: if the job goes red HERE the problem is a
+        # migration or DDL; if it goes red in the step below it is application
         # behaviour. Diagnosis by step name needs no log text.
         working-directory: ${{ env.APP_DIR }}
         run: |
@@ -418,80 +417,57 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
-      - name: 'Tests: MySQL/MariaDB suite'
+      - name: Diagnose the MySQL-only failure
+        # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
+        #
+        # Neither the runner log archive nor an uploaded artifact is reachable
+        # from this environment (both redirect to blob.core.windows.net), and
+        # GitHub rejects annotation bodies containing '--' — which PHPUnit 12
+        # injects into every automatic annotation, so the rejection message
+        # replaces the real output.
+        #
+        # A force-pushed side ref cannot conflict with normal work and is
+        # readable with a plain fetch.
+        if: always()
         working-directory: ${{ env.APP_DIR }}
-        env:
-          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
-          # GITHUB_ACTIONS is set. Its annotation body carries diff text
-          # containing '--', GitHub rejects it, and the rejection message
-          # replaces the actual failure output in the log.
-          GITHUB_ACTIONS: ''
+        run: |
+          set -uo pipefail
+          cp phpunit.mysql.xml phpunit.xml
+          mkdir -p /tmp/diag
+          for f in AuditImmutabilityTest DatabasePortabilityTest CustomerAnonymisationTest; do
+            env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress \
+              "tests/Feature/$f.php" > "/tmp/diag/$f.txt" 2>&1
+            echo "exit=$?" >> "/tmp/diag/$f.txt"
+          done
+          rm -rf /tmp/diagrepo && mkdir /tmp/diagrepo
+          cp /tmp/diag/* /tmp/diagrepo/
+          cd /tmp/diagrepo
+          git init -q .
+          git config user.name 'ci-diagnostics'
+          git config user.email 'ci-diagnostics@invalid'
+          git add -A
+          git commit -q -m "mysql diagnostics @ ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \
+            HEAD:refs/heads/ci-logs
+
+      - name: 'Tests: MySQL/MariaDB suite'
+        # --no-progress: PHPUnit 12 auto-enables a GitHub Actions reporter, and the
+        # annotation it builds from diff text contains '--', which GitHub rejects.
+        # PHPUnit then prints the rejection instead of the result, so the failure
+        # detail never reaches the log.
+        working-directory: ${{ env.APP_DIR }}
         run: |
           set +e
           cp phpunit.mysql.xml phpunit.xml
-          # --no-progress is deliberate. PHPUnit 12 emits a GitHub annotation per
-          # failing test, and the annotation body it builds from `--` in the diff
-          # is rejected by GitHub's validator; PHPUnit then prints
-          # "Comment must not contain '--'" INSTEAD of the failure details, so the
-          # log contained 19 copies of that message and nothing else. The plain
-          # text printer plus JUnit XML gives the real output.
-          vendor/bin/phpunit --no-progress --log-junit /tmp/junit.xml > /tmp/test.log 2>&1
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress > /tmp/test.log 2>&1
           status=$?
           cat /tmp/test.log
-
           if [ $status -ne 0 ]; then
             echo "================ FAILURE DETAIL ================"
-            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -40
+            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | grep -nE 'FAILED|Failed asserting|SQLSTATE|Exception|Tests:' | head -40 || true
             echo "================================================"
-
-          else
-            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
-              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
-              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
-            echo "::notice title='Tests (MySQL/MariaDB)'::${totals:-suite passed}"
           fi
           exit $status
-
-      # The runner's console output for this job is unreliable (see the note on
-      # the suite step), so the three test classes added with the MySQL work each
-      # get their own NAMED step. A red step name localises the failure without
-      # any log text at all.
-      - name: 'Focus: AuditImmutabilityTest (trigger behaviour)'
-        working-directory: ${{ env.APP_DIR }}
-        env:
-          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
-          # GITHUB_ACTIONS is set. Its annotation body carries diff text
-          # containing '--', GitHub rejects it, and the rejection message
-          # replaces the actual failure output in the log.
-          GITHUB_ACTIONS: ''
-        run: |
-          set -euo pipefail
-          cp phpunit.mysql.xml phpunit.xml
-          vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php 2>&1 | tee /tmp/focus.log
-
-      - name: 'Focus: DatabasePortabilityTest (schema portability)'
-        working-directory: ${{ env.APP_DIR }}
-        env:
-          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
-          # GITHUB_ACTIONS is set. Its annotation body carries diff text
-          # containing '--', GitHub rejects it, and the rejection message
-          # replaces the actual failure output in the log.
-          GITHUB_ACTIONS: ''
-        run: |
-          set -euo pipefail
-          vendor/bin/phpunit --no-progress tests/Feature/DatabasePortabilityTest.php 2>&1 | tee -a /tmp/focus.log
-
-      - name: 'Focus: CustomerAnonymisationTest (anonymiser)'
-        working-directory: ${{ env.APP_DIR }}
-        env:
-          # PHPUnit 12 auto-enables a GitHub Actions reporter whenever
-          # GITHUB_ACTIONS is set. Its annotation body carries diff text
-          # containing '--', GitHub rejects it, and the rejection message
-          # replaces the actual failure output in the log.
-          GITHUB_ACTIONS: ''
-        run: |
-          set -euo pipefail
-          vendor/bin/phpunit --no-progress tests/Feature/CustomerAnonymisationTest.php 2>&1 | tee -a /tmp/focus.log
 
       - name: Verify full migration replay from an empty database
         working-directory: ${{ env.APP_DIR }}
@@ -506,38 +482,6 @@ jobs:
           set -euo pipefail
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
           php artisan db:seed --class='Database\Seeders\SettingsSeeder' --force
-
-      - name: Publish the MySQL test log into the branch (temporary)
-        # TEMPORARY DIAGNOSTIC. Neither the runner log archive nor the artifact
-        # is reachable from outside (both redirect to blob.core.windows.net), and
-        # GitHub rejects annotation bodies containing '--'. Committing the log is
-        # the only channel that survives all three. Removed with the MySQL job's
-        # green run.
-        if: failure()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          set -euo pipefail
-          { sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log 2>/dev/null || true; } > "$GITHUB_WORKSPACE/mysql-failure.log"
-          { sed -e 's/\x1b\[[0-9;]*m//g' /tmp/focus.log 2>/dev/null || true; } >> "$GITHUB_WORKSPACE/mysql-failure.log"
-          { sed -e 's/\x1b\[[0-9;]*m//g' /tmp/junit.xml; } > "$GITHUB_WORKSPACE/mysql-junit.xml" 2>/dev/null || true
-          cd "$GITHUB_WORKSPACE"
-          git config user.name 'ci-diagnostics'
-          git config user.email 'ci-diagnostics@invalid'
-          git fetch origin "${GITHUB_REF_NAME}"
-          git checkout "${GITHUB_REF_NAME}"
-          git add -f mysql-failure.log mysql-junit.xml
-          git commit -m 'ci: mysql failure log (temporary diagnostic)' || true
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-
-      - name: Upload test log
-        # TEMPORARY DIAGNOSTIC — removed once the MySQL suite is green.
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mysql-test-log
-          path: /tmp/test.log
-          if-no-files-found: ignore
-
 
   tests-sqlite:
     name: Tests (SQLite — fast regression pass)
