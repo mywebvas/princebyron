@@ -12,6 +12,14 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
+/**
+ * DEMO DATA — never run this on a host that serves customers.
+ *
+ * It creates an owner account whose password is the literal string in this
+ * file, plus a demo customer and sample orders. Anyone who can read the
+ * repository can sign in as the owner afterwards. It is not called by
+ * DatabaseSeeder; run it by class name on a development machine only.
+ */
 class ReviewSampleDataSeeder extends Seeder
 {
     public function run(): void
