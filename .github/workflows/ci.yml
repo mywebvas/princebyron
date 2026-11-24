@@ -417,39 +417,36 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
-      - name: Diagnose the MySQL-only failure
-        # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
-        #
-        # Neither the runner log archive nor an uploaded artifact is reachable
-        # from this environment (both redirect to blob.core.windows.net), and
-        # GitHub rejects annotation bodies containing '--' — which PHPUnit 12
-        # injects into every automatic annotation, so the rejection message
-        # replaces the real output.
-        #
-        # A force-pushed side ref cannot conflict with normal work and is
-        # readable with a plain fetch.
+      - name: 'Probe P1 the database refuses to update an audit event'
         if: always()
         working-directory: ${{ env.APP_DIR }}
         run: |
-          set -uo pipefail
-          cp phpunit.mysql.xml phpunit.xml
-          mkdir -p /tmp/diag
-          for f in AuditImmutabilityTest DatabasePortabilityTest CustomerAnonymisationTest; do
-            env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress \
-              "tests/Feature/$f.php" > "/tmp/diag/$f.txt" 2>&1
-            echo "exit=$?" >> "/tmp/diag/$f.txt"
-          done
-          rm -rf /tmp/diagrepo && mkdir /tmp/diagrepo
-          cp /tmp/diag/* /tmp/diagrepo/
-          cd /tmp/diagrepo
-          git init -q .
-          git config user.name 'ci-diagnostics'
-          git config user.email 'ci-diagnostics@invalid'
-          git add -A
-          git commit -q -m "mysql diagnostics @ ${GITHUB_SHA}"
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" \
-            HEAD:refs/heads/ci-logs
-
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
+            --filter 'test_the_database_refuses_to_update_an_audit_event'
+      - name: 'Probe P2 the database refuses to delete an audit event'
+        if: always()
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
+            --filter 'test_the_database_refuses_to_delete_an_audit_event'
+      - name: 'Probe P3 the row survives a refused tamper attempt'
+        if: always()
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
+            --filter 'test_the_row_survives_a_refused_tamper_attempt'
+      - name: 'Probe P4 inserting is still allowed'
+        if: always()
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
+            --filter 'test_inserting_is_still_allowed'
+      - name: 'Probe P5 a trigger exists on this driver'
+        if: always()
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress tests/Feature/AuditImmutabilityTest.php \
+            --filter 'test_a_trigger_exists_on_this_driver'
       - name: 'Tests: MySQL/MariaDB suite'
         # --no-progress: PHPUnit 12 auto-enables a GitHub Actions reporter, and the
         # annotation it builds from diff text contains '--', which GitHub rejects.
