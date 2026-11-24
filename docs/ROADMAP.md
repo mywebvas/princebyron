@@ -248,11 +248,23 @@ Stripe or PayPal refund API.
 
 ### Sprint 3 — Craft pass
 
-- [ ] Author the 26 Blade classes that have no CSS rule, including the bag drawer and toast (P2-1).
-- [ ] Responsive image derivatives (AVIF/WebP/JPEG + `srcset`, intrinsic dimensions) and self-hosted display/text fonts (P2-6, P2-7).
-- [ ] Branded 404/403/419/429/500/503 views (P2-3), SEO/social metadata and sitemap (P2-4), real favicon set (P2-5).
-- [ ] Truth and price corrections: unapproved $12 collection, WAV claims, invented specifications, price drift (P2-8, P2-9).
-- [ ] Accessibility set: `aria-current`, `aria-invalid`, live regions, table semantics (P2-11). Screen-reader testing stays marked unverified until performed.
+All items below are closed and CI-enforced (run 45408009229: 6/6 jobs, 170 tests,
+829 assertions on SQLite, PostgreSQL and MariaDB alike).
+
+- [x] Author the 26 Blade classes that have no CSS rule, including the bag drawer and toast (P2-1). `tools/check-classes.mjs` now guards this permanently: 225 classes across 12 views, 0 missing.
+- [x] Responsive image derivatives and `srcset` (JPEG + WebP at four widths, intrinsic dimensions via `<x-img>`) and self-hosted display/text fonts (P2-6, P2-7). AVIF is **not** produced — no encoder is available in the build environment, and the fallback chain is complete without it.
+- [x] Branded 404/403/419/429/500/503 views (P2-3), SEO/social metadata and sitemap (P2-4), real favicon set and web manifest (P2-5).
+- [x] Truth and price corrections: unapproved $12 collection, WAV claims, invented specifications, price drift (P2-8, P2-9).
+- [x] Accessibility set: `aria-current`, `aria-invalid`, live regions, error association, dialog focus traps (P2-11). **Screen-reader testing across JAWS/NVDA/VoiceOver stays unverified until a human performs it** — no automated check substitutes for that.
+
+Two residual risks raised against Sprint 2 and closed inside Sprint 3:
+
+- [x] **Customer anonymisation (P1-5 remainder).** Sprint 2 refused to delete a customer who has orders and told the owner to "deactivate or anonymise" without building either. `AnonymiseCustomer` now removes name, email, phone, password and postal address from the account *and* the order, revokes entitlements, deactivates the account, and writes an audit event recording what was done and why without copying the removed values into the log. Money, line items, dates, order reference and shipping country survive as the financial record. Owner accounts are refused. Exposed as a confirming owner action on an order.
+- [x] **MySQL/MariaDB support (P0-8).** `jsonb` became `json` in four migrations; the audit-immutability trigger now has real per-driver branches (PostgreSQL, MySQL/MariaDB via `SIGNAL SQLSTATE`, SQLite); `phpunit.mysql.xml` plus a MariaDB 11 CI job runs the whole suite on the database most cPanel hosts actually provide. Previously the installer offered MySQL while the schema could not build on it.
+
+Still open from this sprint's neighbourhood, deliberately:
+
+- [ ] P2-16: 579 inline `style=` attributes. Out of the $750 scope; the CSP does not permit `unsafe-inline`, so these are also a correctness problem, not only a tidiness one.
 
 ### Sprint 4 — Packaging and operations
 

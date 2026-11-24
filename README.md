@@ -27,8 +27,9 @@ correct in production, only that it is verified in the repository.
 | Composer manifest/lock sync | `node tools/check-lock.mjs` | CI-enforced |
 | Release completeness (vendor, Filament assets) | `node tools/check-release.mjs --strict` | **Reporter** — states what the upload still needs |
 | PHP syntax, every tracked `.php` | `php -l` over `git ls-files '*.php'` | CI-enforced |
-| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 128 tests, 673 assertions |
+| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 170 tests, 829 assertions |
 | Test suite (PostgreSQL, primary) | `phpunit.pgsql.xml` installed as `phpunit.xml` | CI-enforced — same suite |
+| Test suite (MySQL/MariaDB) | `phpunit.mysql.xml` installed as `phpunit.xml` | CI-enforced against MariaDB 11 — same suite |
 | Migration replay from empty DB | `php artisan migrate:fresh --force` | CI-enforced |
 | Seeder idempotency | seeders run twice | CI-enforced |
 | Blade compilation | `php artisan view:cache` | CI-enforced |
@@ -120,11 +121,11 @@ The Prince Byron application has completed Phases 1 through 5 and is currently p
 - **A deployable archive needs two build steps on a machine with PHP, Composer and Node:** `composer install --no-dev` and `php artisan filament:assets`. Run `node tools/check-release.mjs --strict` to confirm both before zipping — it fails the build if either is missing, which is what stops the "unstyled admin panel" outcome (review P0-5).
 - **Bank Transfer:** available in the admin panel as an owner verification action; orders stay `awaiting_bank_verification` until the owner records an independently verified receipt, at which point entitlements are granted (Sprint 2).
 - **Refunds are recorded, not transmitted.** The owner can refund an order from the admin panel: the platform writes a negative payment, revokes the downloads and writes an audit event. The money movement itself still happens in the Stripe or PayPal dashboard — the action does not call either provider's refund API, so the two records must be reconciled by hand.
-- **Financial records cannot be deleted.** Orders, and customers who have orders, refuse deletion at the model layer; the correct operation for a departing customer is deactivation or anonymisation, which is not built yet (Sprint 2, P1-5).
+- **Financial records cannot be deleted.** Orders, and customers who have orders, refuse deletion at the model layer. For a departing customer the correct operation is **anonymisation**, available from the order's admin page: it removes name, email, phone, password and postal address from both the account and the order, revokes download entitlements, deactivates the account and writes an audit event recording what was done and why — without copying the removed values into the log. Money, line items, dates, order reference and shipping country survive, because those are the financial record and the tax aggregation. Owner accounts are refused, since anonymising one would strip the audit trail of its attributions.
 - **Email:** Routed to local Mailpit (`127.0.0.1:1025`/`8025`); no live external emails are sent. The installer template also writes Mailpit settings, so booking notifications are silently dropped on a real host until SMTP is configured (review finding P0-7).
 - **Shipping Rates:** The owner has not finalized physical shipping zones or carrier rates. Live checkout requires configured destinations in `/admin/shipping-rates`.
 - **Master Audio Files:** Studio WAV masters are pending final artist delivery. The catalog advertises 24-bit WAV while no WAV masters exist (`has_wav = false`); downloadable MP3 files are streamed through an entitlement check, and the download counter is only consumed when a real file is delivered.
-- **Hosting:** the current schema requires PostgreSQL (`jsonb` columns, PL/pgSQL audit trigger). Most shared cPanel plans offer MySQL/MariaDB only. The owner has approved moving toward a **MySQL/MariaDB-capable build** so that "upload to any shared host" is achievable; that work is not yet started (review §7, Option B).
+- **Hosting:** the schema now builds on **MySQL/MariaDB, PostgreSQL and SQLite**. The audit-immutability trigger has a real branch per driver (PostgreSQL row trigger, MySQL/MariaDB `SIGNAL SQLSTATE`, SQLite `RAISE(ABORT)`), column types are portable, and CI runs the full suite against MariaDB 11 — the database most shared cPanel plans actually provide — alongside the other two. The installer's MySQL option, which predates this support, is now truthful.
 
 
 ## Approved product direction
