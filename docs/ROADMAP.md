@@ -312,12 +312,32 @@ checksum and an extraction test proving it works without Composer or Node.
 
 **The honest sequencing:** Sprint 4's packaging output is the input to Sprint 5. A fresh-install walkthrough cannot begin until an archive with a real `vendor/` and real Filament assets exists, and that requires one build on a PHP-capable machine. That single build is the gate for everything remaining.
 
-## Phase 6 — Later editorial work and launch operations (PAUSED)
+## Phase 6 — Later editorial work and launch operations
 
-- [ ] Add blog and newsletter after an email provider, consent language, unsubscribe flow, retention and abuse controls are decided.
-- [ ] Add PWA only if offline access adds real customer value and can exclude private account/payment/download state.
-- [ ] Complete legal copy, sales tax, refund, privacy, shipping and music download policies with the owner's qualified advisors.
-- [ ] Obtain explicit owner approval before payment activation, DNS change or production release.
+**Now waiting on the owner, not on code.** Every item that could be built without a
+decision has been; see [`PHASE-6-DECISIONS.md`](PHASE-6-DECISIONS.md) for the five
+decisions that unblock the rest.
+
+- [x] **Legal pages infrastructure.** Four policy routes (`/refund-policy`, `/privacy`,
+      `/terms`, `/shipping`), owner-editable in the admin panel, linked from every
+      footer and from the checkout at the point of sale. Templates are explicitly
+      marked and `noindex` until written; `pb:readiness` lists unwritten ones as
+      blockers.
+- [ ] Complete legal copy, sales tax, refund, privacy, shipping and music download
+      policies with the owner's qualified advisors. **Blocked on:** jurisdiction, entity
+      and contact address, digital-goods refund stance, sales-tax approach, retention
+      period. The pages are ready to receive the text.
+- [ ] Add blog and newsletter after an email provider, consent language, unsubscribe
+      flow, retention and abuse controls are decided. **Blocked on:** provider choice and
+      consent model. Building the form first would make it easy to ship without either.
+- [x] **PWA decision made, and pinned in code.** The manifest ships `display: browser`
+      on purpose — icons, name and theme colour without claiming installability there
+      is no service worker to honour. Adding `display: standalone` or a `sw.js` fails
+      `AssetIntegrityTest`. A service worker needs a caching security spec first,
+      because account, checkout, download and webhook traffic must never be cached.
+- [ ] Obtain explicit owner approval before payment activation, DNS change or
+      production release. This is a gate only the owner can open, and nothing in this
+      repository should be read as having opened it.
 
 ## Scope and evidence rules
 

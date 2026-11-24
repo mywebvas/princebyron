@@ -8,7 +8,8 @@
 - Filament 5 for the owner-only admin panel, branded to the site's design. Its documented baseline includes PHP 8.2+, Laravel 11.28+, and Tailwind CSS 4.1+ for custom panel themes; build its assets locally.
 - Lucide icons as a small, locally included SVG subset to avoid a runtime icon CDN.
 - Vite/Node only on the development machine or release builder; include production-compiled assets in each upload package.
-- No PWA in the core release. Reconsider only after offline user needs and cache/privacy boundaries are specified.
+- No PWA in the core release. Reconsider only after offline user needs and cache/privacy boundaries are specified. The web manifest ships with `display: browser` **on purpose**: it provides the home-screen icons, name and theme colour without claiming installability we do not have. A service worker would have to exclude account, checkout and download state, and none of that has been specified. `AssetIntegrityTest` pins the value.
+- No AVIF in this release. The image pipeline produces JPEG and WebP at four widths; no AVIF encoder was available in the build environment. The `<picture>` fallback chain is complete without it, so nothing is broken — WebP already covers the browsers that matter.
 
 Use responsive AVIF/WebP derivatives where supported, with an appropriate JPEG fallback, intrinsic dimensions, lazy loading below the fold, and a restrained font strategy. Do not introduce external runtime font/icon CDNs as required dependencies; the site should remain legible on a slow connection and when third-party assets fail.
 

@@ -4,7 +4,7 @@
   "description": "Gospel music, ministry bookings, apparel and instant downloads.",
   "start_url": "/",
   "scope": "/",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#F7F3EC",
   "theme_color": "#14100C",
   "icons": [
@@ -26,5 +26,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "_comment": "display=browser deliberately: this site is not an installable PWA. There is no service worker, so a standalone launch would have nothing to serve when the network is unavailable \u2014 and the account, checkout and download areas must never be cached. The manifest exists for the icons, theme colour and home-screen name, which work without installability. See docs/ROADMAP.md Phase 6."
 }

@@ -81,6 +81,24 @@ class AssetIntegrityTest extends TestCase
         );
     }
 
+    public function test_the_manifest_does_not_claim_to_be_an_installable_app(): void
+    {
+        // display: standalone tells the browser this is an installable PWA, but
+        // there is no service worker — so a standalone launch would have nothing
+        // to serve offline, and the account, checkout and download areas must
+        // never be cached anyway. Claiming installability we do not have is a
+        // promise broken at the moment a customer tries it.
+        $manifest = json_decode(File::get(public_path('manifest.webmanifest')), true);
+
+        $this->assertSame(
+            'browser',
+            $manifest['display'] ?? null,
+            'display must stay "browser" until a service worker exists and can exclude private state.'
+        );
+
+        $this->assertFileDoesNotExist(public_path('sw.js'));
+    }
+
     public function test_the_manifest_offers_a_maskable_icon(): void
     {
         // Android crops a regular icon into its adaptive shape and can clip the
