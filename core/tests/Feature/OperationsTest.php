@@ -205,13 +205,30 @@ class OperationsTest extends TestCase
         // This is why no "expired entitlements" job is scheduled: the read-time
         // scope already refuses it, so a sweep would only add a second source of
         // truth for the same fact.
+        // No factories exist for Order or Song, and song_id is NOT NULL, so both
+        // are created the way the application creates them.
         $user = User::factory()->create();
-        $order = Order::factory()->create(['user_id' => $user->id]);
+
+        $order = Order::create([
+            'reference' => 'ORD-OPS-'.uniqid(),
+            'user_id' => $user->id,
+            'status' => 'paid',
+            'currency' => 'USD',
+            'subtotal_cents' => 1000,
+            'total_cents' => 1000,
+        ]);
+
+        $song = \App\Models\Song::create([
+            'title' => 'Ops Probe',
+            'slug' => 'ops-probe-'.uniqid(),
+            'is_published' => true,
+        ]);
 
         $expired = DownloadEntitlement::create([
             'user_id' => $user->id,
             'order_id' => $order->id,
-            'song_id' => null,
+            'song_id' => $song->id,
+            'format' => 'mp3',
             'is_active' => true,
             'expires_at' => now()->subDay(),
             'download_count' => 0,

@@ -238,9 +238,19 @@ class BackupCommand extends Command
             // chunk() needs a stable order or rows can be skipped or repeated as
             // the cursor moves. Every table here has an `id`; the few pivot-free
             // tables without one are ordered by their whole row instead.
+            // chunk() throws "You must specify an orderBy clause" when there is
+            // none. Every table in this schema has an `id`, but a future pivot or
+            // view might not, so fall back to ordering by the first column rather
+            // than letting the backup die halfway through a restore file.
             $query = DB::table($table);
             if (Schema::hasColumn($table, 'id')) {
                 $query->orderBy('id');
+            } else {
+                $first = Schema::getColumnListing($table)[0] ?? null;
+                if ($first === null) {
+                    continue;
+                }
+                $query->orderBy($first);
             }
 
             $query->chunk(500, function ($rows) use ($handle, $table) {
