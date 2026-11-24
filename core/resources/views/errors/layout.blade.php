@@ -9,7 +9,12 @@
   <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="preload" href="/fonts/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="{{ asset('build/errors.css') }}">
+  {{-- Deliberately NOT under build/. Vite empties its output directory on every
+       build (emptyOutDir defaults to true when the root is inside public/), so a
+       stylesheet parked there is deleted by the very step that produces a
+       release — and the error pages would deploy unstyled, which is precisely
+       what these pages exist to avoid. Verified: npm run build removes it. --}}
+  <link rel="stylesheet" href="{{ asset('errors.css') }}">
   <style>
     @font-face{font-family:'Cinzel';font-style:normal;font-weight:400 900;font-display:swap;
       src:url('/fonts/cinzel-latin.woff2') format('woff2')}

@@ -92,6 +92,36 @@ class AssetIntegrityTest extends TestCase
         $this->assertContains('maskable', $purposes);
     }
 
+    public function test_the_error_pages_stylesheet_lives_outside_the_vite_build_directory(): void
+    {
+        // A Vite build EMPTIES its output directory (emptyOutDir defaults to true
+        // when the root sits inside public/). errors.css was parked in
+        // public/build/, so the release step — `npm run build`, which Sprint 4's
+        // packaging runs — deleted it, and every branded error page would deploy
+        // unstyled. There is no error for that; the pages render, just wrong.
+        $this->assertFileExists(
+            public_path('errors.css'),
+            'errors.css must live in public/, not public/build/, or a Vite build deletes it.'
+        );
+
+        $this->assertFileDoesNotExist(
+            public_path('build/errors.css'),
+            'errors.css has crept back into public/build/, where `npm run build` will delete it.'
+        );
+
+        $layout = File::get(resource_path('views/errors/layout.blade.php'));
+
+        $this->assertStringContainsString(
+            "asset('errors.css')",
+            $layout,
+            'The error layout must reference the stylesheet outside build/.'
+        );
+
+        foreach (['404', '403', '419', '429', '500', '503'] as $status) {
+            $this->assertFileExists(resource_path("views/errors/{$status}.blade.php"));
+        }
+    }
+
     public function test_every_responsive_derivative_that_exists_is_a_real_image(): void
     {
         $checked = 0;
