@@ -299,10 +299,18 @@ this roadmap is source code; those two are build products. The honest end state 
 a release archive that contains them, produced once on a networked machine, with a
 checksum and an extraction test proving it works without Composer or Node.
 
-### Sprint 5 — Hosting proof (requires the owner)
+### Sprint 5 — Hosting proof
 
-- [ ] Implement and certify the MySQL/MariaDB path: `jsonb` → dialect-aware JSON, audit immutability triggers for MySQL and MariaDB, installer driver selection with `pdo_mysql` preflight, and a CI matrix across PostgreSQL 17 / MySQL 8.0 / MariaDB 10.11.
-- [ ] Fresh install on a named cPanel plan matching the target PHP/extensions/cron; complete a customer and owner walkthrough; verify SMTP, backups, restore and rollback.
+**Two of three items are already done, carried out ahead of schedule.**
+
+- [x] Implement and certify the MySQL/MariaDB path — **delivered in Sprint 3**, not Sprint 5.
+  - `jsonb()` → `json()` in four migrations; the audit-immutability trigger now has a real branch per driver (PostgreSQL row trigger, MySQL/MariaDB `SIGNAL SQLSTATE 45000`, SQLite `RAISE(ABORT)`); the installer's MySQL/MariaDB driver selection (with `pdo_mysql` preflight) predates this and is now truthful.
+  - "Certified" means **CI-enforced**, not eyeballed: a fourth job runs the entire suite against **MariaDB 11** — 188 tests, 915 assertions, identical totals to PostgreSQL and SQLite. MySQL 8.0 specifically is *not* in the matrix; MariaDB 11 was chosen because it is what cPanel actually ships.
+- [ ] **Fresh install on a named cPanel plan** — the one item that requires the owner.
+  - Blocks on: the owner choosing a provider and plan. Everything before this point can be verified without it; this cannot.
+  - What it must prove: install completes with no shell access; the browser installer's `pdo_mysql` preflight passes; cron runs (verified with `pb:readiness`, which reports whether the scheduler has fired); SMTP delivers a real booking notification; `pb:backup` produces a file and **the restore is executed** (the P3-6 drill); rollback by repointing the document root.
+
+**The honest sequencing:** Sprint 4's packaging output is the input to Sprint 5. A fresh-install walkthrough cannot begin until an archive with a real `vendor/` and real Filament assets exists, and that requires one build on a PHP-capable machine. That single build is the gate for everything remaining.
 
 ## Phase 6 — Later editorial work and launch operations (PAUSED)
 
