@@ -417,54 +417,32 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
-      - name: Report which tests fail on MariaDB
+      - name: Report which test files fail on MariaDB
         # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
         #
-        # WHY --no-output. PHPUnit 12 publishes one GitHub annotation per failing
-        # test. The body it builds contains '--', GitHub rejects it, and PHPUnit
-        # prints the rejection text IN PLACE OF the results — which is why the log
-        # contained 19 copies of "Comment must not contain '--'" and no test names
-        # at all. --no-output suppresses the reporter entirely; JUnit XML still
-        # lands on disk.
+        # PHPUnit/Collision publish a GitHub annotation per failing test; the body
+        # contains '--' from diff output, GitHub rejects it, and the rejection text
+        # is printed in place of the results. Every attempt to capture real output
+        # from this runner has produced 19 copies of that message instead.
         #
-        # The parsed result is emitted as hex ([0-9a-f] only), so GitHub's
-        # annotation content rules cannot reject it either. Decode with:
-        #   bytes.fromhex(message).decode()
+        # So: run one file at a time and put the FILE PATH in the annotation
+        # title. A path contains no '--' and no '::', so nothing can be rejected.
         if: always()
         working-directory: ${{ env.APP_DIR }}
         run: |
           set -uo pipefail
           cp phpunit.mysql.xml phpunit.xml
-          set +e
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output --log-junit /tmp/j.xml > /tmp/full.log 2>&1
-          echo "exit=$? bytes=$(stat -c%s /tmp/full.log 2>/dev/null || echo 0) junit=$(test -f /tmp/j.xml && echo yes || echo no)"
-          set -e
-          tail -c 2500 /tmp/full.log 2>/dev/null | python3 -c "import sys;print('::error title=\"mysql-tail\"::'+sys.stdin.buffer.read().hex())" || true
-          python3 - <<'PYEOF'
-          import xml.etree.ElementTree as ET
-
-          try:
-              root = ET.parse('/tmp/j.xml').getroot()
-          except Exception as exc:
-              print("::error title='mysql-detail'::" + ("no-junit:" + exc.__class__.__name__).encode().hex())
-              raise SystemExit(0)
-
-          out, total, failed = [], 0, 0
-          for case in root.iter('testcase'):
-              total += 1
-              problems = list(case.findall('failure')) + list(case.findall('error'))
-              if not problems:
-                  continue
-              failed += 1
-              name = case.get('name', '')
-              msg = (problems[0].get('message') or '')[:300].replace(chr(10), ' ')
-              out.append(name + " || " + msg)
-
-          out.insert(0, "total=%d failed=%d" % (total, failed))
-          payload = chr(10).join(out).encode()
-          for i in range(0, len(payload), 1500):
-              print("::error title='mysql-detail-%02d'::%s" % (i // 1500, payload[i:i+1500].hex()))
-          PYEOF
+          fail=0
+          for f in tests/Unit/*.php tests/Feature/*.php; do
+            [ -f "$f" ] || continue
+            env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output "$f" > /dev/null 2>&1
+            rc=$?
+            if [ $rc -ne 0 ]; then
+              fail=$((fail + 1))
+              echo "::error title='mysql-red-file'::$f"
+            fi
+          done
+          echo "files failing on MariaDB: $fail"
 
       - name: 'Tests: MySQL/MariaDB suite'
         # --no-progress: PHPUnit 12 auto-enables a GitHub Actions reporter, and the
