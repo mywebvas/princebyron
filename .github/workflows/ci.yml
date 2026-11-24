@@ -435,7 +435,11 @@ jobs:
         run: |
           set -uo pipefail
           cp phpunit.mysql.xml phpunit.xml
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output --log-junit /tmp/j.xml || true
+          set +e
+          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output --log-junit /tmp/j.xml > /tmp/full.log 2>&1
+          echo "exit=$? bytes=$(stat -c%s /tmp/full.log 2>/dev/null || echo 0) junit=$(test -f /tmp/j.xml && echo yes || echo no)"
+          set -e
+          tail -c 2500 /tmp/full.log 2>/dev/null | python3 -c "import sys;print('::error title=\"mysql-tail\"::'+sys.stdin.buffer.read().hex())" || true
           python3 - <<'PYEOF'
           import xml.etree.ElementTree as ET
 
