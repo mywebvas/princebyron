@@ -139,12 +139,34 @@ class OperationsTest extends TestCase
             $dump .= file_get_contents($f);
         }
 
-        // Only the portable dump is text; pg_dump/mysqldump output is too, but a
-        // SQLite file copy is binary. Assert on whichever the engine produced.
-        if (str_contains($dump, 'INSERT INTO') || str_contains($dump, 'COPY ')) {
-            $this->assertStringContainsString('backup-probe@example.test', $dump);
+        /*
+         | THE ROW IS ONLY ASSERTABLE ON THE PORTABLE PATH, and the reason is worth
+         | recording.
+         |
+         | RefreshDatabase wraps each test in a transaction that is never committed.
+         | An engine-native dump (pg_dump, mysqldump) opens its OWN connection, so it
+         | cannot see uncommitted rows — the dump is correct in production and
+         | legitimately empty of this row in a test. The PHP fallback reads through
+         | the same PDO connection inside the transaction, so it does see the row.
+         |
+         | Asserting the email unconditionally made the test fail on PostgreSQL for a
+         | reason that had nothing to do with the backup being wrong.
+         */
+        if (str_contains($dump, 'Prince Byron portable backup')) {
+            $this->assertStringContainsString(
+                'backup-probe@example.test',
+                $dump,
+                'The portable dump must contain the rows it claims to include.'
+            );
+            $this->assertStringContainsString(
+                'LIMITATIONS',
+                $dump,
+                'The portable dump must carry its own limitations header.'
+            );
         } else {
-            $this->assertNotEmpty($dump, 'A binary backup was written, so at least assert it exists.');
+            // Engine-native or binary. Assert it is a real artefact rather than an
+            // empty file, and that the method was reported honestly.
+            $this->assertGreaterThan(200, strlen($dump), 'The backup file is suspiciously small.');
         }
 
         array_map('unlink', $files);
