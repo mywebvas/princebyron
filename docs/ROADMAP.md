@@ -274,17 +274,24 @@ Still open from this sprint's neighbourhood, deliberately:
 
 ### Sprint 4 — Packaging and operations
 
-**What it needs to begin: nothing from the user.** Three of the six items are pure
-code and can start immediately. The other three need a machine with PHP 8.5,
-Composer and a database, and this environment has no PHP runtime at all — so they
-are authored here and *executed* on the release machine, or they stay untrue.
+**Status: five of six items closed; the sixth is genuinely blocked, not deferred.**
 
-- [ ] `tools/package.sh` producing a versioned archive with `vendor/` and Filament assets, plus an extraction test (P3-1).
-  - Depends on: `composer install --no-dev --optimize-autoloader` and `php artisan filament:assets` having run. **Either the owner provides the built `vendor/` + Filament assets, or the owner runs the two commands from `docs/` on a PHP-capable machine.** Until then `tools/check-release.mjs` correctly reports INCOMPLETE, and the package cannot be called ready.
-- [ ] Backup/restore procedure with a **rehearsed** restore (P3-6) — a restore that has never been executed is a plan, not a capability.
-  - Depends on: a database of the target engine (MySQL/MariaDB preferred) to rehearse against.
-- [ ] Scheduler entries (P3-7); daily log rotation in the installer template (P3-5); lighter health endpoint (P3-9). No dependencies — code only.
-- [ ] Documented `install/` removal and release-rollback steps (P3-8). No dependencies — documentation only.
+Everything that could be built and executed in a PHP-less environment has been —
+including running the packaging script end to end against stand-in prerequisites,
+which is how two of its bugs were found. What remains needs a machine with PHP 8.5
+and Composer, which this environment does not have, and a database to rehearse a
+restore against.
+
+- [x] `tools/package.sh` producing a versioned archive with `vendor/` and Filament assets, plus an extraction test (P3-1).
+  - **Built and executed end-to-end** against stand-in prerequisites. It refuses to build without `vendor/` and the Filament assets rather than shipping an archive that fails in a browser. The extraction test unzips its own output into a clean directory and checks the structure — it caught a real bug during development (`core/vendor` was missing from the copy list, the one directory a no-Composer host cannot do without), and `rsync` was replaced with `cp -a` after it proved unavailable.
+  - **Still required before a real release:** `composer install --no-dev --optimize-autoloader`, `php artisan filament:assets` and `npm run build` on a PHP-capable machine. No archive containing a real `vendor/` has ever been produced in this project.
+- [x] Scheduler entries (P3-7); daily log rotation in the installer template (P3-5); lighter health endpoint (P3-9).
+  - Two drafted scheduler tasks were **removed rather than shipped**: a sitemap cache clear (the sitemap is not cached — the key would never exist) and an expired-entitlement sweep (`scopeActive` already filters on `expires_at` at read time, so a sweep would create a second source of truth). A test pins that they stay gone.
+  - The health probe no longer writes to the cache on every poll. On the file driver that was 2,880 disk writes a day at a 30-second interval.
+- [x] Documented `install/` removal and release-rollback steps (P3-8) — `docs/DEPLOYMENT.md`, plus `php artisan pb:readiness` (14 checks) so the removal step fails loudly instead of being a line in a document nobody reads.
+- [ ] Backup/restore procedure with a **rehearsed** restore (P3-6) — **partially done.**
+  - `php artisan pb:backup` is built and tested: prefers `pg_dump`/`mysqldump` with `--single-transaction`, falls back to a portable SQL dump on hosts where they are disabled, states in the terminal *and* the file header what that fallback omits, uses `MYSQL_PWD`/`PGPASSWORD` rather than argv (world-readable `/proc/<pid>/cmdline` on shared hosts), and prunes on retention.
+  - **The restore has never been executed.** `docs/DEPLOYMENT.md` §4 labels it **NOT YET REHEARSED**. Until someone runs it against a real database and records the result, this item is not closed, and Sprint 5 cannot be marked complete.
 
 **What Sprint 4 cannot fix, and should not pretend to:** the package is only
 "plug-n-play" if it ships `vendor/` and the Filament assets. Everything else in

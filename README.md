@@ -27,7 +27,7 @@ correct in production, only that it is verified in the repository.
 | Composer manifest/lock sync | `node tools/check-lock.mjs` | CI-enforced |
 | Release completeness (vendor, Filament assets) | `node tools/check-release.mjs --strict` | **Reporter** — states what the upload still needs |
 | PHP syntax, every tracked `.php` | `php -l` over `git ls-files '*.php'` | CI-enforced |
-| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 170 tests, 829 assertions |
+| Test suite (SQLite, fast pass) | `php artisan test` | CI-enforced — 188 tests, 915 assertions |
 | Test suite (PostgreSQL, primary) | `phpunit.pgsql.xml` installed as `phpunit.xml` | CI-enforced — same suite |
 | Test suite (MySQL/MariaDB) | `phpunit.mysql.xml` installed as `phpunit.xml` | CI-enforced against MariaDB 11 — same suite |
 | Migration replay from empty DB | `php artisan migrate:fresh --force` | CI-enforced |
@@ -55,8 +55,16 @@ The Prince Byron application has completed Phases 1 through 5 and is currently p
 
 ### Local review access
 
-- **Base URL:** [http://127.0.0.1:8001](http://127.0.0.1:8001)
-- **Local Review Credentials:**
+> **This section describes the developer's local machine only.** Nothing below
+> exists on a deployed site: the seeders that create these accounts are review
+> fixtures, not part of the installer. A production install starts with an empty
+> database and creates its owner account in the installer.
+>
+> The passwords are published here *because* they are worthless — they only exist
+> in a local review database. Do not reuse them anywhere.
+
+- **Base URL:** [http://127.0.0.1:8001](http://127.0.0.1:8001) (local only)
+- **Local Review Credentials (local only):**
   - **Customer Fan Vault:**
     - Email: `fan@princebyron.local`
     - Password: `changeme-dev-only`

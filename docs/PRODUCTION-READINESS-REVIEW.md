@@ -147,15 +147,15 @@ Effort: `S` ≤ 2h · `M` ≤ 1d · `L` ≤ 3d · `XL` > 3d (estimates, not quot
 
 | # | Finding | Evidence | Fix | Effort |
 |---|---|---|---|---|
-| **P3-1** | **No release tooling.** No `Makefile`/script that produces the versioned archive (vendor + build + Filament assets + root loader + installer + version marker, excluding `.env`, logs, tests, scratch, snapshots, `node_modules`). Phase 5 is marked "done" without a reproducible artifact builder. | no `scripts/`, `Makefile`, `.github/` | `tools/package.sh` with an explicit include/exclude manifest + SHA-256 + `VERSION` file; assert the archive by extracting it into a clean dir and hitting it | M |
+| **P3-1** | **CLOSED (tooling) — see §13. A real archive still needs vendor/ built on a PHP machine.** | no `scripts/`, `Makefile`, `.github/` | `tools/package.sh` with an explicit include/exclude manifest + SHA-256 + `VERSION` file; assert the archive by extracting it into a clean dir and hitting it | M |
 | **P3-2** | **No CI.** The 71-test claim is unenforced; a regression can ship silently. | no `.github/workflows` | GitHub Actions: PHP 8.5 + Postgres 17 service, `phpunit.pgsql.xml` **and** sqlite matrix, `pint --test`, `vite build`, installer tests | M |
 | **P3-3** | **Default test DB ≠ production DB.** `phpunit.xml` = SQLite in-memory; production = PostgreSQL with `jsonb`, PL/pgSQL trigger, `lockForUpdate` semantics, `SELECT … FOR UPDATE` under READ COMMITTED. PG-specific behaviour is only covered by the optional `phpunit.pgsql.xml`. | `phpunit.xml:30-33`; `phpunit.pgsql.xml` | Make PG the primary CI job; keep SQLite as the fast job | S |
 | **P3-4** | **`docker-compose.yml` has a broken `APP_KEY`** (`base64:$(openssl rand -base64 32)` is not shell-interpolated by Compose). | `docker-compose.yml` `environment.APP_KEY` | Use a `.env`-provided key or an entrypoint that generates it once | S |
-| **P3-5** | **Logging can grow unbounded on the host.** Installer writes `LOG_CHANNEL=stack` with no `LOG_STACK`, so the stack default applies (often `single`). | `install/index.php:340-345` | Emit `LOG_STACK=daily`, `LOG_DAILY_DAYS=14`, `LOG_LEVEL=warning` | S |
-| **P3-6** | **No backup/restore automation or documented rollback artifact**, though PRD's acceptance outcome requires one. | docs only | `artisan pb:backup` (pg_dump via `Process`, or a SQL export), retention + restore drill note; plus a documented "revert to previous release dir" procedure | M |
-| **P3-7** | **No scheduler entries.** `routes/console.php` has only `inspire`; no `withSchedule`, no prune/expiry jobs, no queue worker guidance beyond docs — and the installer sets `QUEUE_CONNECTION=sync`, so any future queued mail/retry must change that deliberately. | `routes/console.php`; `install/index.php:347` | Add schedule: `queue:prune-failed`, `model:prune`, expired-entitlement sweep, sitemap refresh; document the single cron line | S |
-| **P3-8** | **Install directory remains after success** (only 403'd). Acceptable defence-in-depth, but the success screen should give an exact, copy-pasteable removal instruction per host UI, and the loader should stop advertising `install/` once locked. | `install/index.php:620-640`; `index.php:19-25` | Add "delete `install/`" as a required release checklist step + a readiness self-check page | S |
-| **P3-9** | **Health endpoint does a cache *write* per request** (`Cache::put` then `get`), which on the `file` driver is disk I/O on every probe. | `routes/web.php:88-95` | Read-only DB ping + `cache()->get` on a pre-seeded key, or throttle the probe | S |
+| **P3-5** | **CLOSED in Sprint 4 — see §13.** | `install/index.php:340-345` | Emit `LOG_STACK=daily`, `LOG_DAILY_DAYS=14`, `LOG_LEVEL=warning` | S |
+| **P3-6** | **BACKUP CLOSED, RESTORE NOT REHEARSED — see §13 and docs/DEPLOYMENT.md §4.** | docs only | `artisan pb:backup` (pg_dump via `Process`, or a SQL export), retention + restore drill note; plus a documented "revert to previous release dir" procedure | M |
+| **P3-7** | **CLOSED in Sprint 4 — see §13.** | `routes/console.php`; `install/index.php:347` | Add schedule: `queue:prune-failed`, `model:prune`, expired-entitlement sweep, sitemap refresh; document the single cron line | S |
+| **P3-8** | **CLOSED in Sprint 4 — see §13.** | `install/index.php:620-640`; `index.php:19-25` | Add "delete `install/`" as a required release checklist step + a readiness self-check page | S |
+| **P3-9** | **CLOSED in Sprint 4 — see §13.** | `routes/web.php:88-95` | Read-only DB ping + `cache()->get` on a pre-seeded key, or throttle the probe | S |
 | **P3-10** | **Docs drift.** README advertises `/admin/preview`, demo credentials, and "Filament 5 Owner Admin Panel" availability without the asset caveat; ROADMAP marks "Integrate Stripe and PayPal in sandbox" ✅ while only verification exists (P1-12); `docs/DESIGN_SYSTEM_AUDIT.md` says "0 raw color literals" (true) but the same audit's class-coverage gap was never checked (P2-1). | `README.md`; `ROADMAP.md:58`; `DESIGN_SYSTEM_AUDIT.md:50` | Re-baseline the three docs after fixes; separate "implemented" from "verifiable" | S |
 
 ---
@@ -521,6 +521,48 @@ Verified: **170 tests / 829 assertions** on **SQLite, PostgreSQL and MariaDB 11*
 — identical totals on all three — plus full migration replay from an empty
 database, Blade compilation, PHP syntax over every tracked file, class coverage,
 packaging rules and the asset budget. Six jobs, all green (run 45408009229).
+
+**2026-11-24 · Sprint 3 audit correction.**
+
+Three Sprint 3 items were reported done and were not, found by auditing the
+checklist rather than trusting the summary. All three were silent failures:
+
+| Item | What was actually wrong |
+|---|---|
+| **P2-6** | Only the store page used `<x-img>`. The home page's product cards and the product page's gallery and related rail still served master JPEGs — a 1.03 MB photo to a 390 px phone on the two highest-traffic templates — plus a hard-coded `600x600` that no longer matched the assets. `tools/check-images.mjs` now fails the build on a raw `<img>`. |
+| **P2-5** | The web manifest advertised `apple-touch-icon.png` at 180×180. Apple reads the `<link>` tag and ignores the manifest, so that entry named a size no launcher asks for. Replaced with a `maskable` 512px entry. |
+| **P2-3** | `errors.css` lived in `public/build/`, which **Vite empties on every build** — verified by running the project's own build, not assumed. The release step would have deleted the stylesheet, so every branded error page would have deployed unstyled. Moved to `public/errors.css`. |
+
+`AssetIntegrityTest` and `tools/check-images.mjs` now pin all three.
+
+**2026-11-24 · Sprint 4 delivered — packaging and operations.**
+
+| Finding | Status | Evidence |
+|---|---|---|
+| **P3-1** no release tooling | **Built, not yet fed real inputs** | `tools/package.sh`: versioned archive, SHA-256, VERSION file, self-extraction test. Refuses to build without `vendor/` + Filament assets. Executed end to end against stand-in prerequisites, which found two real bugs — `rsync` unavailable (replaced with `cp -a`) and `core/vendor` missing from the copy list, caught by the extraction test. **No archive with a real `vendor/` has ever been built in this project.** |
+| **P3-6** no backup/restore | **Backup done; restore NOT rehearsed** | `pb:backup`: engine-native dump when available, portable SQL fallback that states its own limitations in the file header, credentials via `PGPASSWORD`/`MYSQL_PWD` not argv, retention pruning. The restore procedure is written and labelled **NOT YET REHEARSED** in `docs/DEPLOYMENT.md` §4, because it has not been. |
+| **P3-7** no scheduler | **Closed** | `queue:prune-failed` daily plus a heartbeat `pb:readiness` reads (PHP cannot portably read another user's crontab). Two drafted tasks removed as no-ops: a sitemap cache clear for a key that never exists, and an expired-entitlement sweep that would duplicate `scopeActive`. A test pins them gone. |
+| **P3-5** logs grow unbounded | **Closed** | Installer writes `LOG_STACK=daily`, `LOG_DAILY_DAYS=14`. It previously wrote `LOG_CHANNEL=stack` with no `LOG_STACK`, so the default `single` channel applied. |
+| **P3-8** installer left behind | **Closed** | `php artisan pb:readiness` — 14 checks against the live installation, `--strict` exits non-zero. Turns "delete install/" into something that fails loudly. `docs/DEPLOYMENT.md` covers removal and version-directory rollback. |
+| **P3-9** health endpoint writes per request | **Closed** | Now read-only. The previous `Cache::put` was a disk write per poll on the file driver: 2,880 files a day at a 30-second interval, against a shared host's inode quota. |
+
+**Defects this sprint introduced, and how they were caught.** Four, all by CI:
+
+1. `BackupCommand` called `chunk()` without an `orderBy` on tables lacking an `id` —
+   it throws, abandoning the backup file halfway through. Now falls back to the
+   first column.
+2. `Order::factory()` and `Song::factory()` do not exist (only `UserFactory` does),
+   and `download_entitlements.song_id` is `NOT NULL`. The fixture could never have
+   worked.
+3. `orders.customer_email` and `customer_name` are `NOT NULL`; the fixture omitted
+   them.
+4. The backup-content assertion assumed `pg_dump` would contain a row created inside
+   `RefreshDatabase`'s uncommitted transaction. It cannot — `pg_dump` opens its own
+   connection. The assertion is now scoped to the portable path, which reads through
+   the same PDO connection and legitimately does contain it.
+
+Verified: **188 tests / 915 assertions** on SQLite, PostgreSQL and MariaDB 11, six
+jobs green.
 
 ---
 
