@@ -454,6 +454,9 @@ jobs:
           php artisan test --filter=test_that_true_is_true > /tmp/c.log 2>&1
           c=$?
           echo "::error title=probe::no-output=$a no-progress=$b artisan=$c"
+          for f in a b c; do
+            tail -c 700 /tmp/$f.log | python3 -c "import sys;print('::error title=\"x$f\"::'+sys.stdin.buffer.read().hex())"
+          done
 
       - name: 'MariaDB first failure'
         if: always()
