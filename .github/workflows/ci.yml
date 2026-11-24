@@ -76,6 +76,12 @@ jobs:
         # fails in seconds.
         run: node tools/check-lock.mjs
 
+      - name: PHPUnit configuration well-formedness
+        # A malformed phpunit*.xml makes every test error while reporting nothing
+        # useful. XML forbids '--' inside a comment, which a dashed rule in a doc
+        # comment violates. Cheap, needs no Composer, catches the whole class.
+        run: node tools/check-phpunit-xml.mjs
+
       - name: PHP syntax check (every tracked PHP file)
         # Scope is deliberately the whole repository: dev scripts and the
         # installer are checked too, so a broken file can never reach the
@@ -425,47 +431,23 @@ jobs:
           status=$?
           cat /tmp/test.log
 
-          # TEMPORARY. The failure detail goes straight into GITHUB_STEP_SUMMARY
-          # and into a follow-up step's NAME, because annotations on this runner
-          # reject the text and the raw log archive is not reachable.
-          {
-            echo "### MariaDB suite exit $status"
-            echo '```'
-            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -50
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
-            | grep -E 'FAILED|Failed asserting|SQLSTATE|Exception|Tests:' | head -3 > /tmp/first.txt || true
+          # The failure detail also goes to the job summary: annotations on a
+          # GitHub runner are size- and content-limited, and the raw log archive
+          # is not reachable from every environment.
+          if [ $status -ne 0 ]; then
+            {
+              echo "### MariaDB suite exit $status"
+              echo '```'
+              sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | grep -E 'FAILED|Failed|SQLSTATE|Exception|Tests:' | head -40
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (MySQL/MariaDB)'::${totals:-suite passed}"
+          fi
           exit $status
-
-      - name: 'MariaDB probe validity'
-        # TEMPORARY. Earlier per-file probes may have failed because of their own
-        # flags rather than because of the tests. This reports the exit code of
-        # each invocation on a file whose only test is `assertTrue(true)`.
-        if: always()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          set +e
-          cp phpunit.mysql.xml phpunit.xml
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output tests/Unit/ExampleTest.php > /tmp/a.log 2>&1
-          a=$?
-          vendor/bin/phpunit --no-progress tests/Unit/ExampleTest.php > /tmp/b.log 2>&1
-          b=$?
-          php artisan test --filter=test_that_true_is_true > /tmp/c.log 2>&1
-          c=$?
-          echo "::error title=probe::no-output=$a no-progress=$b artisan=$c"
-          for f in a b c; do
-            tail -c 700 /tmp/$f.log | python3 -c "import sys;print('::error title=\"x$f\"::'+sys.stdin.buffer.read().hex())"
-          done
-
-      - name: 'MariaDB first failure'
-        if: always()
-        run: |
-          set +e
-          line=$(head -1 /tmp/first.txt 2>/dev/null | sed -e 's/%/%25/g' -e 's/--/-/g' -e 's/::/:\:/g' | cut -c1-160)
-          [ -z "$line" ] && line="no-matching-line"
-          echo "::error title=mysql-first::$line"
-          echo "first=$line"
 
       - name: Verify full migration replay from an empty database
         working-directory: ${{ env.APP_DIR }}

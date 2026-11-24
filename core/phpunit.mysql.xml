@@ -28,7 +28,7 @@
             actually provide.
 
             WHY THIS FILE EXISTS
-            --------------------
+
             MySQL support was claimed in the installer while every migration
             used `jsonb` and the audit-immutability migration was PostgreSQL +
             SQLite only. On MariaDB the installer would have run, the schema
