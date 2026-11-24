@@ -412,40 +412,28 @@ jobs:
           php artisan migrate:fresh --force
           php artisan migrate:status
 
-      - name: Capture the MariaDB error for one trivial test
-        # TEMPORARY DIAGNOSTIC, removed with this job's first green run.
-        #
-        # tests/Unit/ExampleTest.php has no database access at all and still fails
-        # on this runner, so every file from AuthorizationTest onwards is failing
-        # for one shared reason. This prints that reason, hex-encoded so no
-        # annotation content rule can reject it. Decode: bytes.fromhex(m).decode()
-        if: always()
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          set +e
-          cp phpunit.mysql.xml phpunit.xml
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-output --filter test_that_true_is_true tests/Unit/ExampleTest.php > /tmp/one.log 2>&1
-          echo "exit=$?"
-          head -c 1500 /tmp/one.log | python3 -c "import sys;print('::error title=\"e1\"::'+sys.stdin.buffer.read().hex())"
-          php -r 'require "vendor/autoload.php"; echo "pdo_drivers=".implode(",", PDO::getAvailableDrivers()).PHP_EOL;' 2>&1 | python3 -c "import sys;print('::error title=\"e2\"::'+sys.stdin.buffer.read().hex())"
-
       - name: 'Tests: MySQL/MariaDB suite'
-        # `env -u GITHUB_ACTIONS` and `--no-progress` guard against PHPUnit's
-        # GitHub Actions reporter, which publishes one annotation per failing test
-        # and — if GitHub rejects the body — prints the rejection instead of the
-        # results. With collision in the dependency set that reporter is not
-        # active, so these are belt and braces.
+        # `artisan test` rather than vendor/bin/phpunit directly: it is the
+        # invocation the SQLite and PostgreSQL jobs use, and it configures the
+        # console printer itself instead of inheriting whatever a bare PHPUnit
+        # run picks up on a GitHub runner.
         working-directory: ${{ env.APP_DIR }}
         run: |
           set +e
           cp phpunit.mysql.xml phpunit.xml
-          env -u GITHUB_ACTIONS vendor/bin/phpunit --no-progress > /tmp/test.log 2>&1
+          php artisan test > /tmp/test.log 2>&1
           status=$?
           cat /tmp/test.log
+
           if [ $status -ne 0 ]; then
             echo "================ FAILURE DETAIL ================"
-            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | grep -nE 'FAILED|Failed asserting|SQLSTATE|Exception|Tests:' | head -40 || true
+            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -40
             echo "================================================"
+          else
+            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
+              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
+            echo "::notice title='Tests (MySQL/MariaDB)'::${totals:-suite passed}"
           fi
           exit $status
 
