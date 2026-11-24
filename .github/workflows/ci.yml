@@ -304,6 +304,15 @@ jobs:
           fi
           exit $status
 
+      - name: 'MariaDB first failure'
+        if: always()
+        run: |
+          set +e
+          line=$(head -1 /tmp/first.txt 2>/dev/null | sed -e 's/%/%25/g' -e 's/--/-/g' -e 's/::/:\:/g' | cut -c1-160)
+          [ -z "$line" ] && line="no-matching-line"
+          echo "::error title=mysql-first::$line"
+          echo "first=$line"
+
       - name: Verify full migration replay from an empty database
         # The cPanel installer runs `migrate --force` against a fresh database.
         # Prove the whole chain (including the PL/pgSQL audit trigger) works
@@ -425,16 +434,17 @@ jobs:
           status=$?
           cat /tmp/test.log
 
-          if [ $status -ne 0 ]; then
-            echo "================ FAILURE DETAIL ================"
-            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -40
-            echo "================================================"
-          else
-            totals=$(sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
-              | grep -E '^[[:space:]]*(Tests:|Duration:)' \
-              | sed 's/^[[:space:]]*//' | tr -s ' ' | paste -sd' | ' -)
-            echo "::notice title='Tests (MySQL/MariaDB)'::${totals:-suite passed}"
-          fi
+          # TEMPORARY. The failure detail goes straight into GITHUB_STEP_SUMMARY
+          # and into a follow-up step's NAME, because annotations on this runner
+          # reject the text and the raw log archive is not reachable.
+          {
+            echo "### MariaDB suite exit $status"
+            echo '```'
+            sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log | tail -50
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          sed -e 's/\x1b\[[0-9;]*m//g' /tmp/test.log \
+            | grep -E 'FAILED|Failed asserting|SQLSTATE|Exception|Tests:' | head -3 > /tmp/first.txt || true
           exit $status
 
       - name: Verify full migration replay from an empty database
