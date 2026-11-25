@@ -118,7 +118,7 @@
             href="{{ url('/checkout') }}" 
             class="btn-primary" 
             style="width: 100%; text-align: center; justify-content: center; box-sizing: border-box; padding: 16px;"
-          >Proceed to Dedicated Checkout &rarr;</a>
+          >Checkout &rarr;</a>
         </div>
       </div>
     </div>
