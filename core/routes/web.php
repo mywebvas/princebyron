@@ -91,6 +91,38 @@ Route::get('/admin/preview', [PageController::class, 'adminPreview'])->name('adm
 
 /*
 |--------------------------------------------------------------------------
+| Admin Staff Invitations & Exports
+|--------------------------------------------------------------------------
+|
+| These routes sit outside the Filament panel (which owns /admin) but share
+| the same web guard and owner-only authorization. They are not part of the
+| Filament resource set because they are actions, not CRUD resources.
+|
+| All routes are authenticated + owner-only via the `requireOwner` check
+| inside each controller.
+*/
+
+Route::middleware(['auth'])->prefix('/admin/staff')->name('admin.staff.')->group(function () {
+    Route::get('/invitations', [\App\Http\Controllers\Admin\StaffInvitationController::class, 'index'])->name('invitations.index');
+    Route::post('/invitations', [\App\Http\Controllers\Admin\StaffInvitationController::class, 'store'])->name('invitations.store');
+    Route::delete('/invitations/{invitation}', [\App\Http\Controllers\Admin\StaffInvitationController::class, 'destroy'])->name('invitations.destroy');
+});
+
+// Public invitation accept flow — no auth required (the token is the key).
+Route::prefix('/admin/staff/invitations')->name('admin.staff.')->group(function () {
+    Route::get('/{token}/accept', [\App\Http\Controllers\Admin\StaffInvitationController::class, 'showAccept'])->name('invitations.accept');
+    Route::post('/{token}/accept', [\App\Http\Controllers\Admin\StaffInvitationController::class, 'accept'])->name('invitations.accept.submit');
+});
+
+Route::middleware(['auth'])->prefix('/admin/exports')->name('admin.exports.')->group(function () {
+    Route::get('/orders',    [\App\Http\Controllers\Admin\ExportController::class, 'orders'])->name('orders');
+    Route::get('/users',     [\App\Http\Controllers\Admin\ExportController::class, 'users'])->name('users');
+    Route::get('/products',  [\App\Http\Controllers\Admin\ExportController::class, 'products'])->name('products');
+    Route::get('/songs',     [\App\Http\Controllers\Admin\ExportController::class, 'songs'])->name('songs');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Health check — minimal safe public response; zero diagnostic leakage.
 |--------------------------------------------------------------------------
 */
