@@ -21,7 +21,7 @@
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                @foreach ($invitations as $invitation)
+                @forelse ($invitations as $invitation)
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ $invitation['email'] }}
@@ -75,7 +75,7 @@
                             No staff invitations found.
                         </td>
                     </tr>
-                @endforeach
+                @endforelse
             </tbody>
         </table>
     </div>

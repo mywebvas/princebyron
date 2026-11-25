@@ -380,7 +380,7 @@ if ($action === 'execute' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         try {
                             $dsn = $dbDriver === 'mysql'
                                 ? "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4"
-                                : "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName}";
+                                : "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName};connect_timeout=5";
                             $pdo = new PDO($dsn, $dbUser, $dbPass, [
                                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                                 PDO::ATTR_TIMEOUT => 5,

@@ -43,7 +43,7 @@ class ExportController extends Controller
         $this->checkExportRateLimit($request);
 
         return $this->stream('orders-' . now()->format('Ymd-His') . '.csv', function ($writer) {
-            $writer->fputcsv([
+            fputcsv($writer, [
                 'Reference',
                 'Customer Name',
                 'Customer Email',
@@ -54,7 +54,7 @@ class ExportController extends Controller
                 'Tax',
                 'Total',
                 'Placed At',
-            ]);
+            ], ',', '"', '');
 
             Order::select([
                 'reference', 'customer_name', 'customer_email', 'status',
@@ -64,7 +64,7 @@ class ExportController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->cursor()
                 ->each(function ($order) use ($writer) {
-                    $writer->fputcsv([
+                    fputcsv($writer, [
                         $order->reference,
                         $order->customer_name,
                         $order->customer_email,
@@ -75,7 +75,7 @@ class ExportController extends Controller
                         $order->tax_cents / 100,
                         $order->total_cents / 100,
                         $order->created_at->toIso8601String(),
-                    ]);
+                    ], ',', '"', '');
                 });
         });
     }
@@ -86,7 +86,7 @@ class ExportController extends Controller
         $this->checkExportRateLimit($request);
 
         return $this->stream('users-' . now()->format('Ymd-His') . '.csv', function ($writer) {
-            $writer->fputcsv([
+            fputcsv($writer, [
                 'ID',
                 'Name',
                 'Email',
@@ -97,7 +97,7 @@ class ExportController extends Controller
                 'Email Verified At',
                 'Last Login At',
                 'Created At',
-            ]);
+            ], ',', '"', '');
 
             User::select([
                 'id', 'name', 'email', 'role', 'staff_level',
@@ -107,7 +107,7 @@ class ExportController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->cursor()
                 ->each(function ($user) use ($writer) {
-                    $writer->fputcsv([
+                    fputcsv($writer, [
                         $user->id,
                         $user->name,
                         $user->email,
@@ -118,7 +118,7 @@ class ExportController extends Controller
                         $user->email_verified_at?->toIso8601String(),
                         $user->last_login_at?->toIso8601String(),
                         $user->created_at->toIso8601String(),
-                    ]);
+                    ], ',', '"', '');
                 });
         });
     }
@@ -129,7 +129,7 @@ class ExportController extends Controller
         $this->checkExportRateLimit($request);
 
         return $this->stream('products-' . now()->format('Ymd-His') . '.csv', function ($writer) {
-            $writer->fputcsv([
+            fputcsv($writer, [
                 'ID',
                 'Name',
                 'Slug',
@@ -138,7 +138,7 @@ class ExportController extends Controller
                 'Is Published',
                 'Sort Order',
                 'Created At',
-            ]);
+            ], ',', '"', '');
 
             Product::select([
                 'id', 'name', 'slug', 'type', 'description',
@@ -147,7 +147,7 @@ class ExportController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->cursor()
                 ->each(function ($product) use ($writer) {
-                    $writer->fputcsv([
+                    fputcsv($writer, [
                         $product->id,
                         $product->name,
                         $product->slug,
@@ -156,7 +156,7 @@ class ExportController extends Controller
                         $product->is_published ? 'yes' : 'no',
                         $product->sort_order,
                         $product->created_at->toIso8601String(),
-                    ]);
+                    ], ',', '"', '');
                 });
         });
     }
@@ -167,7 +167,7 @@ class ExportController extends Controller
         $this->checkExportRateLimit($request);
 
         return $this->stream('songs-' . now()->format('Ymd-His') . '.csv', function ($writer) {
-            $writer->fputcsv([
+            fputcsv($writer, [
                 'ID',
                 'Title',
                 'Slug',
@@ -178,7 +178,7 @@ class ExportController extends Controller
                 'Has WAV',
                 'Sort Order',
                 'Created At',
-            ]);
+            ], ',', '"', '');
 
             Song::select([
                 'id', 'title', 'slug', 'price_cents', 'is_free',
@@ -187,7 +187,7 @@ class ExportController extends Controller
                 ->orderBy('sort_order', 'asc')
                 ->cursor()
                 ->each(function ($song) use ($writer) {
-                    $writer->fputcsv([
+                    fputcsv($writer, [
                         $song->id,
                         $song->title,
                         $song->slug,
@@ -198,7 +198,7 @@ class ExportController extends Controller
                         $song->has_wav ? 'yes' : 'no',
                         $song->sort_order,
                         $song->created_at->toIso8601String(),
-                    ]);
+                    ], ',', '"', '');
                 });
         });
     }
@@ -236,7 +236,7 @@ class ExportController extends Controller
         // UTF-8 BOM so Excel recognizes the encoding.
         $bom = "\xEF\xBB\xBF";
 
-        return (new StreamedResponse(function () use ($writer, $bom)) {
+        return new StreamedResponse(function () use ($writer, $bom) {
             echo $bom;
 
             $handle = fopen('php://output', 'w');

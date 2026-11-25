@@ -6,6 +6,108 @@
 @source '../../storage/framework/views/*.php';
 @source '../views/**/*.blade.php';
 
+/* Owner dashboard revenue widget */
+.filament-widget.revenue-chart-widget {
+  width: 100%;
+  max-width: 560px;
+  padding: 1.25rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+.revenue-chart-widget .widget-header,
+.revenue-chart-widget .widget-controls,
+.revenue-chart-widget .widget-footer,
+.revenue-chart-widget .widget-group-form {
+  display: flex;
+  align-items: center;
+}
+
+.revenue-chart-widget .widget-header,
+.revenue-chart-widget .widget-footer {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.revenue-chart-widget .widget-header {
+  margin-bottom: 0.75rem;
+}
+
+.revenue-chart-widget .widget-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.revenue-chart-widget .widget-controls,
+.revenue-chart-widget .widget-group-form {
+  gap: 0.75rem;
+}
+
+.revenue-chart-widget .group-label,
+.revenue-chart-widget .widget-footer,
+.revenue-chart-widget .widget-period,
+.revenue-chart-widget .widget-max {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.revenue-chart-widget .widget-total {
+  color: var(--color-clay);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.revenue-chart-widget .widget-group-form select {
+  min-height: 2.25rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.revenue-chart-widget .widget-group-form select:focus-visible {
+  outline: 2px solid var(--border-input-focus);
+  outline-offset: 2px;
+}
+
+.revenue-chart-widget .widget-chart {
+  width: 100%;
+  overflow: visible;
+}
+
+.revenue-chart-widget .widget-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.revenue-chart-widget .widget-footer {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 40rem) {
+  .revenue-chart-widget .widget-header,
+  .revenue-chart-widget .widget-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .revenue-chart-widget .widget-controls {
+    width: 100%;
+  }
+
+  .revenue-chart-widget .widget-group-form {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
 
 @theme {
   --color-obsidian: var(--color-obsidian);

@@ -3,10 +3,12 @@
 namespace App\Filament\Pages;
 
 use App\Models\User;
+use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use UnitEnum;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,10 +21,10 @@ use Illuminate\Support\Facades\Log;
 
 class Exports extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-down-tray';
-    protected static ?string $navigationGroup = 'Staff Management';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-arrow-down-tray';
+    protected static string | UnitEnum | null $navigationGroup = 'Staff Management';
     protected static ?int $navigationSort = 2;
-    protected static string $view = 'filament.pages.exports';
+    protected string $view = 'filament.pages.exports';
 
     public function mount(): void
     {
