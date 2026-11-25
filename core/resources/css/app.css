@@ -3897,7 +3897,7 @@
 
 /* Entrance animation for sections */
 .animate-in {
-  animation: fadeInUp var(--transition-base) ease-out forwards;
+  animation: fadeInUp 280ms ease-out forwards;
   opacity: 0;
 }
 
@@ -3924,7 +3924,7 @@
 
 /* Staggered list items */
 .stagger > * {
-  animation: fadeInUp var(--transition-base) ease-out forwards;
+  animation: fadeInUp 280ms ease-out forwards;
   opacity: 0;
 }
 .stagger > *:nth-child(1) { animation-delay: 80ms; }
