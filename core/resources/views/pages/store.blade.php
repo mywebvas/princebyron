@@ -2,7 +2,7 @@
 
 @section('content')
 <!-- Store Hero Stage -->
-<section class="hero-stage">
+<section class="hero-stage animate-in">
   <div class="hero-inner">
     <span class="hero-eyebrow">Official Worship Apparel &amp; Merchandise</span>
     <h1 class="hero-title">
@@ -10,13 +10,13 @@
       <em>Crafted with care.</em>
     </h1>
     <p class="hero-lead">
-      Elevated essentials, embroidered symbols of faith, and archival art crafted to endure every season.
+      Elevated essentials and archival art crafted to endure every season.
     </p>
   </div>
 </section>
 
 <!-- Store Catalog Section -->
-<section class="section-editorial" style="background: var(--color-linen);" x-data="{ activeCategory: 'all' }">
+<section class="section-editorial animate-in" style="background: var(--color-linen);" x-data="{ activeCategory: 'all' }">
   <div class="section-container">
     
     @if($samplePricing)

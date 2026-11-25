@@ -2,7 +2,7 @@
 
 @section('content')
 <!-- Booking Hero Stage -->
-<section class="hero-stage">
+<section class="hero-stage animate-in">
   <div class="hero-inner">
     <span class="hero-eyebrow">Congregational Ministry &amp; Event Invitations</span>
     <h1 class="hero-title">
@@ -18,7 +18,7 @@
 <!-- Booking Enquiry Process & Form Section -->
 <section 
   id="booking-section"
-  class="section-editorial" 
+  class="section-editorial animate-in" 
   style="background: var(--color-paper);"
   x-data="{
     step: 1,
@@ -120,11 +120,11 @@
       </div>
       <span class="section-eyebrow" style="color: var(--status-success-text);">Inquiry Received</span>
       <h2 style="font-family: var(--font-display); font-size: 2rem; color: var(--text-primary); margin-bottom: 12px;">Booking Inquiry Received</h2>
-      <p style="color: var(--text-muted); max-width: 560px; margin: 0 auto 24px;">
+      <p style="color: var(--text-primary); max-width: 560px; margin: 0 auto 24px;">
         Thank you, <strong x-text="form.contact_name"></strong>. Your invitation for <strong x-text="form.organisation || form.event_name"></strong> has been safely recorded under reference <strong style="color: var(--color-clay);" x-text="bookingRef"></strong>. Prince Byron's ministry management will review calendar availability and respond promptly via email.
       </p>
 
-      <div style="background: var(--color-cream); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; max-width: 500px; margin: 0 auto 32px; text-align: left; font-size: 0.9rem; color: var(--text-muted);">
+      <div style="background: var(--color-cream); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; max-width: 500px; margin: 0 auto 32px; text-align: left; font-size: 0.9rem; color: var(--text-primary);">
         <div style="margin-bottom: 8px;"><strong>Event Type:</strong> <span x-text="form.event_type"></span></div>
         <div style="margin-bottom: 8px;"><strong>Gathering Title:</strong> <span x-text="form.event_name"></span></div>
         <div style="margin-bottom: 8px;" x-show="form.event_city"><strong>Location:</strong> <span x-text="form.event_city"></span></div>
@@ -335,7 +335,7 @@
             >
           </div>
 
-          <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 28px; line-height: 1.5;">
+          <div style="font-size: 0.82rem; color: var(--text-primary); margin-bottom: 28px; line-height: 1.5;">
             &bull; No public booking fees are published. Quotations and logistics are prepared individually following review.
           </div>
 

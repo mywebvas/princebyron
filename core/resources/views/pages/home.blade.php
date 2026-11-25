@@ -2,7 +2,7 @@
 
 @section('content')
 <!-- Hero Stage Section (Cinematic Dark Sanctuary) -->
-<section class="hero-stage">
+<section class="hero-stage animate-in">
   <div class="hero-inner">
     <div class="hero-grid">
       <div>
@@ -12,12 +12,12 @@
           <em>every season.</em>
         </h1>
         <p class="hero-lead">
-          Welcome to the official sanctuary of Prince Byron's music and ministry. From quiet acoustic devotion to congregational praise anthems, explore songs written to anchor weary hearts and exalt the living God.
+          Gospel music and ministry to anchor weary hearts and exalt the living God.
         </p>
         
         <div class="hero-actions">
-          <a href="{{ url('/music') }}" class="btn-primary">Listen to the Music &rarr;</a>
-          <a href="{{ url('/booking') }}" class="btn-secondary">Request Ministry Booking</a>
+          <a href="{{ url('/music') }}" class="btn-primary">Listen to Music &rarr;</a>
+          <a href="{{ url('/booking') }}" class="btn-secondary">Book Ministry</a>
         </div>
 
         <!-- Persistent Audio Player Teaser -->
@@ -59,7 +59,7 @@
 </section>
 
 <!-- Narrative Bio Band (Tactile Linen & Clay) -->
-<section class="bio-band">
+<section class="bio-band animate-in">
   <div class="bio-inner">
     <div class="bio-grid">
       <div class="bio-portrait-frame">
@@ -95,7 +95,7 @@
 </section>
 
 <!-- Featured Music Spotlight (All 5 Songs) -->
-<section class="section-editorial" style="background: var(--color-obsidian); color: var(--color-sand);">
+<section class="section-editorial animate-in" style="background: var(--color-obsidian); color: var(--color-sand);">
   <div class="section-container">
     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; flex-wrap: wrap; gap: 20px;">
       <div>
@@ -135,7 +135,7 @@
                 <button
                   type="button"
                   class="btn-add-track"
-                  @click="$store.app.addSongToCart({{ $song['dbId'] }}).then(ok => { if (ok) $store.app.openBag(); })"
+                  @click="$store.app.addSongToCart({{ $song['dbId'] }}, '{{ $song['title'] }}').then(ok => { if (ok) $store.app.openBag(); })"
                 >
                   Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
                 </button>
@@ -153,7 +153,7 @@
 </section>
 
 <!-- Featured Merchandise Spotlight -->
-<section class="section-editorial" style="background: var(--color-linen);">
+<section class="section-editorial animate-in" style="background: var(--color-linen);">
   <div class="section-container">
     <div style="text-align: center; max-width: 680px; margin: 0 auto 48px;">
       <span class="section-eyebrow">Sacred Textiles &amp; Testimony</span>
@@ -163,7 +163,7 @@
       </p>
     </div>
 
-    <div class="product-grid">
+    <div class="product-grid stagger">
       @foreach($products as $product)
         <article class="product-card">
           <div class="product-badge">{{ $product['category'] }}</div>

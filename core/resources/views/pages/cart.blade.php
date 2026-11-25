@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="section-editorial" style="background: var(--color-cream);">
+<section class="section-editorial animate-in" style="background: var(--color-cream);">
   <div class="cart-page-wrap">
     
     <!-- Breadcrumb -->

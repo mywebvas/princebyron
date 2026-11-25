@@ -143,7 +143,7 @@ class PageController extends Controller
     public function checkout()
     {
         return view('pages.checkout', [
-            'title' => 'Dedicated USD Checkout — Prince Byron Store',
+            'title' => 'Checkout — Prince Byron Store',
         ]);
     }
 
