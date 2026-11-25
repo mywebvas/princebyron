@@ -36,7 +36,7 @@ class RevenueChartWidget extends Widget
     {
         $user = auth()->user();
 
-        if (! $user || ! $user->can(User::PERM_VIEW_REPORTS)) {
+        if (! $user || ! $user->hasPermission(User::PERM_VIEW_REPORTS)) {
             abort(403);
         }
 

@@ -148,8 +148,11 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
      * permissions.
      *
      * @param string $permission One of the PERM_* constants on this model.
+     *
+     * Note: named hasPermission() (not can()) to avoid overriding
+     * Illuminate\Auth\Access\Authorizable::can() used by Gates and Filament.
      */
-    public function can(string $permission): bool
+    public function hasPermission(string $permission): bool
     {
         if ($this->isOwner()) {
             return true;
@@ -194,57 +197,57 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 
     public function canViewOrders(): bool
     {
-        return $this->can(self::PERM_VIEW_ORDERS);
+        return $this->hasPermission(self::PERM_VIEW_ORDERS);
     }
 
     public function canManageOrders(): bool
     {
-        return $this->can(self::PERM_MANAGE_ORDERS);
+        return $this->hasPermission(self::PERM_MANAGE_ORDERS);
     }
 
     public function canViewProducts(): bool
     {
-        return $this->can(self::PERM_VIEW_PRODUCTS);
+        return $this->hasPermission(self::PERM_VIEW_PRODUCTS);
     }
 
     public function canManageProducts(): bool
     {
-        return $this->can(self::PERM_MANAGE_PRODUCTS);
+        return $this->hasPermission(self::PERM_MANAGE_PRODUCTS);
     }
 
     public function canViewContent(): bool
     {
-        return $this->can(self::PERM_VIEW_CONTENT);
+        return $this->hasPermission(self::PERM_VIEW_CONTENT);
     }
 
     public function canManageContent(): bool
     {
-        return $this->can(self::PERM_MANAGE_CONTENT);
+        return $this->hasPermission(self::PERM_MANAGE_CONTENT);
     }
 
     public function canViewBookings(): bool
     {
-        return $this->can(self::PERM_VIEW_BOOKINGS);
+        return $this->hasPermission(self::PERM_VIEW_BOOKINGS);
     }
 
     public function canManageBookings(): bool
     {
-        return $this->can(self::PERM_MANAGE_BOOKINGS);
+        return $this->hasPermission(self::PERM_MANAGE_BOOKINGS);
     }
 
     public function canManageUsers(): bool
     {
-        return $this->can(self::PERM_MANAGE_USERS);
+        return $this->hasPermission(self::PERM_MANAGE_USERS);
     }
 
     public function canViewReports(): bool
     {
-        return $this->can(self::PERM_VIEW_REPORTS);
+        return $this->hasPermission(self::PERM_VIEW_REPORTS);
     }
 
     public function canExportData(): bool
     {
-        return $this->can(self::PERM_EXPORT_DATA);
+        return $this->hasPermission(self::PERM_EXPORT_DATA);
     }
 
     /**
