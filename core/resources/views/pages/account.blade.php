@@ -266,6 +266,17 @@
                 <span>Help &amp; Ministry Contact</span>
               </a>
 
+              @if(auth()->user()->isOwner())
+                <a href="{{ url('/admin') }}" class="saas-menu-link" role="menuitem">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                  </svg>
+                  <span>Owner Admin Dashboard &rarr;</span>
+                </a>
+              @endif
+
               <div class="saas-menu-divider"></div>
 
               <form method="POST" action="{{ route('logout') }}" style="margin: 0;">
