@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use App\Providers\Filament\AdminPanelProvider;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -60,4 +61,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             }
         });
+
+        // Register the owner-only admin panel (Filament 5).
+        // Discovered resources: Orders, Products, Songs, BookingRequests,
+        // ContentSections, Settings, ShippingRates, AuditEvents.
+        // Access is gated by User::canAccessPanel() (owner + active only).
+        ->withProviders([
+            AdminPanelProvider::class,
+        ])
     })->create();
