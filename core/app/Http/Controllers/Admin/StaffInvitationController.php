@@ -35,6 +35,15 @@ class StaffInvitationController extends Controller
     {
         $this->requireOwner();
 
+        // Rate limit: max 30 list requests per minute per owner.
+        if (RateLimiter::tooManyAttempts("staff-invitations-list:{$request->user()->id}", 30)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many requests. Please wait before trying again.',
+            ], 429);
+        }
+        RateLimiter::hit("staff-invitations-list:{$request->user()->id}");
+
         $invitations = StaffInvitation::with('inviter:name,email')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -152,8 +161,15 @@ class StaffInvitationController extends Controller
         ]);
     }
 
-    public function showAccept(string $token)
+    public function showAccept(Request $request, string $token)
     {
+        // Rate limit public acceptance page views by IP — prevent scraping
+        // and enumeration of invitation tokens.
+        if (RateLimiter::tooManyAttempts("staff-accept-page:{$request->ip()}", 20)) {
+            abort(429, 'Too many attempts. Please wait before trying again.');
+        }
+        RateLimiter::hit("staff-accept-page:{$request->ip()}");
+
         $invitation = StaffInvitation::where('token', $token)->first();
 
         if (! $invitation || ! $invitation->isClaimable()) {
@@ -167,14 +183,25 @@ class StaffInvitationController extends Controller
 
     public function accept(Request $request, string $token): JsonResponse
     {
+        // Rate limit acceptance submissions by IP — prevent brute-force and DoS.
+        if (RateLimiter::tooManyAttempts("staff-accept:{$request->ip()}", 10)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many acceptance attempts. Please wait before trying again.',
+            ], 429);
+        }
+
         $invitation = StaffInvitation::where('token', $token)->first();
 
         if (! $invitation || ! $invitation->isClaimable()) {
+            RateLimiter::hit("staff-accept:{$request->ip()}");
             return response()->json([
                 'success' => false,
                 'message' => 'This invitation link is invalid, expired, or has already been used.',
             ], 404);
         }
+
+        RateLimiter::hit("staff-accept:{$request->ip()}");
 
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],

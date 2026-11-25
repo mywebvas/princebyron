@@ -59,14 +59,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             @if ($invitation['is_claimable'])
-                                <form method="POST" action="{{ route('admin.staff.invitations.destroy', $invitation['id']) }}" class="inline" onsubmit="return confirm('Revoke this invitation?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                        class="text-xs font-medium text-red-600 hover:text-red-800 underline">
-                                        Revoke
-                                    </button>
-                                </form>
+                                <button type="button"
+                                    onclick="revokeInvitation(event, {{ $invitation['id'] }}, '{{ $invitation['email'] }}')"
+                                    class="text-xs font-medium text-red-600 hover:text-red-800 underline">
+                                    Revoke
+                                </button>
                             @else
                                 <span class="text-xs text-gray-400">—</span>
                             @endif
@@ -95,3 +92,50 @@
     </div>
 
 </div>
+
+<script>
+    function revokeInvitation(event, id, email) {
+        if (!confirm('Revoke invitation for ' + email + '?')) {
+            return;
+        }
+
+        const btn = event.currentTarget;
+        const originalText = btn.innerText;
+        btn.innerText = 'Revoking&hellip;';
+        btn.disabled = true;
+
+        fetch("{{ route('admin.staff.invitations.destroy', 0) }}".replace('/0', '/' + id), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+            .then(async (response) => {
+                const result = await response.json();
+
+                if (response.ok) {
+                    btn.innerText = 'Revoked';
+                    btn.classList.replace('text-red-600', 'text-green-600');
+                    btn.classList.remove('hover:text-red-800');
+                    btn.classList.add('hover:text-green-800');
+                    btn.disabled = true;
+
+                    // Remove the row after a short delay so the user sees feedback.
+                    setTimeout(() => {
+                        btn.closest('tr').remove();
+                    }, 800);
+                } else {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                    alert(result.message ?? 'Failed to revoke invitation. Please try again.');
+                }
+            })
+            .catch(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                alert('Network error. Please try again.');
+            });
+    }
+</script>

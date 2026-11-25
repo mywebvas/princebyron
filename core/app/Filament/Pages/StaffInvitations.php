@@ -5,7 +5,6 @@ namespace App\Filament\Pages;
 use App\Models\StaffInvitation;
 use App\Models\User;
 use Filament\Pages\Page;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 

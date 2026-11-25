@@ -102,9 +102,21 @@ class StaffInvitation extends Model
     /**
      * Mark the invitation as accepted and return the staff-level + permissions
      * that should be applied to the new user record.
+     *
+     * Must be called inside a database transaction. Re-checks claimability
+     * after a fresh read to prevent a race condition where two concurrent
+     * acceptance requests with the same token could both pass isClaimable().
      */
     public function accept(): array
     {
+        $this->refresh();
+
+        if (! $this->isClaimable()) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'This invitation is no longer claimable.'
+            );
+        }
+
         $this->update([
             'accepted_at' => now(),
         ]);
