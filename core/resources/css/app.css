@@ -144,7 +144,6 @@
   background: var(--color-cream);
   position: relative;
   overflow-x: hidden;
-  padding-bottom: 96px;
 }
 
 /* Top Demo Notice Ribbon */
@@ -3038,7 +3037,7 @@
         font-size: 0.9rem;
       }
 
-      /* Mobile Footer: Artist & Description first, clear stacked columns (WCAG tap targets & no overflow) */
+      /* Mobile Footer: Brand full width, Music & Ministry + Store & Orders side-by-side in 2 columns, Social full width below */
       .site-footer {
         padding: 48px 16px 28px;
         width: 100%;
@@ -3052,6 +3051,18 @@
       }
       .footer-brand {
         margin-bottom: 6px;
+      }
+      @media (min-width: 480px) {
+        .footer-inner {
+          grid-template-columns: 1fr 1fr;
+          gap: 28px 24px;
+        }
+        .footer-brand {
+          grid-column: 1 / -1;
+        }
+        .footer-col:nth-child(4) {
+          grid-column: 1 / -1;
+        }
       }
       .footer-col h5 {
         font-size: 0.85rem;
@@ -3737,4 +3748,196 @@
 .price-notice strong {
     color: var(--color-gold, #DFA759);
     font-weight: 700;
+}
+
+/* ==========================================================================
+   PREMIUM ANIMATIONS & ENTRANCE EFFECTS
+   Moderate, tasteful motion — never gratuitous. Respects
+   prefers-reduced-motion.
+   ========================================================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Entrance animation for sections */
+.animate-in {
+  animation: fadeInUp var(--transition-base) ease-out forwards;
+  opacity: 0;
+}
+
+.animate-in:nth-child(2) { animation-delay: 60ms; }
+.animate-in:nth-child(3) { animation-delay: 120ms; }
+.animate-in:nth-child(4) { animation-delay: 180ms; }
+.animate-in:nth-child(5) { animation-delay: 240ms; }
+
+/* Cart item added — subtle pulse to confirm action */
+.cart-item-added {
+  animation: pulseSoft 400ms ease-in-out;
+}
+
+/* Button press feedback */
+.btn-press-active {
+  transform: scale(0.95);
+  opacity: 0.8;
+}
+
+/* Floating element for premium feel */
+.float-anim {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Staggered list items */
+.stagger > * {
+  animation: fadeInUp var(--transition-base) ease-out forwards;
+  opacity: 0;
+}
+.stagger > *:nth-child(1) { animation-delay: 80ms; }
+.stagger > *:nth-child(2) { animation-delay: 160ms; }
+.stagger > *:nth-child(3) { animation-delay: 240ms; }
+.stagger > *:nth-child(4) { animation-delay: 320ms; }
+.stagger > *:nth-child(5) { animation-delay: 400ms; }
+
+/* Track row hover lift */
+.track-row {
+  position: relative;
+}
+.track-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, transparent, rgba(223, 167, 89, 0.03), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+.track-row:hover::before {
+  opacity: 1;
+}
+
+/* Premium card hover */
+.product-card, .playlist-card {
+  position: relative;
+}
+.product-card::after, .playlist-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  pointer-events: none;
+}
+.product-card:hover::after, .playlist-card:hover::after {
+  border-color: var(--color-clay);
+  box-shadow: 0 0 0 1px var(--color-clay);
+}
+
+/* GPU hints for animated elements — promote to compositor layer */
+.animate-in,
+.track-row:hover,
+.product-card:hover,
+.playlist-card:hover,
+.hero-portrait-frame:hover img {
+  will-change: transform, opacity;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .stagger > *,
+  .cart-item-added,
+  .float-anim,
+  .track-row::before {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Hero buttons — mobile stack / desktop side-by-side (pro layout) */
+.hero-actions {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 12px;
+  }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-secondary {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* Fixed header — ensure it stays on top */
+.site-header {
+  position: sticky !important;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Mobile header bag button — compact */
+.btn-bag span {
+  display: none;
+}
+@media (min-width: 601px) {
+  .btn-bag span {
+    display: inline;
+  }
+}
+
+/* Toast — slide in from top-right */
+.toast-notification {
+  top: 24px;
+  right: 24px;
+}
+
+/* About page — ensure dark text on light background */
+.section-editorial.style-background-paper .bio-body,
+section[style*="background: var(--color-paper)"] .bio-body,
+section[style*="background: var(--color-paper)"] p {
+  color: var(--text-primary) !important;
 }

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="section-editorial" style="background: var(--color-cream);">
+<section class="section-editorial animate-in" style="background: var(--color-cream);">
   <div class="cart-page-wrap">
     
     <!-- Breadcrumb -->
@@ -118,7 +118,7 @@
             href="{{ url('/checkout') }}" 
             class="btn-primary" 
             style="width: 100%; text-align: center; justify-content: center; box-sizing: border-box; padding: 16px;"
-          >Proceed to Dedicated Checkout &rarr;</a>
+          >Checkout &rarr;</a>
         </div>
       </div>
     </div>

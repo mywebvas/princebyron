@@ -32,8 +32,8 @@ class Phase2ScreensTest extends TestCase
         $response->assertSee('A sound for');
         $response->assertSee('every season');
         $response->assertSee('Purify Me');
-        $response->assertSee('Listen to the Music');
-        $response->assertSee('Request Ministry Booking');
+        $response->assertSee('Listen to Music');
+        $response->assertSee('Book Ministry');
         $response->assertSee('Skip to main content');
     }
 
@@ -127,7 +127,7 @@ class Phase2ScreensTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Your Shopping Bag');
         $response->assertSee('Review Your Selection');
-        $response->assertSee('Proceed to Dedicated Checkout');
+        $response->assertSee('Checkout');
     }
 
     /**
@@ -138,7 +138,7 @@ class Phase2ScreensTest extends TestCase
         $response = $this->get('/checkout');
 
         $response->assertStatus(200);
-        $response->assertSee('Dedicated USD Checkout');
+        $response->assertSee('Checkout — Prince Byron Store');
         $response->assertSee('Contact &amp; Entitlement Account', false);
         $response->assertSee('Shipping &amp; Delivery Destination', false);
         $response->assertSee('Payment Method Review');

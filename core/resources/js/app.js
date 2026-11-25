@@ -183,9 +183,26 @@ document.addEventListener('alpine:init', () => {
 
     /**
      * Add a merchandise variant by its database id.
-     * Returns true on success so the caller can decide whether to open the bag.
+     * Optimistic UI: updates the bag immediately so the click feels instant,
+     * then reconciles with the server. If the server rejects, rolls back.
      */
-    async addVariantToCart(variantId, quantity = 1) {
+    async addVariantToCart(variantId, quantity = 1, itemLabel = '') {
+      const before = JSON.stringify(this.cart);
+      const optimisticItem = {
+        key: 'opt-' + Date.now(),
+        type: 'variant',
+        id: variantId,
+        title: itemLabel || 'Item',
+        variant_label: '',
+        quantity: quantity,
+        unit_price_cents: 0,
+        line_total_cents: 0
+      };
+
+      this.cart.items.push(optimisticItem);
+      this.cart.item_count += quantity;
+      this.showToast('Added to your bag.');
+
       const result = await this.apiFetch('POST', '/api/cart/items', {
         type: 'variant',
         id: variantId,
@@ -193,17 +210,33 @@ document.addEventListener('alpine:init', () => {
       });
 
       if (!result.success) {
-        this.showToast(result.message);
+        this.cart = JSON.parse(before);
+        this.showToast(result.message || 'Could not add to bag.');
         return false;
       }
 
       this.applyCart(result.payload.cart);
-      this.showToast('Added to your shopping bag.');
       return true;
     },
 
-    /** Add a digital song by its database id. */
-    async addSongToCart(songId) {
+    /** Add a digital song by its database id. Optimistic UI — same pattern. */
+    async addSongToCart(songId, songTitle = '') {
+      const before = JSON.stringify(this.cart);
+      const optimisticItem = {
+        key: 'opt-' + Date.now(),
+        type: 'song',
+        id: songId,
+        title: songTitle || 'Track',
+        variant_label: 'Digital single · 1 copy',
+        quantity: 1,
+        unit_price_cents: 0,
+        line_total_cents: 0
+      };
+
+      this.cart.items.push(optimisticItem);
+      this.cart.item_count += 1;
+      this.showToast('Added to your bag.');
+
       const result = await this.apiFetch('POST', '/api/cart/items', {
         type: 'song',
         id: songId,
@@ -211,12 +244,12 @@ document.addEventListener('alpine:init', () => {
       });
 
       if (!result.success) {
-        this.showToast(result.message);
+        this.cart = JSON.parse(before);
+        this.showToast(result.message || 'Could not add to bag.');
         return false;
       }
 
       this.applyCart(result.payload.cart);
-      this.showToast('Added to your shopping bag.');
       return true;
     },
 

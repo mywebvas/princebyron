@@ -2,7 +2,7 @@
 
 @section('content')
 <!-- Music Hero Stage -->
-<section class="hero-stage">
+<section class="hero-stage animate-in">
   <div class="hero-inner">
     <span class="hero-eyebrow">The Complete Music Experience</span>
     <h1 class="hero-title">
@@ -10,16 +10,13 @@
       <em>every season.</em>
     </h1>
     <p class="hero-lead">
-      Stream studio previews, download verified lead tracks, and explore the curated 5-song collection. Purchases deliver authentic high-resolution audio masters to your private vault.
+      Stream studio previews and download lead tracks. Purchases deliver high-resolution audio to your private Fan Vault.
     </p>
-    <div style="font-size: 0.82rem; color: var(--color-gold); margin-top: 10px;">
-      Includes instant private Fan Vault digital downloads upon completed checkout.
-    </div>
   </div>
 </section>
 
 <!-- Music Catalog Section -->
-<section class="section-editorial" x-data="{ activeFilter: 'all', activeFormat: '{{ $formats['mp3']['label'] }}' }">
+<section class="section-editorial animate-in" x-data="{ activeFilter: 'all', activeFormat: '{{ $formats['mp3']['label'] }}' }">
   <div class="section-container">
     
     <!-- 1. Featured Collection / Album Card -->
@@ -28,8 +25,9 @@
         <x-img
           src="images/music/faith-for-the-in-between-album.jpg"
           alt="Faith for the In-Between album art"
-          class="album-cover-photo"
+          class="album-cover-photo float-anim"
           sizes="(max-width: 700px) 70vw, 260px"
+          loading="lazy"
         />
       </div>
       <div class="album-feature-info">
@@ -109,7 +107,7 @@
       </p>
     @endif
 
-    <div class="track-grid" id="tracklist">
+    <div class="track-grid stagger" id="tracklist">
       @foreach($songs as $song)
         <div 
           class="track-row {{ $song['isFree'] ? 'music-item-free' : 'music-item-paid' }}"
@@ -151,7 +149,7 @@
                 <button
                   type="button"
                   class="btn-add-track"
-                  @click="$store.app.addSongToCart({{ $song['dbId'] }}).then(ok => { if (ok) $store.app.openBag(); })"
+                  @click="$store.app.addSongToCart({{ $song['dbId'] }}, '{{ $song['title'] }}').then(ok => { if (ok) $store.app.openBag(); })"
                 >
                   Add &bull; ${{ number_format($song['priceCents'] / 100, 2) }}
                 </button>

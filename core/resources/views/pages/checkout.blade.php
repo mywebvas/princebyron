@@ -38,11 +38,14 @@
     get needsShipping() { return !!this.calculation.has_physical; },
 
     init() {
-      this.refreshTotals();
+      // Always render the form even if the totals API is slow or unreachable.
+      // Totals refresh in the background; the server is source of truth at submit.
+      setTimeout(() => this.refreshTotals().catch(() => {}), 50);
     },
 
     /** Ask the server what this bag costs to this destination. */
     async refreshTotals() {
+      if (!$store.app) return;
       const q = this.needsShipping || this.shippingCountry ? '?country=' + encodeURIComponent(this.shippingCountry) : '';
       const result = await $store.app.apiFetch('GET', '/api/checkout/calculate' + q);
       if (!result.success) {
@@ -50,13 +53,23 @@
         this.calcError = result.message;
         return;
       }
-      this.calculation = result.payload || this.calculation;
-      this.calcError = result.payload.success === false ? (result.payload.message || '') : '';
+      if (result.payload) {
+        this.calculation = result.payload.success === false ? this.calculation : result.payload;
+      }
+      this.calcError = result.payload && result.payload.success === false ? (result.payload.message || '') : '';
     },
 
     async submitCheckout() {
       if (this.submitting) return;
       this.errorMessage = '';
+
+      // Guard: empty bag cannot checkout
+      if ($store.app.cartIsEmpty) {
+        this.errorMessage = 'Your bag is empty. Add items before checking out.';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
       this.submitting = true;
 
       const payload = {
@@ -115,13 +128,13 @@
     
     <!-- Breadcrumb -->
     <nav class="breadcrumb-nav" aria-label="Checkout Breadcrumbs">
-      <a href="{{ url('/cart') }}">&larr; Back to Shopping Bag</a>
+      <a href="{{ url('/cart') }}">&larr; Back to Bag</a>
       <span>/</span>
-      <span>Dedicated USD Checkout</span>
+      <span>Checkout</span>
     </nav>
 
     <div style="margin-bottom: 32px;">
-      <span class="section-eyebrow">Dedicated Checkout</span>
+      <span class="section-eyebrow">Checkout</span>
       <h1 class="section-title" style="margin-bottom: 8px;">Complete Your Order</h1>
       <p class="section-desc" style="margin-bottom: 0;">
         Review your delivery details, payment method, and complete your order.
@@ -177,8 +190,8 @@
       </div>
 
       <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-        <a href="{{ url('/account') }}" class="btn-primary">View in Fan Vault Account &rarr;</a>
-        <a href="{{ url('/music') }}" class="btn-secondary">Return to Music Catalog</a>
+        <a href="{{ url('/account') }}" class="btn-primary">View Order &rarr;</a>
+        <a href="{{ url('/music') }}" class="btn-secondary">Back to Music</a>
       </div>
     </div>
 

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="hero-stage">
+<section class="hero-stage animate-in">
   <div class="hero-inner">
     <span class="hero-eyebrow">Policies &amp; Terms</span>
     <h1 class="hero-title">

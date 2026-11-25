@@ -24,11 +24,11 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
 
-  {{-- P2-7: preload only the display face. It is used above the fold for the
-       hero headline, so it is on the critical path; the body face is not
-       preloaded because `font-display: swap` already keeps text readable while
-       it loads, and a second preload would compete with the LCP image. --}}
+  {{-- Preload both self-hosted faces. Cinzel is above-the-fold (hero headline),
+       Source Sans 3 is body/UI. Both are needed for first paint; preloading both
+       avoids a layout shift when the fallback swaps to the real face. --}}
   <link rel="preload" href="/fonts/cinzel-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/source-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -70,13 +70,11 @@
 
         <nav class="mobile-nav-links" aria-label="Mobile Navigation Links">
           <a href="{{ url('/') }}" class="mobile-nav-link {{ request()->is('/') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Home</a>
-          <a href="{{ url('/about') }}" class="mobile-nav-link {{ request()->is('about') ? 'active' : '' }}" @if(request()->is('about')) aria-current="page" @endif @click="$store.app.closeMobileNav()">Our Story &amp; Vision</a>
-          <a href="{{ url('/music') }}" class="mobile-nav-link {{ request()->is('music*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Music Releases</a>
-          <a href="{{ url('/store') }}" class="mobile-nav-link {{ request()->is('store*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Official Store</a>
-          <a href="{{ url('/booking') }}" class="mobile-nav-link {{ request()->is('booking') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Ministry Booking &amp; RFQ</a>
-          <a href="{{ url('/cart') }}" class="mobile-nav-link {{ request()->is('cart') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Shopping Bag (<span x-text="$store.app.cartCount"></span>)</a>
-          <a href="{{ url('/checkout') }}" class="mobile-nav-link {{ request()->is('checkout') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Dedicated Checkout</a>
-          <a href="{{ url('/account') }}" class="mobile-nav-link {{ request()->is('account*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Fan Vault &amp; Entitlements</a>
+          <a href="{{ url('/about') }}" class="mobile-nav-link {{ request()->is('about') ? 'active' : '' }}" @if(request()->is('about')) aria-current="page" @endif @click="$store.app.closeMobileNav()">Our Story</a>
+          <a href="{{ url('/music') }}" class="mobile-nav-link {{ request()->is('music*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Music</a>
+          <a href="{{ url('/store') }}" class="mobile-nav-link {{ request()->is('store*') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Store</a>
+          <a href="{{ url('/booking') }}" class="mobile-nav-link {{ request()->is('booking') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Ministry Booking</a>
+          <a href="{{ url('/checkout') }}" class="mobile-nav-link {{ request()->is('checkout') ? 'active' : '' }}" @click="$store.app.closeMobileNav()">Checkout</a>
         </nav>
 
         <div class="mobile-nav-footer">
@@ -283,7 +281,7 @@
             class="btn-primary" 
             style="width: 100%; text-align: center; box-sizing: border-box; justify-content: center;"
             @click="$store.app.closeBag()"
-          >Proceed to Dedicated Checkout &rarr;</a>
+          >Checkout &rarr;</a>
           <a 
             href="{{ url('/cart') }}" 
             style="display: block; text-align: center; margin-top: 12px; font-size: 0.82rem; color: var(--color-amber); text-decoration: underline;"
