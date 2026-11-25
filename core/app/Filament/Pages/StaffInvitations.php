@@ -4,9 +4,11 @@ namespace App\Filament\Pages;
 
 use App\Models\StaffInvitation;
 use App\Models\User;
+use BackedEnum;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use UnitEnum;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,10 +21,10 @@ use Illuminate\Support\Facades\Log;
 
 class StaffInvitations extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-user-plus';
-    protected static ?string $navigationGroup = 'Staff Management';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-user-plus';
+    protected static string | UnitEnum | null $navigationGroup = 'Staff Management';
     protected static ?int $navigationSort = 1;
-    protected static string $view = 'filament.pages.staff-invitations';
+    protected string $view = 'filament.pages.staff-invitations';
 
     public array $invitations = [];
 

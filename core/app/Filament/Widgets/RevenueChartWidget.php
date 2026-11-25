@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Order;
 use App\Models\User;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,7 +26,7 @@ class RevenueChartWidget extends Widget
 {
     protected static ?int $sort = 2;
 
-    protected static string $view = 'filament.widgets.revenue-chart';
+    protected string $view = 'filament.widgets.revenue-chart';
 
     // These public properties are automatically available to the Blade view.
     public array $chartData = [];
@@ -95,6 +96,11 @@ class RevenueChartWidget extends Widget
     {
         $weeks = 12;
         $startDate = $now->copy()->subWeeks($weeks - 1)->startOfWeek()->startOfDay();
+        $periodExpression = match (DB::connection()->getDriverName()) {
+            'pgsql' => "TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-MM-DD')",
+            'mysql' => "DATE_FORMAT(DATE_SUB(DATE(created_at), INTERVAL WEEKDAY(created_at) DAY), '%Y-%m-%d')",
+            default => "DATE(created_at, '-' || ((CAST(strftime('%w', created_at) AS INTEGER) + 6) % 7) || ' days')",
+        };
 
         $rows = Order::whereIn('status', [
             Order::STATUS_PAID,
@@ -102,7 +108,7 @@ class RevenueChartWidget extends Widget
             Order::STATUS_FULFILLED,
         ])
             ->where('created_at', '>=', $startDate)
-            ->selectRaw('YEARWEEK(created_at, 1) as period, SUM(total_cents) as cents')
+            ->selectRaw("{$periodExpression} as period, SUM(total_cents) as cents")
             ->groupBy('period')
             ->get()
             ->keyBy('period');
@@ -112,7 +118,7 @@ class RevenueChartWidget extends Widget
 
         for ($i = $weeks - 1; $i >= 0; $i--) {
             $weekStart = $now->copy()->subWeeks($i)->startOfWeek();
-            $period = (int) $weekStart->format('%Y%U'); // MySQL YEARWEEK mode 1
+            $period = $weekStart->format('Y-m-d');
             $labels[] = $weekStart->format('M d');
             $values[] = (float) ($rows[(string) $period]?->cents ?? 0) / 100;
         }
@@ -124,6 +130,11 @@ class RevenueChartWidget extends Widget
     {
         $months = 12;
         $startDate = $now->copy()->subMonths($months - 1)->startOfMonth()->startOfDay();
+        $periodExpression = match (DB::connection()->getDriverName()) {
+            'pgsql' => "TO_CHAR(created_at, 'YYYY-MM')",
+            'mysql' => "DATE_FORMAT(created_at, '%Y-%m')",
+            default => "strftime('%Y-%m', created_at)",
+        };
 
         $rows = Order::whereIn('status', [
             Order::STATUS_PAID,
@@ -131,7 +142,7 @@ class RevenueChartWidget extends Widget
             Order::STATUS_FULFILLED,
         ])
             ->where('created_at', '>=', $startDate)
-            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as period, SUM(total_cents) as cents')
+            ->selectRaw("{$periodExpression} as period, SUM(total_cents) as cents")
             ->groupBy('period')
             ->get()
             ->keyBy('period');
@@ -184,10 +195,19 @@ class RevenueChartWidget extends Widget
 
         $pointString = implode(' ', $points);
         $lastY = $height - $padding - ($values[count($values) - 1] / $max) * $plotHeight;
+        $baselineY = $height - $padding;
+        $baselineEndX = $padding + $plotWidth;
+        $labelY = $height - 8;
+        $total = $data['total'];
+        $title = match ($data['group']) {
+            'week' => 'Revenue trend — last 12 weeks',
+            'month' => 'Revenue trend — last 12 months',
+            default => 'Revenue trend — last 30 days',
+        };
 
         return <<<SVG
 <svg width="{$width}" height="{$height}" viewBox="0 0 {$width} {$height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="revenueChartTitle">
-  <title id="revenueChartTitle">Revenue trend — last 30 days</title>
+  <title id="revenueChartTitle">{$title}</title>
   <defs>
     <linearGradient id="revenueGradient" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0%" stop-color="#DFA759" stop-opacity="0.25"/>
@@ -195,7 +215,7 @@ class RevenueChartWidget extends Widget
     </linearGradient>
   </defs>
 
-  <path d="M{$padding},{$height - $padding} L{$pointString} L{$padding + $plotWidth},{$height - $padding} Z"
+  <path d="M{$padding},{$baselineY} L{$pointString} L{$baselineEndX},{$baselineY} Z"
         fill="url(#revenueGradient)" fill-opacity="0.15"/>
 
   <polyline points="{$pointString}"
@@ -205,10 +225,10 @@ class RevenueChartWidget extends Widget
             stroke-linecap="round"
             stroke-linejoin="round"/>
 
-  <circle cx="{$padding + $plotWidth}" cy="{$lastY}"
+  <circle cx="{$baselineEndX}" cy="{$lastY}"
           r="3" fill="#DFA759"/>
 
-  <text x="{$padding}" y="{$height - 8}" font-size="9" fill="#7E7066" font-family="system-ui, -apple-system, sans-serif">${$data['total']} total</text>
+  <text x="{$padding}" y="{$labelY}" font-size="9" fill="#7E7066" font-family="system-ui, -apple-system, sans-serif">{$total} total</text>
 </svg>
 SVG;
     }

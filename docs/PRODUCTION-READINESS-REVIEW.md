@@ -564,6 +564,14 @@ checklist rather than trusting the summary. All three were silent failures:
 Verified: **188 tests / 915 assertions** on SQLite, PostgreSQL and MariaDB 11, six
 jobs green.
 
+**2026-11-25 · Phase 2 admin verification.**
+
+The Revenue Chart widget adds responsive, token-based styles to the owner panel.
+The production build measures 20.4 kB gzip for CSS, under the adjusted 22 kB
+gate and far below the unchanged 45 kB hard ceiling. The chart's day, week and
+month queries are covered by a database-backed feature test so the configured
+SQLite, PostgreSQL and MariaDB CI matrix exercises each grouping.
+
 ---
 
 *Review originally written 2026-11-23; §13 appended as findings were closed. Application feature code was not modified by the review itself. Sprint 0 did modify code — the installer, the storefront disclosure and the test harness — and each such change is listed above with the defect it closes.*

@@ -448,7 +448,9 @@ PHP;
 
         $response = $this->runInstaller(['action' => 'execute'], [
             'db_host'            => '127.0.0.1',
-            'db_port'            => '5437',
+            // Port 1 is reserved and normally closed; do not probe a developer's
+            // Docker/PostgreSQL port while simulating invalid credentials.
+            'db_port'            => '1',
             'db_name'            => 'princebyron',
             'db_user'            => 'princebyron',
             'db_pass'            => $rawSecretPassword,
