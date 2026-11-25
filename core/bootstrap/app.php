@@ -61,12 +61,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             }
         });
+    })
 
-        // Register the owner-only admin panel (Filament 5).
-        // Discovered resources: Orders, Products, Songs, BookingRequests,
-        // ContentSections, Settings, ShippingRates, AuditEvents.
-        // Access is gated by User::canAccessPanel() (owner + active only).
-        ->withProviders([
-            AdminPanelProvider::class,
-        ])
-    })->create();
+    // Register the owner-only admin panel (Filament 5).
+    // Discovered resources: Orders, Products, Songs, BookingRequests,
+    // ContentSections, Settings, ShippingRates, AuditEvents.
+    // Access is gated by User::canAccessPanel() (owner + active only).
+    ->withProviders([
+        AdminPanelProvider::class,
+    ])
+    ->create();
