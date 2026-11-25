@@ -23,6 +23,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -494,5 +495,14 @@ class OrderResource extends Resource
             'create' => CreateOrder::route('/create'),
             'edit'   => EditOrder::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Eager load the customer relationship so the `anonymise_customer`
+     * action visible callback doesn't trigger N+1 queries on the order list.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['user']);
     }
 }

@@ -64,13 +64,16 @@ class RevenueChartWidget extends Widget
     protected function chartByDay(\Carbon\Carbon $now): array
     {
         $days = 30;
+        $startDate = $now->copy()->subDays($days - 1)->startOfDay();
 
+        // Range-based WHERE on created_at can use the ('status', 'created_at')
+        // composite index. DATE() wrapping would prevent index usage.
         $rows = Order::whereIn('status', [
             Order::STATUS_PAID,
             Order::STATUS_FULFILLMENT_PENDING,
             Order::STATUS_FULFILLED,
         ])
-            ->where('created_at', '>=', $now->copy()->subDays($days - 1))
+            ->where('created_at', '>=', $startDate)
             ->selectRaw('DATE(created_at) as day, SUM(total_cents) as cents')
             ->groupBy('day')
             ->get()
@@ -91,13 +94,14 @@ class RevenueChartWidget extends Widget
     protected function chartByWeek(\Carbon\Carbon $now): array
     {
         $weeks = 12;
+        $startDate = $now->copy()->subWeeks($weeks - 1)->startOfWeek()->startOfDay();
 
         $rows = Order::whereIn('status', [
             Order::STATUS_PAID,
             Order::STATUS_FULFILLMENT_PENDING,
             Order::STATUS_FULFILLED,
         ])
-            ->where('created_at', '>=', $now->copy()->subWeeks($weeks - 1)->startOfWeek())
+            ->where('created_at', '>=', $startDate)
             ->selectRaw('YEARWEEK(created_at, 1) as period, SUM(total_cents) as cents')
             ->groupBy('period')
             ->get()
@@ -119,13 +123,14 @@ class RevenueChartWidget extends Widget
     protected function chartByMonth(\Carbon\Carbon $now): array
     {
         $months = 12;
+        $startDate = $now->copy()->subMonths($months - 1)->startOfMonth()->startOfDay();
 
         $rows = Order::whereIn('status', [
             Order::STATUS_PAID,
             Order::STATUS_FULFILLMENT_PENDING,
             Order::STATUS_FULFILLED,
         ])
-            ->where('created_at', '>=', $now->copy()->subMonths($months - 1)->startOfMonth())
+            ->where('created_at', '>=', $startDate)
             ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as period, SUM(total_cents) as cents')
             ->groupBy('period')
             ->get()

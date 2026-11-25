@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ProductVariant;
 use App\Models\Song;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
 
 class CartService
@@ -129,6 +130,38 @@ class CartService
     public function getSummary(): array
     {
         $cart = $this->getRawCart();
+
+        if (empty($cart)) {
+            return [
+                'items'          => [],
+                'item_count'     => 0,
+                'subtotal_cents' => 0,
+                'has_physical'   => false,
+                'currency'       => 'USD',
+            ];
+        }
+
+        // --- Batch fetch all variants and songs in two queries (no N+1) ---
+        $variantIds = [];
+        $songIds = [];
+
+        foreach ($cart as $cartItem) {
+            if (($cartItem['type'] ?? null) === 'variant') {
+                $variantIds[] = (int) ($cartItem['id'] ?? 0);
+            } elseif (($cartItem['type'] ?? null) === 'song') {
+                $songIds[] = (int) ($cartItem['id'] ?? 0);
+            }
+        }
+
+        $variants = ProductVariant::with('product')
+            ->whereIn('id', array_unique($variantIds))
+            ->get()
+            ->keyBy('id');
+
+        $songs = Song::whereIn('id', array_unique($songIds))
+            ->get()
+            ->keyBy('id');
+
         $items = [];
         $subtotalCents = 0;
         $totalQuantity = 0;
@@ -140,7 +173,8 @@ class CartService
             $qty = (int) ($cartItem['quantity'] ?? 1);
 
             if ($type === 'variant') {
-                $variant = ProductVariant::with('product')->find($id);
+                $variant = $variants[$id] ?? null;
+
                 if (! $variant || ! $variant->is_active || ! $variant->product || ! $variant->product->is_published) {
                     // Out of stock / unpublished — prune from session
                     unset($cart[$key]);
@@ -176,7 +210,8 @@ class CartService
                     'size'             => $variant->size,
                 ];
             } elseif ($type === 'song') {
-                $song = Song::find($id);
+                $song = $songs[$id] ?? null;
+
                 if (! $song || ! $song->is_published) {
                     unset($cart[$key]);
                     continue;
